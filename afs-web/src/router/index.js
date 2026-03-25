@@ -4,6 +4,7 @@ import Login from '../views/Login.vue'
 import Chat from '../views/Chat.vue'
 import Cases from '../views/Cases.vue'
 import Knowledge from '../views/Knowledge.vue'
+import Profile from '../views/Profile.vue'
 
 const routes = [
   { path: '/', component: Home },
@@ -11,7 +12,8 @@ const routes = [
   { path: '/chat', component: Chat },
   { path: '/chat/:sessionId', component: Chat },
   { path: '/cases', component: Cases },
-  { path: '/knowledge', component: Knowledge }
+  { path: '/knowledge', component: Knowledge },
+  { path: '/profile', component: Profile }
 ]
 
 const router = createRouter({

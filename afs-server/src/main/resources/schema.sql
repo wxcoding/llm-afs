@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS `user` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password` VARCHAR(100) NOT NULL,
+    `nickname` VARCHAR(50),
+    `avatar` LONGTEXT,
+    `phone` VARCHAR(20),
+    `email` VARCHAR(100),
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

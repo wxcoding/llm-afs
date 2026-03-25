@@ -115,9 +115,9 @@ public class ChatService {
     }
 
     private String callAI(List<Map<String, String>> messages) {
-        if (!StringUtils.hasText(apiKey) || "your-api-key-here".equals(apiKey)) {
-            return getMockResponse(messages);
-        }
+//        if (!StringUtils.hasText(apiKey) || "your-api-key-here".equals(apiKey)) {
+//            return getMockResponse(messages);
+//        }
 
         try {
             ObjectNode json = objectMapper.createObjectNode();

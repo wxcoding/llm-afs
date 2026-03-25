@@ -21,8 +21,42 @@
           </el-menu>
           <div class="user-area">
             <template v-if="user">
-              <span class="username">{{ user.username }}</span>
-              <el-button type="danger" size="small" @click="logout">退出</el-button>
+              <el-popover
+                placement="bottom"
+                :width="200"
+                trigger="hover"
+              >
+                <template #reference>
+                  <div class="user-info" @click="$router.push('/')">
+                    <el-avatar 
+                      :size="36" 
+                      :src="user.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                      class="user-avatar"
+                    />
+                    <span class="username">{{ user.nickname || user.username }}</span>
+                  </div>
+                </template>
+                <div class="user-popover-simple">
+                  <div class="popover-user-info">
+                    <el-avatar :size="40" :src="user.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
+                    <div>
+                      <div class="popover-name">{{ user.nickname || user.username }}</div>
+                      <div class="popover-username">@{{ user.username }}</div>
+                    </div>
+                  </div>
+                </div>
+              </el-popover>
+              <el-dropdown @command="handleCommand">
+                <el-button type="primary" size="small">
+                  更多<i class="el-icon-arrow-down el-icon--right"></i>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                    <el-dropdown-item command="logout" divided>退出</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </template>
             <template v-else>
               <el-button type="primary" size="small" @click="$router.push('/login')">登录</el-button>
@@ -38,7 +72,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 export default {
@@ -46,12 +80,20 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+    const user = inject('user')
 
     const activeIndex = computed(() => route.path)
 
     const handleMenuSelect = (index) => {
       router.push(index)
+    }
+
+    const handleCommand = (command) => {
+      if (command === 'profile') {
+        router.push('/profile')
+      } else if (command === 'logout') {
+        logout()
+      }
     }
 
     const logout = () => {
@@ -64,6 +106,7 @@ export default {
       user,
       activeIndex,
       handleMenuSelect,
+      handleCommand,
       logout
     }
   }
@@ -119,6 +162,24 @@ export default {
   gap: 12px;
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.user-info:hover {
+  background-color: #f5f7fa;
+}
+
+.user-avatar {
+  cursor: pointer;
+}
+
 .username {
   color: #666;
 }
@@ -128,5 +189,30 @@ export default {
   margin: 0 auto;
   width: 100%;
   padding: 20px;
+}
+
+.user-popover-simple {
+  padding: 8px;
+}
+
+.popover-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.popover-user-info > div {
+  flex: 1;
+}
+
+.popover-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.popover-username {
+  font-size: 12px;
+  color: #999;
 }
 </style>

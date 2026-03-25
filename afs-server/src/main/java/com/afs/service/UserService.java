@@ -22,6 +22,7 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(password);
+        user.setNickname(username);
         user.setCreateTime(LocalDateTime.now());
         userMapper.insert(user);
         return user;
@@ -34,6 +35,25 @@ public class UserService {
         if (user == null) {
             throw new RuntimeException("用户名或密码错误");
         }
+        return user;
+    }
+
+    public User getUserById(Long id) {
+        return userMapper.selectById(id);
+    }
+
+    public User updateUser(User user) {
+        userMapper.updateById(user);
+        return userMapper.selectById(user.getId());
+    }
+
+    public User updateAvatar(Long userId, String avatar) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setAvatar(avatar);
+        userMapper.updateById(user);
         return user;
     }
 }
