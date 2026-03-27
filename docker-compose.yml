@@ -1,0 +1,53 @@
+services:
+#  mysql:
+#    image: mysql:8.0
+#    container_name: afs-mysql
+#    restart: unless-stopped
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+#      MYSQL_DATABASE: afs
+#      TZ: Asia/Shanghai
+#    ports:
+#      - "3306:3306"
+#    command: >
+#      --character-set-server=utf8mb4
+#      --collation-server=utf8mb4_unicode_ci
+#      --default-time-zone=+08:00
+#    volumes:
+#      - ./data/mysql:/var/lib/mysql
+#      - ./afs-server/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+#    healthcheck:
+#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 12
+
+  afs-server:
+    build:
+      context: ./afs-server
+      dockerfile: Dockerfile
+    container_name: afs-server
+    restart: unless-stopped
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://192.168.209.133:3306/afs?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+#      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-guanwx}
+      SPRING_DATASOURCE_PASSWORD: guanwx
+      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-sk-e3a6931ada6045909dc8db75a839a0ca}
+      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
+    ports:
+      - "8080:8080"
+
+  afs-web:
+    build:
+      context: ./afs-web
+      dockerfile: Dockerfile
+    container_name: afs-web
+    restart: unless-stopped
+    depends_on:
+      - afs-server
+    ports:
+      - "3000:80"
