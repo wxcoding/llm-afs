@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/user")
@@ -110,6 +112,88 @@ public class UserController {
                     "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : ""
                 ));
             }
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    @GetMapping("/list")
+    public Map<String, Object> getAllUsers() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<User> users = userService.getAllUsers();
+            List<Map<String, Object>> userList = users.stream().map(user -> Map.<String, Object>of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "nickname", user.getNickname() != null ? user.getNickname() : "",
+                "avatar", user.getAvatar() != null ? user.getAvatar() : "",
+                "phone", user.getPhone() != null ? user.getPhone() : "",
+                "email", user.getEmail() != null ? user.getEmail() : "",
+                "createTime", user.getCreateTime() != null ? user.getCreateTime().toString() : ""
+            )).collect(Collectors.toList());
+            result.put("success", true);
+            result.put("users", userList);
+            result.put("total", userList.size());
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    @PostMapping("/create")
+    public Map<String, Object> createUser(@RequestBody User user) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User createdUser = userService.createUser(user);
+            result.put("success", true);
+            result.put("message", "创建成功");
+            result.put("user", Map.of(
+                "id", createdUser.getId(),
+                "username", createdUser.getUsername(),
+                "nickname", createdUser.getNickname() != null ? createdUser.getNickname() : "",
+                "avatar", createdUser.getAvatar() != null ? createdUser.getAvatar() : "",
+                "phone", createdUser.getPhone() != null ? createdUser.getPhone() : "",
+                "email", createdUser.getEmail() != null ? createdUser.getEmail() : ""
+            ));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    @PutMapping("/admin/update/{id}")
+    public Map<String, Object> updateUserByAdmin(@PathVariable Long id, @RequestBody User user) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User updatedUser = userService.updateUserByAdmin(id, user);
+            result.put("success", true);
+            result.put("message", "更新成功");
+            result.put("user", Map.of(
+                "id", updatedUser.getId(),
+                "username", updatedUser.getUsername(),
+                "nickname", updatedUser.getNickname() != null ? updatedUser.getNickname() : "",
+                "avatar", updatedUser.getAvatar() != null ? updatedUser.getAvatar() : "",
+                "phone", updatedUser.getPhone() != null ? updatedUser.getPhone() : "",
+                "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : ""
+            ));
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Map<String, Object> deleteUser(@PathVariable Long id) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            userService.deleteUser(id);
+            result.put("success", true);
+            result.put("message", "删除成功");
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());

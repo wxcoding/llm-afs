@@ -18,6 +18,7 @@
             <el-menu-item index="/chat">智能问答</el-menu-item>
             <el-menu-item index="/cases">案例分析</el-menu-item>
             <el-menu-item index="/knowledge">知识库</el-menu-item>
+            <el-menu-item index="/users">用户管理</el-menu-item>
           </el-menu>
           <div class="user-area">
             <template v-if="user">

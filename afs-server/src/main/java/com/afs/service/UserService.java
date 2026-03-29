@@ -2,10 +2,12 @@ package com.afs.service;
 
 import com.afs.entity.User;
 import com.afs.mapper.UserMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UserService {
@@ -55,5 +57,55 @@ public class UserService {
         user.setAvatar(avatar);
         userMapper.updateById(user);
         return user;
+    }
+
+    public List<User> getAllUsers() {
+        return userMapper.selectList(
+                new LambdaQueryWrapper<User>().orderByDesc(User::getCreateTime)
+        );
+    }
+
+    public User createUser(User user) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq("username", user.getUsername());
+        if (userMapper.selectOne(wrapper) != null) {
+            throw new RuntimeException("用户名已存在");
+        }
+        if (user.getCreateTime() == null) {
+            user.setCreateTime(LocalDateTime.now());
+        }
+        if (user.getNickname() == null || user.getNickname().isBlank()) {
+            user.setNickname(user.getUsername());
+        }
+        userMapper.insert(user);
+        return user;
+    }
+
+    public User updateUserByAdmin(Long id, User req) {
+        User existing = userMapper.selectById(id);
+        if (existing == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (req.getNickname() != null) {
+            existing.setNickname(req.getNickname());
+        }
+        if (req.getPhone() != null) {
+            existing.setPhone(req.getPhone());
+        }
+        if (req.getEmail() != null) {
+            existing.setEmail(req.getEmail());
+        }
+        if (req.getAvatar() != null) {
+            existing.setAvatar(req.getAvatar());
+        }
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            existing.setPassword(req.getPassword());
+        }
+        userMapper.updateById(existing);
+        return existing;
+    }
+
+    public void deleteUser(Long id) {
+        userMapper.deleteById(id);
     }
 }
