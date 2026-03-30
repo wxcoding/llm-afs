@@ -68,7 +68,9 @@ public class UserController {
                     "nickname", user.getNickname() != null ? user.getNickname() : "",
                     "avatar", user.getAvatar() != null ? user.getAvatar() : "",
                     "phone", user.getPhone() != null ? user.getPhone() : "",
-                    "email", user.getEmail() != null ? user.getEmail() : ""
+                    "email", user.getEmail() != null ? user.getEmail() : "",
+                    "createTime", user.getCreateTime() != null ? user.getCreateTime().toString() : "",
+                    "updateTime", user.getUpdateTime() != null ? user.getUpdateTime().toString() : ""
                 ));
             }
         } catch (Exception e) {
@@ -109,7 +111,9 @@ public class UserController {
                     "nickname", updatedUser.getNickname() != null ? updatedUser.getNickname() : "",
                     "avatar", updatedUser.getAvatar() != null ? updatedUser.getAvatar() : "",
                     "phone", updatedUser.getPhone() != null ? updatedUser.getPhone() : "",
-                    "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : ""
+                    "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : "",
+                    "createTime", updatedUser.getCreateTime() != null ? updatedUser.getCreateTime().toString() : "",
+                    "updateTime", updatedUser.getUpdateTime() != null ? updatedUser.getUpdateTime().toString() : ""
                 ));
             }
         } catch (Exception e) {
@@ -131,7 +135,8 @@ public class UserController {
                 "avatar", user.getAvatar() != null ? user.getAvatar() : "",
                 "phone", user.getPhone() != null ? user.getPhone() : "",
                 "email", user.getEmail() != null ? user.getEmail() : "",
-                "createTime", user.getCreateTime() != null ? user.getCreateTime().toString() : ""
+                "createTime", user.getCreateTime() != null ? user.getCreateTime().toString() : "",
+                "updateTime", user.getUpdateTime() != null ? user.getUpdateTime().toString() : ""
             )).collect(Collectors.toList());
             result.put("success", true);
             result.put("users", userList);
@@ -156,7 +161,9 @@ public class UserController {
                 "nickname", createdUser.getNickname() != null ? createdUser.getNickname() : "",
                 "avatar", createdUser.getAvatar() != null ? createdUser.getAvatar() : "",
                 "phone", createdUser.getPhone() != null ? createdUser.getPhone() : "",
-                "email", createdUser.getEmail() != null ? createdUser.getEmail() : ""
+                "email", createdUser.getEmail() != null ? createdUser.getEmail() : "",
+                "createTime", createdUser.getCreateTime() != null ? createdUser.getCreateTime().toString() : "",
+                "updateTime", createdUser.getUpdateTime() != null ? createdUser.getUpdateTime().toString() : ""
             ));
         } catch (Exception e) {
             result.put("success", false);
@@ -178,7 +185,9 @@ public class UserController {
                 "nickname", updatedUser.getNickname() != null ? updatedUser.getNickname() : "",
                 "avatar", updatedUser.getAvatar() != null ? updatedUser.getAvatar() : "",
                 "phone", updatedUser.getPhone() != null ? updatedUser.getPhone() : "",
-                "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : ""
+                "email", updatedUser.getEmail() != null ? updatedUser.getEmail() : "",
+                "createTime", updatedUser.getCreateTime() != null ? updatedUser.getCreateTime().toString() : "",
+                "updateTime", updatedUser.getUpdateTime() != null ? updatedUser.getUpdateTime().toString() : ""
             ));
         } catch (Exception e) {
             result.put("success", false);

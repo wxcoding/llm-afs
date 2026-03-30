@@ -45,18 +45,9 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
         return userMapper.selectById(user.getId());
-    }
-
-    public User updateAvatar(Long userId, String avatar) {
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        user.setAvatar(avatar);
-        userMapper.updateById(user);
-        return user;
     }
 
     public List<User> getAllUsers() {
@@ -101,6 +92,7 @@ public class UserService {
         if (req.getPassword() != null && !req.getPassword().isBlank()) {
             existing.setPassword(req.getPassword());
         }
+        existing.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(existing);
         return existing;
     }

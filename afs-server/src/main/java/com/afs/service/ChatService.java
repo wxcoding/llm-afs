@@ -4,21 +4,18 @@ import com.afs.entity.ChatMessage;
 import com.afs.entity.ChatSession;
 import com.afs.mapper.ChatMessageMapper;
 import com.afs.mapper.ChatSessionMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import okhttp3.*;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
-import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChatService {
@@ -29,31 +26,8 @@ public class ChatService {
     @Autowired
     private ChatMessageMapper messageMapper;
 
-    @Value("${ai.dashscope.api-key}")
-    private String apiKey;
-
-    @Value("${ai.dashscope.model}")
-    private String model;
-
-    private static final String API_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final OkHttpClient httpClient = new OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build();
-
-    private static final String SYSTEM_PROMPT = """ 
-            你是防诈骗知识助手，专门帮助用户了解各种诈骗手法和提高防骗意识。
-            你应该：
-            1. 回答关于常见诈骗手法的问题（电信诈骗、网络诈骗、冒充诈骗、投资诈骗等）
-            2. 提供防范诈骗的建议和技巧
-            3. 分享真实的诈骗案例（如果用户要求）
-            4. 帮助用户识别可疑行为和骗术
-            
-            请用通俗易懂的语言回答问题，语言要亲切友好。如果用户问的问题与诈骗无关，请礼貌地引导回到防诈骗话题上来。
-            """;
+    @Autowired
+    private ChatClient chatClient;
 
     public Map<String, Object> sendMessage(Long userId, Long sessionId, String content) {
         ChatSession session;
@@ -75,10 +49,9 @@ public class ChatService {
         userMsg.setCreateTime(LocalDateTime.now());
         messageMapper.insert(userMsg);
 
-        List<Map<String, String>> messages = buildMessages(sessionId);
-        messages.add(Map.of("role", "user", "content", content));
-
-        String aiResponse = callAI(messages);
+        List<Message> messages = buildMessages(sessionId);
+        
+        String aiResponse = callAI(messages, content);
 
         ChatMessage assistantMsg = new ChatMessage();
         assistantMsg.setSessionId(sessionId);
@@ -96,9 +69,90 @@ public class ChatService {
         return result;
     }
 
-    private List<Map<String, String>> buildMessages(Long sessionId) {
-        List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", SYSTEM_PROMPT));
+    public void sendMessageStream(Long userId, Long sessionId, String content, PrintWriter writer) throws Exception {
+        ChatSession session;
+        if (sessionId == null) {
+            session = new ChatSession();
+            session.setUserId(userId);
+            session.setTitle(content.length() > 20 ? content.substring(0, 20) + "..." : content);
+            session.setCreateTime(LocalDateTime.now());
+            sessionMapper.insert(session);
+            sessionId = session.getId();
+        } else {
+            session = sessionMapper.selectById(sessionId);
+        }
+
+        // 保存用户消息
+        ChatMessage userMsg = new ChatMessage();
+        userMsg.setSessionId(sessionId);
+        userMsg.setRole("user");
+        userMsg.setContent(content);
+        userMsg.setCreateTime(LocalDateTime.now());
+        messageMapper.insert(userMsg);
+
+        // 构建消息历史
+        List<Message> messages = buildMessages(sessionId);
+        
+        // 发送会话ID
+        Map<String, Object> sessionInfo = new HashMap<>();
+        sessionInfo.put("sessionId", sessionId);
+        writer.write("data: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(sessionInfo) + "\n\n");
+        writer.flush();
+        
+        // 调用AI并流式输出
+        String aiResponse = callAIStream(messages, content, writer);
+
+        // 保存助手消息
+        ChatMessage assistantMsg = new ChatMessage();
+        assistantMsg.setSessionId(sessionId);
+        assistantMsg.setRole("assistant");
+        assistantMsg.setContent(aiResponse);
+        assistantMsg.setCreateTime(LocalDateTime.now());
+        messageMapper.insert(assistantMsg);
+    }
+
+    private String callAIStream(List<Message> historyMessages, String userContent, PrintWriter writer) throws Exception {
+        try {
+            // 调用大模型的同步API获取完整响应
+            ChatClient.ChatClientRequestSpec request = chatClient.prompt()
+                    .messages(historyMessages)
+                    .user(userContent);
+            
+            String fullResponse = request.call().content();
+            
+            // 模拟流式输出，将完整响应分块发送
+            StringBuilder responseBuilder = new StringBuilder();
+            int chunkSize = 50; // 每50个字符为一个块
+            
+            for (int i = 0; i < fullResponse.length(); i += chunkSize) {
+                int end = Math.min(i + chunkSize, fullResponse.length());
+                String chunk = fullResponse.substring(i, end);
+                responseBuilder.append(chunk);
+                
+                // 发送流式数据
+                Map<String, Object> data = new HashMap<>();
+                data.put("content", chunk);
+                writer.write("data: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(data) + "\n\n");
+                writer.flush();
+                
+                // 模拟网络延迟，使流式效果更明显
+                Thread.sleep(100);
+            }
+            
+            return responseBuilder.toString();
+        } catch (Exception e) {
+            // 发生错误时使用模拟响应
+            String mockResponse = getMockResponse(userContent);
+            Map<String, Object> data = new HashMap<>();
+            data.put("content", mockResponse);
+            writer.write("data: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(data) + "\n\n");
+            writer.flush();
+            return mockResponse;
+        }
+    }
+
+    private List<Message> buildMessages(Long sessionId) {
+        List<Message> messages = new ArrayList<>();
 
         List<ChatMessage> history = messageMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<ChatMessage>()
@@ -108,109 +162,29 @@ public class ChatService {
 
         for (ChatMessage msg : history) {
             if (msg.getContent() != null) {
-                messages.add(Map.of("role", msg.getRole(), "content", msg.getContent()));
+                if ("user".equals(msg.getRole())) {
+                    messages.add(new UserMessage(msg.getContent()));
+                } else if ("assistant".equals(msg.getRole())) {
+                    messages.add(new org.springframework.ai.chat.messages.AssistantMessage(msg.getContent()));
+                }
             }
         }
         return messages;
     }
 
-    private String callAI(List<Map<String, String>> messages) {
-//        if (!StringUtils.hasText(apiKey) || "your-api-key-here".equals(apiKey)) {
-//            return getMockResponse(messages);
-//        }
-
+    private String callAI(List<Message> historyMessages, String userContent) {
         try {
-            ObjectNode json = objectMapper.createObjectNode();
-            json.put("model", model);
+            ChatClient.ChatClientRequestSpec request = chatClient.prompt()
+                    .messages(historyMessages)
+                    .user(userContent);
 
-            ObjectNode input = objectMapper.createObjectNode();
-            ArrayNode messagesArray = objectMapper.createArrayNode();
-            for (Map<String, String> m : messages) {
-                ObjectNode msg = objectMapper.createObjectNode();
-                msg.put("role", m.get("role"));
-                msg.put("content", m.get("content"));
-                messagesArray.add(msg);
-            }
-            input.set("messages", messagesArray);
-
-            ObjectNode parameters = objectMapper.createObjectNode();
-            parameters.put("result_format", "message");
-            parameters.put("temperature", 0.7);
-            parameters.put("max_tokens", 1000);
-
-            json.set("input", input);
-            json.set("parameters", parameters);
-
-            RequestBody body = RequestBody.create(
-                    json.toString(),
-                    MediaType.parse("application/json; charset=utf-8")
-            );
-
-            Request request = new Request.Builder()
-                    .url(API_URL)
-                    .addHeader("Authorization", "Bearer " + apiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .post(body)
-                    .build();
-
-            CountDownLatch latch = new CountDownLatch(1);
-            final String[] responseBody = {null};
-            final Exception[] error = {null};
-
-            httpClient.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    error[0] = e;
-                    latch.countDown();
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.body() != null) {
-                        responseBody[0] = response.body().string();
-                    }
-                    latch.countDown();
-                }
-            });
-
-            latch.await(60, TimeUnit.SECONDS);
-
-            if (error[0] != null) {
-                return getMockResponse(messages);
-            }
-
-            if (responseBody[0] != null) {
-                JsonNode result = objectMapper.readTree(responseBody[0]);
-                if (result.has("output")) {
-                    JsonNode output = result.get("output");
-                    if (output.has("choices")) {
-                        ArrayNode choices = (ArrayNode) output.get("choices");
-                        if (choices.size() > 0) {
-                            ObjectNode choice = (ObjectNode) choices.get(0);
-                            if (choice.has("message")) {
-                                JsonNode msg = choice.get("message");
-                                return msg.get("content").asText();
-                            }
-                        }
-                    }
-                }
-            }
-            return getMockResponse(messages);
-
+            return request.call().content();
         } catch (Exception e) {
-            return getMockResponse(messages);
+            return getMockResponse(userContent);
         }
     }
 
-    private String getMockResponse(List<Map<String, String>> messages) {
-        String lastUserMsg = "";
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            if ("user".equals(messages.get(i).get("role"))) {
-                lastUserMsg = messages.get(i).get("content");
-                break;
-            }
-        }
-
+    private String getMockResponse(String lastUserMsg) {
         String lowerMsg = lastUserMsg.toLowerCase();
 
         if (lowerMsg.contains("电信诈骗") || lowerMsg.contains("诈骗") || lowerMsg.contains("防骗")) {

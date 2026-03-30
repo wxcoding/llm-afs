@@ -173,14 +173,81 @@ export default {
           sessionId: sessionId.value
         }
         
-        const res = await axios.post('/api/chat/send', params)
+        // 先添加用户消息
+        const userMessage = {
+          role: 'user',
+          content: content
+        }
+        messages.value.push(userMessage)
+        scrollToBottom()
         
-        if (res.data.success) {
-          sessionId.value = res.data.sessionId
-          messages.value.push(res.data.userMessage)
-          messages.value.push(res.data.assistantMessage)
+        // 创建助手消息容器
+        const assistantMessage = {
+          role: 'assistant',
+          content: ''
+        }
+        const assistantIndex = messages.value.length
+        messages.value.push(assistantMessage)
+        
+        // 使用fetch API实现流式接收
+        const response = await fetch('/api/chat/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(params)
+        })
+        
+        if (!response.ok) {
+          throw new Error('请求失败')
+        }
+        
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let sessionIdReceived = null
+        
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          const chunk = decoder.decode(value, { stream: true })
+          // 解析服务器发送的事件
+          const lines = chunk.split('\n')
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.substring(6)
+              if (data === '[DONE]') {
+                break
+              }
+              
+              try {
+                const json = JSON.parse(data)
+                if (json.sessionId) {
+                  sessionIdReceived = json.sessionId
+                }
+                if (json.content) {
+                  // 更新助手消息内容
+                  messages.value[assistantIndex].content += json.content
+                  // 检查用户是否正在拖动滚动条
+                  const container = messagesContainer.value
+                  if (container) {
+                    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20
+                    if (isAtBottom) {
+                      scrollToBottom()
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('解析流式数据失败:', e)
+              }
+            }
+          }
+        }
+        
+        if (sessionIdReceived) {
+          sessionId.value = sessionIdReceived
           await loadSessions()
-          scrollToBottom()
         }
       } catch (e) {
         ElMessage.error('发送失败')

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `phone` VARCHAR(20),
     `email` VARCHAR(100),
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

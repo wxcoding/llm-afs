@@ -7,6 +7,15 @@ spring:
     url: jdbc:mysql://localhost:3306/afs?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
     username: root
     password: guanwx
+  ai:
+    openai:
+      api-key: sk-e3a6931ada6045909dc8db75a839a0ca
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      chat:
+        options:
+          model: qwen-turbo
+          temperature: 0.7
+          max-tokens: 1000
 
 mybatis-plus:
   configuration:
@@ -15,10 +24,4 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-
-# 大模型配置
-ai:
-  dashscope:
-    api-key: sk-e3a6931ada6045909dc8db75a839a0ca
-    model: qwen-turbo
 

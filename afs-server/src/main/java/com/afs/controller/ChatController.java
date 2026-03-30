@@ -6,6 +6,8 @@ import com.afs.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,22 +21,31 @@ public class ChatController {
     private ChatService chatService;
 
     @PostMapping("/send")
-    public Map<String, Object> send(@RequestBody Map<String, Object> params) {
-        Map<String, Object> result = new HashMap<>();
+    public void send(@RequestBody Map<String, Object> params, HttpServletResponse response) {
         try {
             Long userId = Long.valueOf(params.get("userId").toString());
             Long sessionId = params.get("sessionId") != null ? 
                     Long.valueOf(params.get("sessionId").toString()) : null;
             String content = params.get("content").toString();
             
-            Map<String, Object> chatResult = chatService.sendMessage(userId, sessionId, content);
-            result.put("success", true);
-            result.putAll(chatResult);
+            // 设置响应头，支持SSE
+            response.setContentType("text/event-stream");
+            response.setCharacterEncoding("UTF-8");
+            response.setHeader("Cache-Control", "no-cache");
+            response.setHeader("Connection", "keep-alive");
+            
+            PrintWriter writer = response.getWriter();
+            
+            // 调用流式方法
+            chatService.sendMessageStream(userId, sessionId, content, writer);
+            
+            // 发送结束信号
+            writer.write("data: [DONE]\n\n");
+            writer.flush();
+            writer.close();
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", e.getMessage());
+            e.printStackTrace();
         }
-        return result;
     }
 
     @GetMapping("/sessions/{userId}")
