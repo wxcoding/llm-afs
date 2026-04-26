@@ -168,3 +168,7 @@ jobs:
 
             # Cleanup unused images
             docker image prune -f
+          envs: |
+            CI=true
+          debug: true
+          strict: false
