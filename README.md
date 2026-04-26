@@ -1,147 +1,368 @@
-# 防诈骗知识问答系统
-* monomer版部署演示地址：http://192.168.209.133:3000
-## 项目简介
+# 防诈骗智能问答系统
 
-防诈骗知识问答系统是一个基于Spring Boot和Vue 3开发的智能问答平台，旨在帮助用户了解和防范各类诈骗手法。系统集成了大模型AI能力，提供智能问答、案例分析和知识库查询等功能。
+基于 Spring Boot 3.4 + Vue 3 + RAG 的防诈骗知识问答平台，集成大语言模型与向量检索，为用户提供智能防诈骗咨询服务。
+
+---
+
+## 功能概览
+
+| 功能 | 说明 |
+|------|------|
+| AI 智能问答 | 基于 RAG 检索增强生成，结合知识库给出准确回答 |
+| 流式输出 | SSE 实时推送 AI 回复，逐字显示 |
+| 多轮对话 | 支持上下文记忆，连续追问 |
+| 诈骗案例库 | 收录电信诈骗、网络诈骗、情感诈骗等典型案例 |
+| 防诈骗知识库 | 分类整理防诈骗知识，支持关键词和语义检索 |
+| 用户管理 | 注册登录、个人信息、管理员用户管理 |
+| 数据统计 | 用户数、知识数、案例数、对话数实时统计 |
+
+---
 
 ## 技术栈
 
-### 后端
-- Spring Boot 3.2.10
-- MyBatis Plus
-- MySQL
-- Spring AI (OpenAI集成)
+**后端**
 
-### 前端
-- Vue 3
-- Element Plus
-- Vue Router
-- Vite
+- Spring Boot 3.4.4
+- Spring AI 1.0.0（OpenAI 兼容接口 + pgVector 向量存储）
+- MyBatis Plus 3.5.5
+- PostgreSQL 17 + pgvector 扩展
+- 阿里云通义千问（qwen-turbo / text-embedding-v3）
 
-## 功能特性
+**前端**
 
-1. **智能问答**：基于大模型AI的智能问答功能，支持流式输出
-2. **案例分析**：提供真实诈骗案例的分析和防范建议
-3. **知识库**：包含各类防诈骗知识和技巧
-4. **用户管理**：支持用户注册、登录和个人信息管理
-5. **响应式设计**：适配不同设备屏幕
+- Vue 3.4
+- Element Plus 2.5
+- Vue Router 4.2
+- Vite 5.0
+- Axios
+
+**部署**
+
+- Docker + Docker Compose
+- Nginx（前端托管 + API 反向代理）
+- GitHub Actions CI/CD
+
+---
+
+## 系统架构
+
+```
+                         ┌──────────┐
+                         │  Browser │
+                         └────┬─────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   Nginx (:3000)   │
+                    │  静态资源 + 反代   │
+                    └────┬────────┬─────┘
+                         │        │
+              /api/*     │        │  /*
+                         │        │
+               ┌─────────▼──┐  ┌──▼──────────┐
+               │ afs-server │  │  Vue SPA    │
+               │  (:8080)   │  │  静态文件    │
+               └──────┬─────┘  └─────────────┘
+                      │
+          ┌───────────┼───────────┐
+          │           │           │
+    ┌─────▼─────┐ ┌───▼───┐ ┌───▼────────┐
+    │ Spring AI │ │ RAG   │ │ MyBatis    │
+    │ ChatModel │ │ 检索  │ │ Plus ORM   │
+    └─────┬─────┘ └───┬───┘ └───┬────────┘
+          │           │         │
+          │     ┌─────▼─────┐   │
+          │     │ pgVector  │   │
+          │     │ 向量存储   │   │
+          │     └─────┬─────┘   │
+          │           │         │
+          │     ┌─────▼─────────▼─────┐
+          │     │   PostgreSQL (:5432) │
+          │     │   业务数据 + 向量数据 │
+          │     └──────────────────────┘
+          │
+    ┌─────▼──────────┐
+    │ 通义千问 API    │
+    │ qwen-turbo     │
+    │ text-embedding │
+    └────────────────┘
+```
+
+**RAG 工作流程：**
+
+```
+用户提问 → Embedding 编码 → pgVector 相似度检索 → 拼接上下文 → LLM 生成回答 → SSE 流式输出
+```
+
+---
 
 ## 项目结构
 
 ```
 llm-afs/
-├── afs-server/           # 后端服务
-│   ├── src/main/java/com/afs/  # Java源代码
-│   │   ├── config/       # 配置类
-│   │   ├── controller/   # 控制器
-│   │   ├── entity/       # 实体类
-│   │   ├── mapper/       # 数据访问层
-│   │   ├── service/      # 服务层
-│   │   └── AfsApplication.java  # 应用入口
-│   ├── src/main/resources/  # 资源文件
-│   │   ├── application.yml  # 配置文件
-│   │   └── schema.sql       # 数据库脚本
-│   └── pom.xml           # Maven依赖
-├── afs-web/              # 前端项目
-│   ├── src/              # 前端源代码
-│   │   ├── router/       # 路由配置
-│   │   ├── views/        # 视图组件
-│   │   ├── App.vue       # 根组件
-│   │   └── main.js       # 入口文件
-│   ├── index.html        # HTML模板
-│   ├── package.json      # 前端依赖
-│   └── vite.config.js    # Vite配置
-└── docker-compose.yml    # Docker部署配置
+├── afs-server/                        # 后端 Spring Boot 项目
+│   ├── src/main/java/com/afs/
+│   │   ├── AfsApplication.java        # 启动类
+│   │   ├── config/
+│   │   │   ├── AiConfig.java          # Spring AI 配置
+│   │   │   └── DataInitializer.java   # 数据初始化
+│   │   ├── controller/
+│   │   │   ├── ChatController.java    # 聊天接口（SSE 流式）
+│   │   │   ├── KnowledgeController.java
+│   │   │   ├── ScamCaseController.java
+│   │   │   ├── UserController.java
+│   │   │   └── StatsController.java
+│   │   ├── entity/                    # 实体类
+│   │   ├── mapper/                    # MyBatis Plus Mapper
+│   │   └── service/
+│   │       ├── ChatService.java       # 聊天 + RAG 检索
+│   │       ├── RagService.java        # 向量检索核心
+│   │       ├── KnowledgeService.java
+│   │       ├── ScamCaseService.java
+│   │       └── UserService.java
+│   ├── src/main/resources/
+│   │   ├── application.yml            # 配置文件
+│   │   └── schema.sql                 # 数据库建表脚本
+│   ├── Dockerfile
+│   └── pom.xml
+│
+├── afs-web/                           # 前端 Vue 项目
+│   ├── src/
+│   │   ├── views/
+│   │   │   ├── Home.vue               # 首页
+│   │   │   ├── Login.vue              # 登录
+│   │   │   ├── Chat.vue               # AI 对话
+│   │   │   ├── Cases.vue              # 诈骗案例
+│   │   │   ├── Knowledge.vue          # 知识库
+│   │   │   ├── Profile.vue            # 个人中心
+│   │   │   └── UserManagement.vue     # 用户管理
+│   │   ├── router/index.js
+│   │   ├── App.vue
+│   │   └── main.js
+│   ├── nginx.conf                     # Nginx 配置
+│   ├── Dockerfile
+│   ├── vite.config.js
+│   └── package.json
+│
+├── scripts/                           # 部署脚本
+│   ├── init-server.sh                 # 服务器初始化
+│   ├── deploy.sh                      # 部署管理
+│   └── health-check.sh               # 健康检查
+│
+├── .github/workflows/ci-cd.yml        # GitHub Actions
+├── docker-compose.yml                 # 开发环境
+├── docker-compose.prod.yml            # 生产环境
+├── .env.example                       # 环境变量模板
+└── deployment.md                      # 部署文档
 ```
+
+---
 
 ## 快速开始
 
-### 环境要求
+### 前置条件
 
 - JDK 17+
-- MySQL 8.0+
-- Node.js 14+
-- npm 6+
+- PostgreSQL 15+（需安装 pgvector 扩展）
+- Node.js 18+
+- Maven 3.9+
 
-### 后端部署
+### 1. 准备数据库
 
-1. **配置数据库**
-   - 创建MySQL数据库：`CREATE DATABASE afs_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
-   - 执行 `afs-server/src/main/resources/schema.sql` 脚本创建表结构
+```sql
+CREATE DATABASE afs;
+\c afs
+CREATE EXTENSION IF NOT EXISTS vector;
+```
 
-2. **修改配置文件**
-   - 编辑 `afs-server/src/main/resources/application.yml`，修改数据库连接信息
-   - 配置OpenAI API密钥（如果需要使用真实的大模型）
+执行建表脚本 `afs-server/src/main/resources/schema.sql`。
 
-3. **启动后端服务**
-   ```bash
-   cd afs-server
-   mvn clean package -DskipTests
-   java -jar target/afs-server-1.0.0.jar
-   ```
+### 2. 配置后端
 
-### 前端部署
+编辑 `afs-server/src/main/resources/application.yml`：
 
-1. **安装依赖**
-   ```bash
-   cd afs-web
-   npm install
-   ```
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
+    username: postgres
+    password: your_password
+  ai:
+    openai:
+      api-key: your-dashscope-api-key
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+```
 
-2. **启动开发服务器**
-   ```bash
-   npm run dev
-   ```
+### 3. 启动后端
 
-3. **构建生产版本**
-   ```bash
-   npm run build
-   ```
+```bash
+cd afs-server
+mvn clean package -DskipTests
+java -jar target/afs-server-1.0.0.jar
+```
 
-## API接口
+### 4. 启动前端
 
-### 用户相关
-- `POST /api/user/register` - 用户注册
-- `POST /api/user/login` - 用户登录
-- `GET /api/user/{id}` - 获取用户信息
-- `PUT /api/user/update` - 更新用户信息
-- `GET /api/user/list` - 获取所有用户（管理员）
-- `POST /api/user/create` - 创建用户（管理员）
-- `PUT /api/user/admin/update/{id}` - 管理员更新用户
-- `DELETE /api/user/delete/{id}` - 删除用户（管理员）
+```bash
+cd afs-web
+npm install
+npm run dev
+```
 
-### 聊天相关
-- `POST /api/chat/send` - 发送消息（流式）
-- `GET /api/chat/sessions/{userId}` - 获取用户会话列表
-- `GET /api/chat/history/{sessionId}` - 获取会话历史
+访问 http://localhost:3000
 
-### 知识库相关
-- `GET /api/knowledge` - 获取知识库内容（支持分类筛选）
-- `GET /api/knowledge/{id}` - 获取知识库详情
+---
 
-### 案例相关
-- `GET /api/cases` - 获取诈骗案例（支持类型筛选）
-- `GET /api/cases/{id}` - 获取案例详情
+## Docker 部署
 
-## 功能说明
+### 一键启动
 
-### 智能问答
-- 支持实时流式输出，边输入边显示
-- 支持多轮对话，保持上下文
-- 提供快速问题建议
-- 集成大模型AI，提供专业的防诈骗建议
+```bash
+# 克隆项目
+git clone https://github.com/your-username/llm-afs.git
+cd llm-afs
 
-### 案例分析
-- 展示真实诈骗案例
-- 提供详细的案例分析和防范建议
-- 支持按类型筛选案例
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env，填写 API Key 和数据库密码
 
-### 知识库
-- 分类展示防诈骗知识
-- 提供详细的防范技巧
-- 支持快速查询
+# 启动所有服务
+docker compose up -d --build
+```
 
-### 用户管理
-- 支持用户注册和登录
-- 个人信息管理
-- 管理员用户管理功能
+启动后包含三个容器：
+
+| 容器 | 说明 | 端口 |
+|------|------|------|
+| afs-postgres | PostgreSQL + pgVector | 5432 |
+| afs-server | Spring Boot 后端 | 8080 |
+| afs-web | Nginx + Vue 前端 | 3000 |
+
+### 常用命令
+
+```bash
+docker compose ps                    # 查看状态
+docker compose logs -f afs-server    # 查看后端日志
+docker compose restart afs-server    # 重启后端
+docker compose down                  # 停止所有服务
+```
+
+### 使用部署脚本
+
+```bash
+# 首次部署（空白服务器）
+sudo ./scripts/init-server.sh
+
+# 日常运维
+sudo ./scripts/deploy.sh deploy      # 部署
+sudo ./scripts/deploy.sh redeploy    # 重新部署
+sudo ./scripts/deploy.sh status      # 查看状态
+sudo ./scripts/deploy.sh logs        # 查看日志
+```
+
+---
+
+## CI/CD 自动部署
+
+推送代码到 `main` 分支自动触发 GitHub Actions：
+
+```
+代码推送 → 构建后端 → 构建前端 → 推送 Docker 镜像 → SSH 部署到服务器
+```
+
+**配置 GitHub Secrets：**
+
+| Secret | 说明 |
+|--------|------|
+| `SERVER_HOST` | 服务器 IP |
+| `SERVER_USER` | SSH 用户名 |
+| `SERVER_SSH_KEY` | SSH 私钥 |
+| `SERVER_PROJECT_PATH` | 项目路径 |
+
+详细配置步骤见 [deployment.md](deployment.md)。
+
+---
+
+## API 接口
+
+### 用户 `/api/user`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/register` | 注册 |
+| POST | `/login` | 登录 |
+| GET | `/{id}` | 获取用户信息 |
+| PUT | `/update` | 更新个人信息 |
+| GET | `/list` | 用户列表（管理员） |
+| POST | `/create` | 创建用户（管理员） |
+| PUT | `/admin/update/{id}` | 管理员更新用户 |
+| DELETE | `/delete/{id}` | 删除用户（管理员） |
+
+### 聊天 `/api/chat`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/send` | 发送消息（SSE 流式响应） |
+| GET | `/sessions/{userId}` | 获取会话列表 |
+| GET | `/history/{sessionId}` | 获取会话历史 |
+| DELETE | `/session/{sessionId}` | 删除会话 |
+
+### 知识库 `/api/knowledge`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/` | 知识列表（支持 category、keyword 参数） |
+| GET | `/{id}` | 知识详情 |
+| POST | `/` | 添加知识 |
+| PUT | `/{id}` | 更新知识 |
+| DELETE | `/{id}` | 删除知识 |
+| GET | `/search/semantic` | 语义检索（基于向量相似度） |
+| POST | `/sync-vector` | 同步知识到向量库 |
+
+### 诈骗案例 `/api/cases`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/` | 案例列表（支持 type 参数） |
+| GET | `/{id}` | 案例详情 |
+| POST | `/` | 添加案例 |
+| PUT | `/{id}` | 更新案例 |
+| DELETE | `/{id}` | 删除案例 |
+
+### 统计 `/api/stats`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/` | 系统统计数据 |
+
+---
+
+## 数据库设计
+
+| 表名 | 说明 |
+|------|------|
+| `user` | 用户表 |
+| `chat_session` | 对话会话表 |
+| `chat_message` | 聊天消息表（含 sources 引用来源） |
+| `knowledge` | 防诈骗知识表 |
+| `scam_case` | 诈骗案例表 |
+| `vector_store` | pgVector 向量存储表（Spring AI 自动管理） |
+
+---
+
+## 环境变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `POSTGRES_USER` | 数据库用户名 | postgres |
+| `POSTGRES_PASSWORD` | 数据库密码 | postgres |
+| `POSTGRES_DB` | 数据库名 | afs |
+| `AI_DASHSCOPE_API_KEY` | 阿里云 DashScope API Key | - |
+| `AI_DASHSCOPE_MODEL` | 对话模型 | qwen-turbo |
+| `SERVER_PORT` | 后端端口 | 8080 |
+| `WEB_PORT` | 前端端口 | 3000 |
+
+---
+
+## License
+
+MIT

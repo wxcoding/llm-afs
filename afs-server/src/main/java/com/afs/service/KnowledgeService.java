@@ -6,28 +6,162 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 知识库服务
+ *
+ * 提供知识库内容的增删改查功能，同时负责将知识库内容同步到向量库，
+ * 支持按分类查询和关键词搜索。
+ */
 @Service
 public class KnowledgeService {
 
     @Autowired
     private KnowledgeMapper knowledgeMapper;
 
+    @Autowired
+    private RagService ragService;
+
+    /**
+     * 获取所有知识库列表
+     *
+     * @return 按创建时间倒序排列的知识列表
+     */
     public List<Knowledge> getAllKnowledge() {
         return knowledgeMapper.selectList(new QueryWrapper<Knowledge>().orderByDesc("create_time"));
     }
 
+    /**
+     * 根据分类获取知识列表
+     *
+     * @param category 知识分类，如"防范技巧"、"诈骗类型"等
+     * @return 该分类下的所有知识
+     */
     public List<Knowledge> getKnowledgeByCategory(String category) {
         return knowledgeMapper.selectList(
                 new QueryWrapper<Knowledge>().eq("category", category).orderByDesc("create_time")
         );
     }
 
+    /**
+     * 根据 ID 获取知识详情
+     *
+     * @param id 知识 ID
+     * @return 知识对象，如果不存在返回 null
+     */
     public Knowledge getKnowledgeById(Long id) {
         return knowledgeMapper.selectById(id);
     }
 
+    /**
+     * 添加知识条目
+     *
+     * 同时将知识内容同步到向量库，以便 AI 检索。
+     *
+     * @param knowledge 知识对象
+     * @return 创建后的知识对象
+     */
+    public Knowledge addKnowledge(Knowledge knowledge) {
+        // 设置创建时间
+        knowledge.setCreateTime(LocalDateTime.now());
+        // 保存到数据库
+        knowledgeMapper.insert(knowledge);
+        
+        // 如果有内容，同步到向量库
+        if (knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
+            ragService.addKnowledgeDocument(
+                    knowledge.getId(),     // 知识ID
+                    knowledge.getTitle(),  // 标题
+                    knowledge.getCategory(),  // 分类
+                    knowledge.getContent()     // 内容
+            );
+        }
+        return knowledge;
+    }
+
+    /**
+     * 更新知识条目
+     *
+     * 更新向量库中的文档以保持同步。
+     *
+     * @param id       知识 ID
+     * @param knowledge 包含更新内容的知识对象
+     * @return 更新后的知识对象
+     * @throws RuntimeException 如果知识不存在
+     */
+    public Knowledge updateKnowledge(Long id, Knowledge knowledge) {
+        // 获取现有知识
+        Knowledge existing = knowledgeMapper.selectById(id);
+        if (existing == null) {
+            throw new RuntimeException("知识不存在");
+        }
+        
+        // 更新字段
+        existing.setTitle(knowledge.getTitle());
+        existing.setCategory(knowledge.getCategory());
+        existing.setContent(knowledge.getContent());
+        
+        // 保存到数据库
+        knowledgeMapper.updateById(existing);
+
+        // 先从向量库删除旧文档
+        ragService.deleteKnowledgeDocument(id);
+        
+        // 如果有内容，重新同步到向量库
+        if (existing.getContent() != null && !existing.getContent().isEmpty()) {
+            ragService.addKnowledgeDocument(
+                    existing.getId(),
+                    existing.getTitle(),
+                    existing.getCategory(),
+                    existing.getContent()
+            );
+        }
+        return existing;
+    }
+
+    /**
+     * 删除知识条目
+     *
+     * 同时从向量库中删除对应的文档。
+     *
+     * @param id 知识 ID
+     */
+    public void deleteKnowledge(Long id) {
+        // 先从向量库删除文档
+        ragService.deleteKnowledgeDocument(id);
+        // 再从数据库删除
+        knowledgeMapper.deleteById(id);
+    }
+
+    /**
+     * 搜索知识
+     *
+     * 在标题、内容、分类中进行关键词模糊匹配。
+     *
+     * @param keyword 搜索关键词
+     * @return 匹配的知识列表
+     */
+    public List<Knowledge> searchKnowledge(String keyword) {
+        // 构建查询条件，在标题、内容、分类中模糊匹配关键词
+        return knowledgeMapper.selectList(
+                new QueryWrapper<Knowledge>()
+                        .like("title", keyword)      // 标题中包含关键词
+                        .or()                        // 或者
+                        .like("content", keyword)    // 内容中包含关键词
+                        .or()                        // 或者
+                        .like("category", keyword)   // 分类中包含关键词
+                        .orderByDesc("create_time")  // 按创建时间倒序排列
+        );
+    }
+
+    /**
+     * 初始化默认知识数据
+     *
+     * 当知识库为空时，自动插入预设的防诈骗知识内容，
+     * 包括防范技巧、诈骗类型、应对方法等。
+     */
     public void initDefaultKnowledge() {
         if (knowledgeMapper.selectCount(new QueryWrapper<Knowledge>()) == 0) {
             Knowledge k1 = new Knowledge();
@@ -44,10 +178,10 @@ public class KnowledgeService {
                 8. 凡是陌生网站(链接)要求登记银行卡信息的
                 9. 凡是QQ、微信要求转账汇款的
                 10. 凡是高收益投资、稳赚不赔的
-                
+
                 遇到以上情况一律是诈骗！
                 """);
-            k1.setCreateTime(java.time.LocalDateTime.now());
+            k1.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k1);
 
             Knowledge k2 = new Knowledge();
@@ -60,10 +194,10 @@ public class KnowledgeService {
                 4. 所有短信，但凡让点击链接的，一律删掉
                 5. 微信不认识的人发来的链接，一律不点
                 6. 所有170/171开头的电话，一律不接
-                
+
                 记住这六个一律，远离电信诈骗！
                 """);
-            k2.setCreateTime(java.time.LocalDateTime.now());
+            k2.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k2);
 
             Knowledge k3 = new Knowledge();
@@ -75,25 +209,25 @@ public class KnowledgeService {
                 - 冒充客服退款诈骗
                 - 虚假中奖诈骗
                 - 钓鱼短信诈骗
-                
+
                 【网络诈骗】
                 - 刷单返利诈骗
                 - 虚假购物诈骗
                 - 网络游戏诈骗
                 - 虚假招聘诈骗
-                
+
                 【情感诈骗】
                 - 杀猪盘诈骗
                 - 婚恋交友诈骗
                 - 冒充熟人诈骗
-                
+
                 【投资诈骗】
                 - 虚假投资理财
                 - 非法集资
                 - 虚拟币传销
                 - 原始股骗局
                 """);
-            k3.setCreateTime(java.time.LocalDateTime.now());
+            k3.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k3);
 
             Knowledge k4 = new Knowledge();
@@ -108,10 +242,10 @@ public class KnowledgeService {
                 6. 如已转账，立即联系银行冻结账户
                 7. 及时修改密码，防止再次被骗
                 8. 告知家人朋友，防止他们也被骗
-                
+
                 记住：被骗后及时报警，有可能追回损失！
                 """);
-            k4.setCreateTime(java.time.LocalDateTime.now());
+            k4.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k4);
 
             Knowledge k5 = new Knowledge();
@@ -119,7 +253,7 @@ public class KnowledgeService {
             k5.setCategory("防范技巧");
             k5.setContent("""
                 【个人信息保护指南】
-                
+
                 1. 身份证复印件要注明用途
                 2. 快递单要撕碎或涂抹后再丢弃
                 3. 不在社交平台晒机票、火车票、护照等
@@ -128,14 +262,96 @@ public class KnowledgeService {
                 6. 银行卡密码要定期更换
                 7. 不在不明网站填写个人信息
                 8. 及时注销不再使用的账户
-                
+
                 【注意】
                 - 官方客服不会索要验证码
                 - 不会有安全账户
                 - 不会要求你转账
                 """);
-            k5.setCreateTime(java.time.LocalDateTime.now());
+            k5.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k5);
+
+            Knowledge k6 = new Knowledge();
+            k6.setTitle("刷单返利诈骗详解");
+            k6.setCategory("诈骗类型");
+            k6.setContent("""
+                【什么是刷单返利诈骗】
+                刷单返利诈骗是目前发案率最高的电信网络诈骗类型，占所有电信网络诈骗案件的近三分之一。
+
+                【常见套路】
+                1. 第一步：通过群聊、短视频等渠道发布兼职刷单广告
+                2. 第二步：先让受害人做小额任务，并真实返利，建立信任
+                3. 第三步：诱导受害人下载虚假APP或进入虚假网站
+                4. 第四步：要求做大额任务，以"连单""卡单"等理由拒绝返现
+                5. 第五步：受害人投入越来越多，最终血本无归
+
+                【识别要点】
+                - 所有刷单都是违法行为
+                - 正规平台不会要求先充值再做任务
+                - "轻松赚钱""日入过百"都是诱饵
+                - 一旦开始做大额任务，基本就是骗局
+
+                【防范建议】
+                - 不要相信任何刷单兼职信息
+                - 不要下载陌生人推荐的APP
+                - 不要向陌生账户转账
+                """);
+            k6.setCreateTime(LocalDateTime.now());
+            knowledgeMapper.insert(k6);
+
+            Knowledge k7 = new Knowledge();
+            k7.setTitle("冒充公检法诈骗详解");
+            k7.setCategory("诈骗类型");
+            k7.setContent("""
+                【什么是冒充公检法诈骗】
+                骗子冒充公安、检察院、法院等机关工作人员，以受害人涉嫌犯罪为由，要求配合调查并转账。
+
+                【常见套路】
+                1. 来电自称是公安机关/检察院/法院工作人员
+                2. 声称你涉嫌洗钱、非法出入境等犯罪
+                3. 要求添加QQ/微信进行"线上办案"
+                4. 发送伪造的"逮捕令""通缉令"
+                5. 要求将资金转入"安全账户"进行核查
+                6. 威胁如果不配合将面临法律后果
+
+                【识别要点】
+                - 公检法不会通过电话办案
+                - 公检法不会通过QQ/微信发送法律文书
+                - 公检法不存在所谓的"安全账户"
+                - 不会要求你转账到任何账户
+
+                【防范建议】
+                - 接到此类电话立即挂断
+                - 有疑问请拨打110或到当地派出所咨询
+                - 不要添加陌生人QQ/微信
+                - 不要点击不明链接或下载不明软件
+                """);
+            k7.setCreateTime(LocalDateTime.now());
+            knowledgeMapper.insert(k7);
+        }
+    }
+
+    /**
+     * 将所有知识库内容同步到向量库
+     *
+     * 用于初始化或修复向量库数据。
+     */
+    public void syncAllToVectorStore() {
+        // 获取所有知识
+        List<Knowledge> allKnowledge = knowledgeMapper.selectList(new QueryWrapper<>());
+        
+        // 逐个同步到向量库
+        for (Knowledge k : allKnowledge) {
+            if (k.getContent() != null && !k.getContent().isEmpty()) {
+                try {
+                    // 先删除旧文档
+                    ragService.deleteKnowledgeDocument(k.getId());
+                } catch (Exception ignored) {
+                    // 忽略删除失败的情况
+                }
+                // 添加新文档
+                ragService.addKnowledgeDocument(k.getId(), k.getTitle(), k.getCategory(), k.getContent());
+            }
         }
     }
 }

@@ -23,19 +23,19 @@
         
         <div class="hero-stats">
           <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-value">98.5<span class="stat-unit">%</span></div>
-            <div class="stat-label">识别准确率</div>
+            <div class="stat-icon">📖</div>
+            <div class="stat-value">{{ stats.knowledgeCount || 0 }}<span class="stat-unit">篇</span></div>
+            <div class="stat-label">知识库文章</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">📊</div>
-            <div class="stat-value">10K<span class="stat-unit">+</span></div>
-            <div class="stat-label">案例数据库</div>
+            <div class="stat-icon">📚</div>
+            <div class="stat-value">{{ stats.caseCount || 0 }}<span class="stat-unit">个</span></div>
+            <div class="stat-label">诈骗案例</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">⏰</div>
-            <div class="stat-value">24<span class="stat-unit">/7</span></div>
-            <div class="stat-label">全天候守护</div>
+            <div class="stat-icon">💬</div>
+            <div class="stat-value">{{ stats.messageCount || 0 }}<span class="stat-unit">次</span></div>
+            <div class="stat-label">智能问答</div>
           </div>
         </div>
         
@@ -158,22 +158,17 @@ export default {
   },
   setup() {
     const stats = ref({
-      cases: 10000,
-      knowledge: 5000,
-      protection: 98.5
+      knowledgeCount: 0,
+      caseCount: 0,
+      sessionCount: 0,
+      messageCount: 0,
+      userCount: 0
     })
-
-    const formatNumber = (num) => {
-      if (num >= 10000) {
-        return (num / 10000).toFixed(1) + '万'
-      }
-      return num.toLocaleString()
-    }
 
     const loadStats = async () => {
       try {
         const res = await axios.get('/api/stats')
-        if (res.data) {
+        if (res.data && res.data.success) {
           stats.value = res.data
         }
       } catch (e) {
@@ -187,7 +182,7 @@ export default {
 
     return {
       stats,
-      formatNumber
+      loadStats
     }
   }
 }

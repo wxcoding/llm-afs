@@ -1,0 +1,31 @@
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files (keep .env.example)
+.env
+.env.local
+.env.production
+
+# Node modules
+afs-web/node_modules/
+
+# Build outputs
+afs-server/target/
+afs-web/dist/
+
+# GitHub
+.github/

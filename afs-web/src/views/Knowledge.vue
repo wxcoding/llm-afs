@@ -6,25 +6,70 @@
     </div>
 
     <div class="filter-bar">
-      <el-select v-model="selectedCategory" placeholder="选择分类" @change="loadKnowledge">
-        <el-option label="全部分类" value="" />
-        <el-option label="防范技巧" value="防范技巧" />
-        <el-option label="诈骗类型" value="诈骗类型" />
-        <el-option label="应对方法" value="应对方法" />
-      </el-select>
+      <div class="filter-left">
+        <el-select v-model="selectedCategory" placeholder="选择分类" @change="loadKnowledge" style="width: 150px">
+          <el-option label="全部分类" value="" />
+          <el-option label="防范技巧" value="防范技巧" />
+          <el-option label="诈骗类型" value="诈骗类型" />
+          <el-option label="应对方法" value="应对方法" />
+        </el-select>
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索知识..."
+          clearable
+          style="width: 250px"
+          @keyup.enter="handleSearch"
+        >
+          <template #append>
+            <el-button @click="handleSearch">搜索</el-button>
+          </template>
+        </el-input>
+      </div>
+      <div class="filter-right">
+        <el-button type="primary" @click="showAddDialog">+ 新增知识</el-button>
+        <el-button type="warning" @click="syncVectorStore" :loading="syncing">同步向量库</el-button>
+      </div>
     </div>
 
-    <div class="knowledge-list">
-      <el-card 
-        v-for="k in knowledgeList" 
-        :key="k.id" 
+    <div class="search-tabs">
+      <el-radio-group v-model="searchMode" @change="handleSearchModeChange">
+        <el-radio-button value="keyword">关键词搜索</el-radio-button>
+        <el-radio-button value="semantic">语义搜索</el-radio-button>
+      </el-radio-group>
+    </div>
+
+    <div v-if="searchMode === 'semantic' && semanticResults.length > 0" class="semantic-results">
+      <h3>语义搜索结果</h3>
+      <el-card v-for="(r, idx) in semanticResults" :key="idx" class="semantic-card" shadow="hover">
+        <div class="semantic-header">
+          <el-tag :type="r.source === 'knowledge' ? 'success' : 'warning'" size="small">
+            {{ r.source === 'knowledge' ? '知识库' : '案例库' }}
+          </el-tag>
+          <span class="semantic-title">{{ r.title || '无标题' }}</span>
+          <el-tag v-if="r.category" size="small" type="info">{{ r.category }}</el-tag>
+          <span class="semantic-score">相似度: {{ (r.score * 100).toFixed(1) }}%</span>
+        </div>
+        <div class="semantic-content">{{ r.content }}</div>
+      </el-card>
+    </div>
+
+    <div v-else class="knowledge-list">
+      <el-card
+        v-for="k in knowledgeList"
+        :key="k.id"
         class="knowledge-card"
         shadow="hover"
       >
         <template #header>
           <div class="card-header">
-            <el-tag type="success">{{ k.category }}</el-tag>
-            <h3>{{ k.title }}</h3>
+            <div class="card-header-left">
+              <el-tag type="success">{{ k.category }}</el-tag>
+              <h3>{{ k.title }}</h3>
+            </div>
+            <div class="card-header-right">
+              <el-button type="primary" size="small" @click="showEditDialog(k)">编辑</el-button>
+              <el-button type="danger" size="small" @click="handleDelete(k.id)">删除</el-button>
+            </div>
           </div>
         </template>
         <div class="knowledge-content">
@@ -32,26 +77,153 @@
         </div>
       </el-card>
     </div>
+
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑知识' : '新增知识'" width="600px">
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="标题">
+          <el-input v-model="form.title" placeholder="请输入知识标题" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="form.category" placeholder="请选择分类" style="width: 100%">
+            <el-option label="防范技巧" value="防范技巧" />
+            <el-option label="诈骗类型" value="诈骗类型" />
+            <el-option label="应对方法" value="应对方法" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input v-model="form.content" type="textarea" :rows="10" placeholder="请输入知识内容" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
   name: 'Knowledge',
   setup() {
     const knowledgeList = ref([])
     const selectedCategory = ref('')
+    const searchKeyword = ref('')
+    const searchMode = ref('keyword')
+    const semanticResults = ref([])
+    const dialogVisible = ref(false)
+    const isEdit = ref(false)
+    const submitting = ref(false)
+    const syncing = ref(false)
+    const form = ref({
+      id: null,
+      title: '',
+      category: '',
+      content: ''
+    })
 
     const loadKnowledge = async () => {
-      const url = selectedCategory.value 
-        ? `/api/knowledge?category=${selectedCategory.value}`
-        : '/api/knowledge'
-      const res = await axios.get(url)
+      const params = {}
+      if (selectedCategory.value) params.category = selectedCategory.value
+      if (searchKeyword.value && searchMode.value === 'keyword') params.keyword = searchKeyword.value
+      const res = await axios.get('/api/knowledge', { params })
       if (res.data.success) {
         knowledgeList.value = res.data.list
+      }
+    }
+
+    const handleSearch = () => {
+      if (searchMode.value === 'semantic' && searchKeyword.value) {
+        doSemanticSearch()
+      } else {
+        loadKnowledge()
+      }
+    }
+
+    const doSemanticSearch = async () => {
+      if (!searchKeyword.value) return
+      try {
+        const res = await axios.get('/api/knowledge/search/semantic', {
+          params: { query: searchKeyword.value, topK: 10 }
+        })
+        if (res.data.success) {
+          semanticResults.value = res.data.results
+        }
+      } catch (e) {
+        ElMessage.error('语义搜索失败')
+      }
+    }
+
+    const handleSearchModeChange = () => {
+      semanticResults.value = []
+      if (searchMode.value === 'keyword') {
+        loadKnowledge()
+      }
+    }
+
+    const showAddDialog = () => {
+      isEdit.value = false
+      form.value = { id: null, title: '', category: '', content: '' }
+      dialogVisible.value = true
+    }
+
+    const showEditDialog = (k) => {
+      isEdit.value = true
+      form.value = { id: k.id, title: k.title, category: k.category, content: k.content }
+      dialogVisible.value = true
+    }
+
+    const handleSubmit = async () => {
+      if (!form.value.title || !form.value.category || !form.value.content) {
+        ElMessage.warning('请填写完整信息')
+        return
+      }
+      submitting.value = true
+      try {
+        if (isEdit.value) {
+          await axios.put(`/api/knowledge/${form.value.id}`, form.value)
+          ElMessage.success('更新成功')
+        } else {
+          await axios.post('/api/knowledge', form.value)
+          ElMessage.success('添加成功')
+        }
+        dialogVisible.value = false
+        loadKnowledge()
+      } catch (e) {
+        ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+      } finally {
+        submitting.value = false
+      }
+    }
+
+    const handleDelete = async (id) => {
+      try {
+        await ElMessageBox.confirm('确定要删除该知识吗？删除后将同时从向量库中移除。', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await axios.delete(`/api/knowledge/${id}`)
+        ElMessage.success('删除成功')
+        loadKnowledge()
+      } catch (e) {
+        if (e !== 'cancel') ElMessage.error('删除失败')
+      }
+    }
+
+    const syncVectorStore = async () => {
+      syncing.value = true
+      try {
+        await axios.post('/api/knowledge/sync-vector')
+        ElMessage.success('向量库同步完成')
+      } catch (e) {
+        ElMessage.error('同步失败')
+      } finally {
+        syncing.value = false
       }
     }
 
@@ -62,7 +234,22 @@ export default {
     return {
       knowledgeList,
       selectedCategory,
-      loadKnowledge
+      searchKeyword,
+      searchMode,
+      semanticResults,
+      dialogVisible,
+      isEdit,
+      submitting,
+      syncing,
+      form,
+      loadKnowledge,
+      handleSearch,
+      handleSearchModeChange,
+      showAddDialog,
+      showEditDialog,
+      handleSubmit,
+      handleDelete,
+      syncVectorStore
     }
   }
 }
@@ -88,7 +275,63 @@ export default {
 }
 
 .filter-bar {
-  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-right {
+  display: flex;
+  gap: 8px;
+}
+
+.search-tabs {
+  margin-bottom: 20px;
+}
+
+.semantic-results h3 {
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.semantic-card {
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.semantic-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.semantic-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.semantic-score {
+  margin-left: auto;
+  color: #999;
+  font-size: 12px;
+}
+
+.semantic-content {
+  color: #666;
+  line-height: 1.6;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 .knowledge-list {
@@ -103,14 +346,25 @@ export default {
 
 .card-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header-left {
+  display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.card-header h3 {
+.card-header-left h3 {
   margin: 0;
   font-size: 18px;
   color: #333;
+}
+
+.card-header-right {
+  display: flex;
+  gap: 4px;
 }
 
 .knowledge-content {

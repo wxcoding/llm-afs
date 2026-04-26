@@ -7,17 +7,17 @@
           <el-button type="primary" size="small" @click="newChat">新建对话</el-button>
         </div>
         <div class="session-list">
-          <div 
-            v-for="session in sessions" 
+          <div
+            v-for="session in sessions"
             :key="session.id"
             :class="['session-item', { active: sessionId === session.id }]"
             @click="selectSession(session.id)"
           >
             <span class="session-title">{{ session.title }}</span>
-            <el-button 
-              type="danger" 
-              size="small" 
-              text 
+            <el-button
+              type="danger"
+              size="small"
+              text
               @click.stop="deleteSession(session.id)"
             >
               删除
@@ -31,9 +31,10 @@
           <div v-if="messages.length === 0" class="welcome-tip">
             <h2>🛡️ 欢迎使用防诈骗问答助手</h2>
             <p>我可以帮您解答关于各类诈骗手法的问题，请直接输入您的问题开始咨询。</p>
+            <p class="rag-tip">💡 本助手已接入知识库，回答将基于专业防诈骗知识进行检索增强</p>
             <div class="quick-questions">
-              <el-tag 
-                v-for="q in quickQuestions" 
+              <el-tag
+                v-for="q in quickQuestions"
                 :key="q"
                 @click="sendQuickQuestion(q)"
                 class="quick-tag"
@@ -43,16 +44,33 @@
             </div>
           </div>
 
-          <div 
-            v-for="(msg, index) in messages" 
+          <div
+            v-for="(msg, index) in messages"
             :key="index"
             :class="['message', msg.role]"
           >
             <div class="message-avatar">
               {{ msg.role === 'user' ? '👤' : '🤖' }}
             </div>
-            <div class="message-content">
-              <pre>{{ msg.content }}</pre>
+            <div class="message-body">
+              <div class="message-content">
+                <pre>{{ msg.content }}</pre>
+              </div>
+              <div v-if="msg.sources && msg.sources.length > 0" class="message-sources">
+                <div class="sources-header" @click="toggleSources(index)">
+                  <span>📚 参考来源 ({{ msg.sources.length }})</span>
+                  <span class="sources-toggle">{{ msg.showSources ? '收起 ▲' : '展开 ▼' }}</span>
+                </div>
+                <div v-show="msg.showSources" class="sources-list">
+                  <div v-for="(src, si) in msg.sources" :key="si" class="source-item">
+                    <el-tag :type="src.source === 'knowledge' ? 'success' : 'warning'" size="small">
+                      {{ src.source === 'knowledge' ? '知识库' : '案例库' }}
+                    </el-tag>
+                    <span class="source-title">{{ src.title || '无标题' }}</span>
+                    <span class="source-score">{{ (src.score * 100).toFixed(1) }}%</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -69,13 +87,13 @@
             v-model="inputMessage"
             type="textarea"
             :rows="3"
-            placeholder="请输入您的问题..."
+            placeholder="请输入您的问题... (Ctrl+Enter 发送)"
             @keydown.enter.ctrl="sendMessage"
             :disabled="loading"
           />
-          <el-button 
-            type="primary" 
-            @click="sendMessage" 
+          <el-button
+            type="primary"
+            @click="sendMessage"
             :loading="loading"
             :disabled="!inputMessage.trim()"
           >
@@ -88,17 +106,17 @@
 </template>
 
 <script>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
   name: 'Chat',
   setup() {
     const route = useRoute()
     const user = JSON.parse(localStorage.getItem('user') || 'null')
-    
+
     const sessionId = ref(null)
     const sessions = ref([])
     const messages = ref([])
@@ -110,7 +128,9 @@ export default {
       '什么是电信诈骗？',
       '如何识别网络诈骗？',
       '遇到诈骗怎么办？',
-      '有哪些常见诈骗手法？'
+      '有哪些常见诈骗手法？',
+      '刷单返利是真的吗？',
+      '如何保护个人信息？'
     ]
 
     const loadSessions = async () => {
@@ -124,7 +144,11 @@ export default {
     const loadHistory = async (id) => {
       const res = await axios.get(`/api/chat/history/${id}`)
       if (res.data.success) {
-        messages.value = res.data.messages
+        messages.value = res.data.messages.map(m => ({
+          ...m,
+          sources: m.sources ? (typeof m.sources === 'string' ? JSON.parse(m.sources) : m.sources) : [],
+          showSources: false
+        }))
         scrollToBottom()
       }
     }
@@ -141,10 +165,25 @@ export default {
     }
 
     const deleteSession = async (id) => {
-      sessions.value = sessions.value.filter(s => s.id !== id)
-      if (sessionId.value === id) {
-        newChat()
+      try {
+        await ElMessageBox.confirm('确定要删除该对话吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await axios.delete(`/api/chat/session/${id}`)
+        sessions.value = sessions.value.filter(s => s.id !== id)
+        if (sessionId.value === id) {
+          newChat()
+        }
+        ElMessage.success('删除成功')
+      } catch (e) {
+        if (e !== 'cancel') ElMessage.error('删除失败')
       }
+    }
+
+    const toggleSources = (index) => {
+      messages.value[index].showSources = !messages.value[index].showSources
     }
 
     const scrollToBottom = () => {
@@ -172,24 +211,23 @@ export default {
           content: content,
           sessionId: sessionId.value
         }
-        
-        // 先添加用户消息
+
         const userMessage = {
           role: 'user',
           content: content
         }
         messages.value.push(userMessage)
         scrollToBottom()
-        
-        // 创建助手消息容器
+
         const assistantMessage = {
           role: 'assistant',
-          content: ''
+          content: '',
+          sources: [],
+          showSources: false
         }
         const assistantIndex = messages.value.length
         messages.value.push(assistantMessage)
-        
-        // 使用fetch API实现流式接收
+
         const response = await fetch('/api/chat/send', {
           method: 'POST',
           headers: {
@@ -197,39 +235,39 @@ export default {
           },
           body: JSON.stringify(params)
         })
-        
+
         if (!response.ok) {
           throw new Error('请求失败')
         }
-        
+
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let sessionIdReceived = null
-        
+
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          
+
           const chunk = decoder.decode(value, { stream: true })
-          // 解析服务器发送的事件
           const lines = chunk.split('\n')
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.substring(6)
               if (data === '[DONE]') {
                 break
               }
-              
+
               try {
                 const json = JSON.parse(data)
                 if (json.sessionId) {
                   sessionIdReceived = json.sessionId
                 }
+                if (json.sources) {
+                  messages.value[assistantIndex].sources = json.sources
+                }
                 if (json.content) {
-                  // 更新助手消息内容
                   messages.value[assistantIndex].content += json.content
-                  // 检查用户是否正在拖动滚动条
                   const container = messagesContainer.value
                   if (container) {
                     const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20
@@ -244,7 +282,7 @@ export default {
             }
           }
         }
-        
+
         if (sessionIdReceived) {
           sessionId.value = sessionIdReceived
           await loadSessions()
@@ -280,6 +318,7 @@ export default {
       selectSession,
       newChat,
       deleteSession,
+      toggleSources,
       sendMessage,
       sendQuickQuestion
     }
@@ -374,7 +413,12 @@ export default {
 
 .welcome-tip p {
   color: #666;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+}
+
+.rag-tip {
+  color: #409eff !important;
+  font-size: 14px;
 }
 
 .quick-questions {
@@ -382,6 +426,7 @@ export default {
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
+  margin-top: 12px;
 }
 
 .quick-tag {
@@ -413,9 +458,12 @@ export default {
   background: #e6f7ff;
 }
 
-.message-content {
+.message-body {
   max-width: 70%;
   margin: 0 12px;
+}
+
+.message-content {
   padding: 12px 16px;
   border-radius: 12px;
   background: #f5f5f5;
@@ -432,6 +480,64 @@ export default {
   margin: 0;
   font-family: inherit;
   line-height: 1.6;
+}
+
+.message-sources {
+  margin-top: 8px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.sources-header {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: #606266;
+  background: #f5f7fa;
+}
+
+.sources-header:hover {
+  background: #ecf5ff;
+}
+
+.sources-toggle {
+  color: #409eff;
+  font-size: 12px;
+}
+
+.sources-list {
+  padding: 8px 12px;
+}
+
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+}
+
+.source-item:last-child {
+  border-bottom: none;
+}
+
+.source-title {
+  flex: 1;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-score {
+  color: #999;
+  font-size: 12px;
 }
 
 .loading-dots {

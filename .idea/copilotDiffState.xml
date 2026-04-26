@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="/application (snapshot).yml">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="/application (snapshot).yml" />
+              <option name="originalContent" value="server:&#10;  port: 8080&#10;&#10;spring:&#10;  datasource:&#10;    driver-class-name: org.postgresql.Driver&#10;    url: jdbc:postgresql://localhost:5432/public?stringtype=unspecified&#10;    username: postgres&#10;    password: guanwx&#10;  ai:&#10;    openai:&#10;      api-key: sk-e3a6931ada6045909dc8db75a839a0ca&#10;      base-url: https://dashscope.aliyuncs.com/compatible-mode&#10;      chat:&#10;        options:&#10;          model: qwen-turbo&#10;          temperature: 0.7&#10;          max-tokens: 2000&#10;      embedding:&#10;        options:&#10;          model: text-embedding-v3&#10;    vectorstore:&#10;      pgvector:&#10;        index-type: HNSW&#10;        distance-type: COSINE_DISTANCE&#10;        dimensions: 1024&#10;        initialize-schema: true&#10;&#10;mybatis-plus:&#10;  configuration:&#10;    map-underscore-to-camel-case: true&#10;    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl&#10;  global-config:&#10;    db-config:&#10;      id-type: auto&#10;" />
+              <option name="updatedContent" value="server:&#10;  port: 8080&#10;&#10;spring:&#10;  datasource:&#10;    driver-class-name: org.postgresql.Driver&#10;    url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified&#10;    username: postgres&#10;    password: postgres&#10;  ai:&#10;    openai:&#10;      api-key: sk-e3a6931ada6045909dc8db75a839a0ca&#10;      base-url: https://dashscope.aliyuncs.com/compatible-mode&#10;      chat:&#10;        options:&#10;          model: qwen-turbo&#10;          temperature: 0.7&#10;          max-tokens: 2000&#10;      embedding:&#10;        options:&#10;          model: text-embedding-v3&#10;    vectorstore:&#10;      pgvector:&#10;        index-type: HNSW&#10;        distance-type: COSINE_DISTANCE&#10;        dimensions: 1024&#10;        initialize-schema: true&#10;&#10;mybatis-plus:&#10;  configuration:&#10;    map-underscore-to-camel-case: true&#10;    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl&#10;  global-config:&#10;    db-config:&#10;      id-type: auto" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

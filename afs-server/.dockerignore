@@ -1,4 +1,44 @@
-target
+# Git
 .git
-.idea
+.gitignore
+
+# IDE
+.idea/
+.vscode/
 *.iml
+
+# Maven
+afs-server/target/
+!afs-server/target/*.jar
+
+# npm
+afs-web/node_modules/
+afs-web/dist/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Scripts
+scripts/
+
+# Docs
+*.md
+!README.md
+
+# Env
+.env
+.env.*
+!.env.example
+
+# GitHub
+.github/
