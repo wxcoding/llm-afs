@@ -360,9 +360,3 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 | `AI_DASHSCOPE_MODEL` | 对话模型 | qwen-turbo |
 | `SERVER_PORT` | 后端端口 | 8080 |
 | `WEB_PORT` | 前端端口 | 3000 |
-
----
-
-## License
-
-MIT
