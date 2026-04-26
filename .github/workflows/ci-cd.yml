@@ -48,11 +48,11 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: afs-web/package-lock.json
+          cache-dependency-path: afs-web/package.json
 
       - name: Install dependencies
         working-directory: ./afs-web
-        run: npm ci
+        run: npm install
 
       - name: Build with Vite
         working-directory: ./afs-web
