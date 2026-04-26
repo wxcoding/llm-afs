@@ -171,4 +171,3 @@ jobs:
           envs: |
             CI=true
           debug: true
-          strict: false
