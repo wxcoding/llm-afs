@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: guanwx
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: afs
       TZ: Asia/Shanghai
     ports:
@@ -31,7 +31,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: guanwx
+      SPRING_DATASOURCE_PASSWORD: postgres
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-sk-e3a6931ada6045909dc8db75a839a0ca}
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
     ports:
