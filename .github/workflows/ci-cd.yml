@@ -190,7 +190,7 @@ jobs:
             docker compose pull
 
             # Rebuild and start containers
-            docker compose up -d --build
+            docker compose up -d --no-build
 
             # Cleanup unused images
             docker image prune -f
