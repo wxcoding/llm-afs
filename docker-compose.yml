@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: guanwx
       POSTGRES_DB: afs
       TZ: Asia/Shanghai
     ports:
