@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD 自动化部署流程
 
 on:
   push:
@@ -26,51 +26,51 @@ env:
 jobs:
   # ==================== 构建阶段 ====================
   build:
-    name: Build Application
+    name: 构建应用
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       # 构建后端
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
+      - name: 配置 JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: maven
 
-      - name: Build Spring Boot Server
+      - name: 构建 Spring Boot 后端
         working-directory: ./afs-server
         run: mvn -B -DskipTests clean package
 
       # 构建前端
-      - name: Set up Node.js ${{ env.NODE_VERSION }}
+      - name: 配置 Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: afs-web/package.json
 
-      - name: Install frontend dependencies
+      - name: 安装前端依赖
         working-directory: ./afs-web
         run: npm install
 
-      - name: Build Vue Frontend
+      - name: 构建 Vue 前端
         working-directory: ./afs-web
         run: npm run build
 
       # 上传构建产物
-      - name: Upload server artifact
+      - name: 上传后端 JAR 包
         uses: actions/upload-artifact@v4
         with:
           name: server-jar
           path: afs-server/target/*.jar
           retention-days: 1
 
-      - name: Upload web artifact
+      - name: 上传前端静态文件
         uses: actions/upload-artifact@v4
         with:
           name: web-dist
@@ -79,34 +79,34 @@ jobs:
 
   # ==================== Docker构建与推送 ====================
   docker-build:
-    name: Build and Push Docker Images
+    name: 构建并推送Docker镜像
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
 
       # 下载构建产物
-      - name: Download server artifact
+      - name: 下载后端 JAR 包
         uses: actions/download-artifact@v4
         with:
           name: server-jar
           path: afs-server/target/
 
-      - name: Download web artifact
+      - name: 下载前端静态文件
         uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: afs-web/dist/
 
       # Docker配置
-      - name: Set up Docker Buildx
+      - name: 配置 Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Aliyun Container Registry
+      - name: 登录阿里云容器镜像服务
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -114,7 +114,7 @@ jobs:
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
       # 构建后端镜像
-      - name: Build and push server image
+      - name: 构建并推送后端镜像
         uses: docker/build-push-action@v5
         with:
           context: ./afs-server
@@ -126,7 +126,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       # 构建前端镜像
-      - name: Build and push web image
+      - name: 构建并推送前端镜像
         uses: docker/build-push-action@v5
         with:
           context: ./afs-web
@@ -138,24 +138,24 @@ jobs:
           cache-to: type=gha,mode=max
 
       # 输出镜像信息
-      - name: Output image tags
+      - name: 输出镜像标签
         run: |
-          echo "Server Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.sha }}"
-          echo "Web Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.sha }}"
+          echo "后端镜像: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.sha }}"
+          echo "前端镜像: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.sha }}"
 
   # ==================== 部署到服务器 ====================
   deploy:
-    name: Deploy to Production Server
+    name: 部署到生产服务器
     needs: docker-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     environment: production
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
 
       # 创建服务器目录
-      - name: Create deployment directory
+      - name: 创建部署目录
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -166,7 +166,7 @@ jobs:
             mkdir -p ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
 
       # 上传配置文件
-      - name: Upload docker-compose.prod.yml
+      - name: 上传 docker-compose.prod.yml
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -177,7 +177,7 @@ jobs:
           target: ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}/
 
       # 上传数据库初始化脚本
-      - name: Upload schema.sql
+      - name: 上传 schema.sql
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -188,7 +188,7 @@ jobs:
           target: ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}/afs-server/src/main/resources/
 
       # 执行部署
-      - name: Deploy to server
+      - name: 执行服务器部署
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -229,20 +229,20 @@ jobs:
             # 清理
             docker image prune -f
 
-            echo "Deployment completed successfully!"
+            echo "部署成功！"
 
   # ==================== 通知 ====================
   notify:
-    name: Send Deployment Notification
+    name: 发送部署通知
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Check deployment status
+      - name: 检查部署状态
         run: |
           if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "Deployment successful!"
+            echo "部署成功！"
           else
-            echo "Deployment failed!"
+            echo "部署失败！"
             exit 1
           fi
