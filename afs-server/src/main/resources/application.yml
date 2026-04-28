@@ -4,12 +4,9 @@ server:
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified&serverTimezone=Asia/Shanghai
+    url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
     username: postgres
     password: guanwx
-  jackson:
-    time-zone: Asia/Shanghai
-    date-format: yyyy-MM-dd HH:mm:ss
   flyway:
     enabled: true
     locations: classpath:db/migration
