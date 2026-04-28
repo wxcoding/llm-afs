@@ -7,6 +7,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
     username: postgres
     password: guanwx
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
   ai:
     openai:
       api-key: sk-e3a6931ada6045909dc8db75a839a0ca
