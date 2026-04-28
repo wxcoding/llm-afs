@@ -190,15 +190,17 @@ jobs:
             # 登录GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # 设置环境变量
-            export IMAGE_TAG=${{ github.sha }}
-            export REGISTRY=${{ env.REGISTRY }}
-            export GITHUB_REPOSITORY=${{ github.repository }}
-            export POSTGRES_USER=${{ env.POSTGRES_USER }}
-            export POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
-            export POSTGRES_DB=${{ env.POSTGRES_DB }}
-            export AI_DASHSCOPE_API_KEY=${{ secrets.AI_DASHSCOPE_API_KEY }}
-            export AI_DASHSCOPE_MODEL=${{ env.AI_DASHSCOPE_MODEL }}
+            # 生成 .env 文件，统一管理所有环境变量
+            cat > .env << EOF
+            IMAGE_TAG=${{ github.sha }}
+            REGISTRY=${{ env.REGISTRY }}
+            GITHUB_REPOSITORY=${{ github.repository }}
+            POSTGRES_USER=${{ env.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ env.POSTGRES_DB }}
+            AI_DASHSCOPE_API_KEY=${{ secrets.AI_DASHSCOPE_API_KEY }}
+            AI_DASHSCOPE_MODEL=${{ env.AI_DASHSCOPE_MODEL }}
+            EOF
 
             # 拉取最新镜像
             docker compose -f docker-compose.prod.yml pull
