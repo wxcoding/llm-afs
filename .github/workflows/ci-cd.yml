@@ -185,7 +185,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
           source: afs-server/src/main/resources/schema.sql
-          target: ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}/afs-server/src/main/resources/
+          target: ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
 
       # 执行部署
       - name: 执行服务器部署
