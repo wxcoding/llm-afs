@@ -14,8 +14,8 @@ env:
   
   # Docker配置 - 阿里云容器镜像服务
   REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-  IMAGE_NAME_SERVER: ${{ secrets.ALIYUN_ACR_NAMESPACE }}/afs-server
-  IMAGE_NAME_WEB: ${{ secrets.ALIYUN_ACR_NAMESPACE }}/afs-web
+  IMAGE_NAME_SERVER: ${{ secrets.ALIYUN_ACR_NAMESPACE }}/llm-afs/afs-server
+  IMAGE_NAME_WEB: ${{ secrets.ALIYUN_ACR_NAMESPACE }}/llm-afs/afs-web
   
   # 环境变量
   POSTGRES_USER: postgres
