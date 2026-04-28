@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,33 +6,237 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  # 项目配置
+  APP_NAME: llm-afs
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+  
+  # Docker配置
+  REGISTRY: ghcr.io
+  IMAGE_NAME_SERVER: ${{ github.repository }}/afs-server
+  IMAGE_NAME_WEB: ${{ github.repository }}/afs-web
+  
+  # 环境变量
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres123
+  POSTGRES_DB: afs
+  AI_DASHSCOPE_MODEL: qwen-turbo
+
 jobs:
-  deploy:
+  # ==================== 构建阶段 ====================
+  build:
+    name: Build Application
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 构建后端
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Spring Boot Server
+        working-directory: ./afs-server
+        run: mvn -B -DskipTests clean package
+
+      # 构建前端
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: afs-web/package.json
+
+      - name: Install frontend dependencies
+        working-directory: ./afs-web
+        run: npm ci
+
+      - name: Build Vue Frontend
+        working-directory: ./afs-web
+        run: npm run build
+
+      # 上传构建产物
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-jar
+          path: afs-server/target/*.jar
+          retention-days: 1
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: afs-web/dist
+          retention-days: 1
+
+  # ==================== Docker构建与推送 ====================
+  docker-build:
+    name: Build and Push Docker Images
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 自动把代码传到服务器（服务器不用 git，不用 clone）
-      - name: 上传文件到服务器
-        uses: appleboy/scp-action@master
+      # 下载构建产物
+      - name: Download server artifact
+        uses: actions/download-artifact@v4
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SERVER_SSH_PORT }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "."
-          target: ${{ secrets.SERVER_PROJECT_PATH }}
+          name: server-jar
+          path: afs-server/target/
 
-      # 自动部署
-      - name: 部署启动
-        uses: appleboy/ssh-action@master
+      - name: Download web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: afs-web/dist/
+
+      # Docker配置
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 生成镜像标签
+      - name: Generate image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+
+      # 构建后端镜像
+      - name: Build and push server image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./afs-server
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ steps.meta.outputs.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 构建前端镜像
+      - name: Build and push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./afs-web
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.meta.outputs.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 输出镜像信息
+      - name: Output image tags
+        run: |
+          echo "Server Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ steps.meta.outputs.sha }}"
+          echo "Web Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.meta.outputs.sha }}"
+
+  # ==================== 部署到服务器 ====================
+  deploy:
+    name: Deploy to Production Server
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 创建服务器目录
+      - name: Create deployment directory
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SERVER_SSH_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
           script: |
-            cd /root/project/llm-afs
-            docker compose down
-            docker compose up -d --build
+            mkdir -p ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
+
+      # 上传配置文件
+      - name: Upload docker-compose.prod.yml
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          source: docker-compose.prod.yml
+          target: ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}/
+
+      # 执行部署
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
+
+            # 登录GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 设置环境变量
+            export IMAGE_TAG=${{ github.sha }}
+            export REGISTRY=${{ env.REGISTRY }}
+            export GITHUB_REPOSITORY=${{ github.repository }}
+            export POSTGRES_USER=${{ env.POSTGRES_USER }}
+            export POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
+            export POSTGRES_DB=${{ env.POSTGRES_DB }}
+            export AI_DASHSCOPE_API_KEY=${{ secrets.AI_DASHSCOPE_API_KEY }}
+            export AI_DASHSCOPE_MODEL=${{ env.AI_DASHSCOPE_MODEL }}
+
+            # 拉取最新镜像
+            docker compose -f docker-compose.prod.yml pull
+
+            # 启动服务
+            docker compose -f docker-compose.prod.yml up -d
+
+            # 检查服务状态
+            sleep 30
+            docker compose -f docker-compose.prod.yml ps
+
+            # 清理
+            docker image prune -f
+
+            echo "Deployment completed successfully!"
+
+  # ==================== 通知 ====================
+  notify:
+    name: Send Deployment Notification
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "Deployment successful!"
+          else
+            echo "Deployment failed!"
+            exit 1
+          fi
