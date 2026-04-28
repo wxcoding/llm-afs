@@ -184,7 +184,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
-          timeout: 2400s
+          timeout: 3600s
           script: |
             cd ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
 
@@ -204,7 +204,7 @@ jobs:
             EOF
 
             # 拉取最新镜像
-            docker compose -f docker-compose.prod.yml pull --timeout 600
+            docker compose -f docker-compose.prod.yml pull --timeout 3000s
 
             # 启动服务
             docker compose -f docker-compose.prod.yml up -d
