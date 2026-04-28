@@ -56,7 +56,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./afs-web
-        run: npm ci
+        run: npm install
 
       - name: Build Vue Frontend
         working-directory: ./afs-web
