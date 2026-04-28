@@ -113,26 +113,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 生成镜像标签
-      - name: Generate image tags
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-
       # 构建后端镜像
       - name: Build and push server image
         uses: docker/build-push-action@v5
         with:
           context: ./afs-server
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ steps.meta.outputs.sha }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -142,16 +131,17 @@ jobs:
         with:
           context: ./afs-web
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.meta.outputs.sha }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       # 输出镜像信息
       - name: Output image tags
         run: |
-          echo "Server Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ steps.meta.outputs.sha }}"
-          echo "Web Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.meta.outputs.sha }}"
+          echo "Server Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.sha }}"
+          echo "Web Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.sha }}"
 
   # ==================== 部署到服务器 ====================
   deploy:
