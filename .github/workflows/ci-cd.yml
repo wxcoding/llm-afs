@@ -184,7 +184,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
-          timeout: 2400s
+          timeout: 600s
           script: |
             cd ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
 
