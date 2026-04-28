@@ -28,7 +28,7 @@ services:
       - afs-network
 
   afs-server:
-    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY:-}/afs-server:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME_SERVER}:${IMAGE_TAG:-latest}
     container_name: afs-server
     restart: always
     depends_on:
@@ -56,7 +56,7 @@ services:
       - afs-network
 
   afs-web:
-    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPOSITORY:-}/afs-web:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME_WEB}:${IMAGE_TAG:-latest}
     container_name: afs-web
     restart: always
     depends_on:
