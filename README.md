@@ -2,6 +2,8 @@
 
 基于 Spring Boot 3.4 + Vue 3 + RAG 的防诈骗知识问答平台，集成大语言模型与向量检索，为用户提供智能防诈骗咨询服务。
 
+**线上地址**：http://116.196.79.7:3000
+
 ---
 
 ## 功能概览
@@ -20,15 +22,16 @@
 
 ## 技术栈
 
-**后端**
+### 后端
 
 - Spring Boot 3.4.4
 - Spring AI 1.0.0（OpenAI 兼容接口 + pgVector 向量存储）
 - MyBatis Plus 3.5.5
 - PostgreSQL 17 + pgvector 扩展
+- Flyway 9.22.3（数据库版本管理）
 - 阿里云通义千问（qwen-turbo / text-embedding-v3）
 
-**前端**
+### 前端
 
 - Vue 3.4
 - Element Plus 2.5
@@ -36,82 +39,83 @@
 - Vite 5.0
 - Axios
 
-**部署**
+### 部署
 
 - Docker + Docker Compose
 - Nginx（前端托管 + API 反向代理）
 - GitHub Actions CI/CD
+- 阿里云 ACR（容器镜像服务）
 
 ---
 
 ## 系统架构
 
 ```
-                              ┌─────────────────┐
-                              │   User Browser   │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                        ┌──────────────────────────┐
-                        │    Nginx (:3000)         │
-                        │  ┌──────────────────┐    │
-                        │  │  Static Files    │    │
-                        │  │  (Vue SPA)       │    │
-                        │  └──────────────────┘    │
-                        │  ┌──────────────────┐    │
-                        │  │  API Proxy        │    │
-                        │  │  /api/* → :8080   │    │
-                        │  └──────────────────┘    │
-                        └────────────┬─────────────┘
-                                     │
-              ┌──────────────────────┴──────────────────────┐
-              │                                              │
-              ▼                                              ▼
-┌─────────────────────────┐                    ┌─────────────────────────┐
-│    afs-server (:8080)  │                    │   afs-web 静态资源      │
-│  ┌─────────────────┐   │                    │   (index.html, js, css) │
-│  │  Spring Boot    │   │                    └─────────────────────────┘
-│  │  Application     │   │
-│  └────────┬────────┘   │
-│           │            │
-│  ┌────────┴────────┐  │
-│  │                  │  │
-│  ▼                  ▼  ▼
-│ ┌──────────┐  ┌─────────┐  ┌──────────────┐
-│ │ChatController│  │ RagService │ │UserService  │
-│ └─────┬────┘  └────┬────┘  └──────┬───────┘
-│       │            │               │
-│       └────────────┼───────────────┘
-│                    │
-│         ┌──────────┴──────────┐
-│         │                     │
-│         ▼                     ▼
-│   ┌──────────┐         ┌──────────────┐
-│   │Spring AI │         │  MyBatis Plus │
-│   │ChatModel │         │    ORM        │
-│   └────┬─────┘         └───────┬──────┘
-│        │                       │
-│        ▼                       ▼
-│  ┌─────────────────┐   ┌──────────────────┐
-│  │ 通义千问 API    │   │   PostgreSQL      │
-│  │ qwen-turbo     │   │   (:5432)         │
-│  │ text-embedding │   │ ┌──────────────┐  │
-│  └─────────────────┘   │ │  业务数据表   │  │
-│                       │ │  user         │  │
-│                       │ │  chat_session │  │
-│                       │ │  chat_message │  │
-│                       │ │  knowledge    │  │
-│                       │ │  scam_case    │  │
-│                       │ └──────────────┘  │
-│                       │ ┌──────────────┐  │
-│                       │ │  pgVector    │  │
-│                       │ │  向量存储     │  │
-│                       │ └──────────────┘  │
-│                       └──────────────────┘
+                                    ┌─────────────────┐
+                                    │   User Browser   │
+                                    └────────┬────────┘
+                                             │
+                                             ▼
+                              ┌──────────────────────────┐
+                              │    Nginx (:3000)         │
+                              │  ┌──────────────────┐    │
+                              │  │  Static Files    │    │
+                              │  │  (Vue SPA)       │    │
+                              │  └──────────────────┘    │
+                              │  ┌──────────────────┐    │
+                              │  │  API Proxy        │    │
+                              │  │  /api/* → :8080   │    │
+                              │  └──────────────────┘    │
+                              └────────────┬─────────────┘
+                                           │
+                    ┌──────────────────────┴──────────────────────┐
+                    │                                              │
+                    ▼                                              ▼
+┌─────────────────────────────┐                    ┌─────────────────────────┐
+│       afs-server (:8080)    │                    │      afs-web           │
+│  ┌─────────────────────┐    │                    │    静态资源             │
+│  │    Spring Boot      │    │                    │   (index.html,         │
+│  │     Application     │    │                    │    js, css)             │
+│  └──────────┬──────────┘    │                    └─────────────────────────┘
+│             │               │
+│  ┌──────────┴──────────┐   │
+│  │                      │   │
+│  ▼                      ▼   ▼
+│ ┌──────────┐  ┌─────────────┐  ┌──────────────┐
+│ │ChatController│  │ RagService │  │UserService   │
+│ └──────┬─────┘  └──────┬──────┘  └──────┬───────┘
+│        │                │                  │
+│        └────────────────┼──────────────────┘
+│                         │
+│          ┌──────────────┴──────────────┐
+│          │                               │
+│          ▼                               ▼
+│   ┌──────────────┐              ┌──────────────┐
+│   │  Spring AI    │              │ MyBatis Plus │
+│   │   ChatModel  │              │     ORM      │
+│   └───────┬──────┘              └───────┬──────┘
+│           │                             │
+│           ▼                             ▼
+│   ┌─────────────────┐           ┌──────────────────┐
+│   │  通义千问 API   │           │   PostgreSQL      │
+│   │  qwen-turbo    │           │   (:5432)         │
+│   │  text-embedding│           │ ┌──────────────┐  │
+│   └─────────────────┘           │ │  业务数据表   │  │
+│                                 │ │  user        │  │
+│                                 │ │  chat_session│  │
+│                                 │ │  chat_message│  │
+│                                 │ │  knowledge    │  │
+│                                 │ │  scam_case    │  │
+│                                 │ └──────────────┘  │
+│                                 │ ┌──────────────┐  │
+│                                 │ │  pgVector     │  │
+│                                 │ │  向量存储     │  │
+│                                 │ └──────────────┘  │
+│                                 └──────────────────┘
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**RAG 工作流程：**
+### RAG 工作流程
 
 ```
 ┌──────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
@@ -148,7 +152,8 @@ llm-afs/
 │   │       └── UserService.java
 │   ├── src/main/resources/
 │   │   ├── application.yml            # 配置文件
-│   │   └── schema.sql                 # 数据库建表脚本
+│   │   └── db/migration/             # Flyway 数据库迁移脚本
+│   │       └── V1__init.sql           # 初始表结构
 │   ├── Dockerfile
 │   └── pom.xml
 │
@@ -175,11 +180,12 @@ llm-afs/
 │   ├── deploy.sh                      # 部署管理
 │   └── health-check.sh               # 健康检查
 │
-├── .github/workflows/ci-cd.yml        # GitHub Actions
+├── .github/workflows/ci-cd.yml       # GitHub Actions CI/CD
 ├── docker-compose.yml                 # 开发环境
 ├── docker-compose.prod.yml            # 生产环境
-├── .env.example                       # 环境变量模板
-└── deployment.md                      # 部署文档
+├── .env.example                      # 环境变量模板
+├── deployment.md                      # 部署文档
+└── README.md                          # 项目文档
 ```
 
 ---
@@ -193,15 +199,13 @@ llm-afs/
 - Node.js 18+
 - Maven 3.9+
 
-### 1. 准备数据库
+### 1. 创建数据库
 
 ```sql
 CREATE DATABASE afs;
 \c afs
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
-
-执行建表脚本 `afs-server/src/main/resources/schema.sql`。
 
 ### 2. 配置后端
 
@@ -210,7 +214,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
+    url: jdbc:postgresql://localhost:5432/afs
     username: postgres
     password: your_password
   ai:
@@ -226,6 +230,8 @@ cd afs-server
 mvn clean package -DskipTests
 java -jar target/afs-server-1.0.0.jar
 ```
+
+> **注意**：数据库表结构由 Flyway 自动创建，首次启动时会自动执行 `V1__init.sql` 脚本。
 
 ### 4. 启动前端
 
@@ -296,16 +302,54 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 代码推送 → 构建后端 → 构建前端 → 推送 Docker 镜像 → SSH 部署到服务器
 ```
 
-**配置 GitHub Secrets：**
+### 配置 GitHub Secrets
 
-| Secret | 说明 |
-|--------|------|
-| `SERVER_HOST` | 服务器 IP |
-| `SERVER_USER` | SSH 用户名 |
-| `SERVER_SSH_KEY` | SSH 私钥 |
-| `SERVER_PROJECT_PATH` | 项目路径 |
+| Secret | 说明 | 示例 |
+|--------|------|------|
+| `SERVER_HOST` | 服务器 IP | `116.196.79.7` |
+| `SERVER_USER` | SSH 用户名 | `root` |
+| `SERVER_SSH_KEY` | SSH 私钥 | `-----BEGIN OPENSSH...` |
+| `SERVER_SSH_PORT` | SSH 端口 | `22` |
+| `SERVER_PROJECT_PATH` | 项目路径 | `/root/project/llm-afs` |
+| `ALIYUN_ACR_REGISTRY` | 阿里云 ACR 地址 | `cr-xxx.cn-hangzhou.personal.cr.aliyuncs.com` |
+| `ALIYUN_ACR_NAMESPACE` | ACR 命名空间 | `guanwx` |
+| `ALIYUN_ACR_USERNAME` | 阿里云账号 | `your-email@example.com` |
+| `ALIYUN_ACR_PASSWORD` | 阿里云登录密码 | `your-password` |
+| `AI_DASHSCOPE_API_KEY` | 通义千问 API Key | `sk-xxx` |
 
 详细配置步骤见 [deployment.md](deployment.md)。
+
+---
+
+## 数据库设计
+
+### Flyway 数据库迁移
+
+项目使用 Flyway 进行数据库版本管理，迁移脚本位于：
+
+```
+afs-server/src/main/resources/db/migration/
+└── V1__init.sql    # 初始表结构
+```
+
+**脚本命名规则**：`V<版本号>__<描述>.sql`
+
+**执行时机**：
+- 首次启动自动执行所有脚本
+- 后续启动只执行未应用的脚本
+- 版本记录到 `flyway_schema_history` 表
+
+### 数据表结构
+
+| 表名 | 说明 |
+|------|------|
+| `user` | 用户表 |
+| `chat_session` | 对话会话表 |
+| `chat_message` | 聊天消息表（含 sources 引用来源） |
+| `knowledge` | 防诈骗知识表 |
+| `scam_case` | 诈骗案例表 |
+| `vector_store` | pgVector 向量存储表（Spring AI 自动管理） |
+| `flyway_schema_history` | Flyway 迁移历史表 |
 
 ---
 
@@ -363,19 +407,6 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 
 ---
 
-## 数据库设计
-
-| 表名 | 说明 |
-|------|------|
-| `user` | 用户表 |
-| `chat_session` | 对话会话表 |
-| `chat_message` | 聊天消息表（含 sources 引用来源） |
-| `knowledge` | 防诈骗知识表 |
-| `scam_case` | 诈骗案例表 |
-| `vector_store` | pgVector 向量存储表（Spring AI 自动管理） |
-
----
-
 ## 环境变量
 
 | 变量 | 说明 | 默认值 |
@@ -387,3 +418,17 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 | `AI_DASHSCOPE_MODEL` | 对话模型 | qwen-turbo |
 | `SERVER_PORT` | 后端端口 | 8080 |
 | `WEB_PORT` | 前端端口 | 3000 |
+| `REGISTRY` | Docker 镜像仓库 | 阿里云 ACR 地址 |
+| `IMAGE_TAG` | 镜像版本 | latest |
+
+---
+
+## 项目亮点
+
+| 亮点 | 说明 |
+|------|------|
+| RAG 检索增强 | 基于 PGVector 向量检索，结合知识库提升回答准确性 |
+| SSE 流式响应 | 实时推送 AI 回复，支持逐字显示效果 |
+| 自动化部署 | CI/CD 全流程自动化，部署时间从 30min 缩短至 4min |
+| 镜像加速 | 阿里云 ACR 替代 GHCR，国内服务器拉取速度提升 80% |
+| 数据库版本管理 | Flyway 支持增量迁移和回滚，多人协作安全 |
