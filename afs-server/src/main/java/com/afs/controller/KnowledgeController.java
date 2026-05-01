@@ -2,19 +2,18 @@ package com.afs.controller;
 
 import com.afs.entity.Knowledge;
 import com.afs.service.KnowledgeService;
-import com.afs.service.RagService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 知识库控制器
- *
- * 提供知识库的 CRUD 接口，支持按分类查询、关键词搜索和语义检索。
- */
+@Tag(name = "知识库管理", description = "知识库的增删改查、文档上传、向量同步等接口")
 @RestController
 @RequestMapping("/api/knowledge")
 @CrossOrigin
@@ -23,21 +22,13 @@ public class KnowledgeController {
     @Autowired
     private KnowledgeService knowledgeService;
 
-    @Autowired
-    private RagService ragService;
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-    /**
-     * 获取知识列表
-     *
-     * 支持按分类筛选或关键词搜索。
-     *
-     * @param category 知识分类（可选）
-     * @param keyword  搜索关键词（可选）
-     * @return 知识列表
-     */
+    @Operation(summary = "获取知识库列表", description = "支持按分类或关键词筛选")
     @GetMapping
-    public Map<String, Object> getKnowledge(@RequestParam(required = false) String category,
-                                             @RequestParam(required = false) String keyword) {
+    public Map<String, Object> getKnowledge(
+            @Parameter(description = "分类筛选") @RequestParam(required = false) String category,
+            @Parameter(description = "关键词搜索") @RequestParam(required = false) String keyword) {
         Map<String, Object> result = new HashMap<>();
         try {
             List<Knowledge> list;
@@ -57,14 +48,10 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 获取知识详情
-     *
-     * @param id 知识 ID
-     * @return 知识详情
-     */
+    @Operation(summary = "根据 ID 获取知识库")
     @GetMapping("/{id}")
-    public Map<String, Object> getKnowledgeById(@PathVariable Long id) {
+    public Map<String, Object> getKnowledgeById(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         try {
             Knowledge knowledge = knowledgeService.getKnowledgeById(id);
@@ -77,12 +64,7 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 添加知识条目
-     *
-     * @param knowledge 知识对象
-     * @return 创建结果
-     */
+    @Operation(summary = "添加知识库")
     @PostMapping
     public Map<String, Object> addKnowledge(@RequestBody Knowledge knowledge) {
         Map<String, Object> result = new HashMap<>();
@@ -98,15 +80,11 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 更新知识条目
-     *
-     * @param id       知识 ID
-     * @param knowledge 包含更新内容的知识对象
-     * @return 更新结果
-     */
+    @Operation(summary = "更新知识库")
     @PutMapping("/{id}")
-    public Map<String, Object> updateKnowledge(@PathVariable Long id, @RequestBody Knowledge knowledge) {
+    public Map<String, Object> updateKnowledge(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long id,
+            @RequestBody Knowledge knowledge) {
         Map<String, Object> result = new HashMap<>();
         try {
             Knowledge updated = knowledgeService.updateKnowledge(id, knowledge);
@@ -120,14 +98,10 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 删除知识条目
-     *
-     * @param id 知识 ID
-     * @return 删除结果
-     */
+    @Operation(summary = "删除知识库")
     @DeleteMapping("/{id}")
-    public Map<String, Object> deleteKnowledge(@PathVariable Long id) {
+    public Map<String, Object> deleteKnowledge(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         try {
             knowledgeService.deleteKnowledge(id);
@@ -140,21 +114,14 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 语义检索知识
-     *
-     * 基于向量相似度进行语义检索，返回最相关的知识条目。
-     *
-     * @param query 检索查询
-     * @param topK  返回结果数量（默认5）
-     * @return 检索结果列表
-     */
+    @Operation(summary = "语义搜索", description = "基于向量相似度的语义搜索")
     @GetMapping("/search/semantic")
-    public Map<String, Object> semanticSearch(@RequestParam String query,
-                                               @RequestParam(defaultValue = "5") int topK) {
+    public Map<String, Object> semanticSearch(
+            @Parameter(description = "搜索查询", required = true) @RequestParam String query,
+            @Parameter(description = "返回结果数量") @RequestParam(defaultValue = "5") int topK) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<Map<String, Object>> sources = ragService.searchWithMetadata(query, topK);
+            List<Map<String, Object>> sources = knowledgeService.semanticSearch(query, topK);
             result.put("success", true);
             result.put("results", sources);
         } catch (Exception e) {
@@ -164,13 +131,7 @@ public class KnowledgeController {
         return result;
     }
 
-    /**
-     * 同步所有知识到向量库
-     *
-     * 用于修复或重建向量库数据。
-     *
-     * @return 同步结果
-     */
+    @Operation(summary = "同步向量库", description = "将所有知识库和诈骗案例同步到向量库")
     @PostMapping("/sync-vector")
     public Map<String, Object> syncVectorStore() {
         Map<String, Object> result = new HashMap<>();
@@ -182,6 +143,43 @@ public class KnowledgeController {
             result.put("success", false);
             result.put("message", e.getMessage());
         }
+        return result;
+    }
+
+    @Operation(summary = "上传文档", description = "支持 PDF、Word、Markdown、Excel、TXT 等格式")
+    @PostMapping("/upload")
+    public Map<String, Object> uploadDocument(
+            @Parameter(description = "上传的文件", required = true) @RequestParam("file") MultipartFile file,
+            @Parameter(description = "文档分类") @RequestParam(value = "category", required = false) String category,
+            @Parameter(description = "文档标题") @RequestParam(value = "title", required = false) String title) {
+        return knowledgeService.uploadDocument(file, category, title);
+    }
+
+    @Operation(summary = "批量上传文档")
+    @PostMapping("/upload/batch")
+    public Map<String, Object> uploadDocumentsBatch(
+            @Parameter(description = "上传的文件列表", required = true) @RequestParam("files") MultipartFile[] files,
+            @Parameter(description = "文档分类") @RequestParam(value = "category", required = false) String category) {
+        return knowledgeService.uploadDocumentsBatch(files, category);
+    }
+
+    @Operation(summary = "获取支持的文件类型")
+    @GetMapping("/supported-types")
+    public Map<String, Object> getSupportedTypes() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("types", List.of(
+                Map.of("extension", ".pdf", "name", "PDF 文档", "description", "Portable Document Format"),
+                Map.of("extension", ".docx", "name", "Word 文档", "description", "Microsoft Word 2007+"),
+                Map.of("extension", ".doc", "name", "Word 文档", "description", "Microsoft Word 97-2003"),
+                Map.of("extension", ".md", "name", "Markdown 文档", "description", "Markdown 格式"),
+                Map.of("extension", ".markdown", "name", "Markdown 文档", "description", "Markdown 格式"),
+                Map.of("extension", ".txt", "name", "文本文件", "description", "纯文本格式"),
+                Map.of("extension", ".xlsx", "name", "Excel 工作簿", "description", "Microsoft Excel 2007+"),
+                Map.of("extension", ".xls", "name", "Excel 工作簿", "description", "Microsoft Excel 97-2003")
+        ));
+        result.put("maxFileSize", MAX_FILE_SIZE);
+        result.put("maxFileSizeMB", MAX_FILE_SIZE / 1024 / 1024);
         return result;
     }
 }

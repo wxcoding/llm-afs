@@ -4,11 +4,13 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +24,9 @@ public class RagService {
 
     @Autowired
     private VectorStore vectorStore;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * 检索相关文档
@@ -108,17 +113,17 @@ public class RagService {
      * @param content  知识正文内容
      */
     public void addKnowledgeDocument(Long id, String title, String category, String content) {
-        // 构建文档对象，包含内容和元数据
+        String uuid = UUID.randomUUID().toString();
         Document doc = Document.builder()
-                .text(content)                                  // 文档内容
-                .metadata("source", "知识库")                   // 来源类型
-                .metadata("title", title)                       // 标题
-                .metadata("category", category)                 // 分类
-                .metadata("dbId", id.toString())                // 数据库ID
-                .metadata("type", "knowledge")                 // 文档类型
+                .text(content)
+                .id(uuid)
+                .metadata("source", "知识库")
+                .metadata("title", title)
+                .metadata("category", category)
+                .metadata("dbId", id.toString())
+                .metadata("type", "knowledge")
                 .build();
-        
-        // 将文档添加到向量库
+
         vectorStore.add(List.of(doc));
     }
 
@@ -132,20 +137,19 @@ public class RagService {
      * @param tips    防范提示
      */
     public void addScamCaseDocument(Long id, String title, String type, String content, String tips) {
-        // 构建完整内容，包含案例描述和防范提示
         String fullContent = "案例经过：" + content + "\n防范提示：" + tips;
-        
-        // 构建文档对象
+        String uuid = UUID.randomUUID().toString();
+
         Document doc = Document.builder()
-                .text(fullContent)                              // 完整内容
-                .metadata("source", "诈骗案例")                 // 来源类型
-                .metadata("title", title)                       // 标题
-                .metadata("caseType", type)                    // 案例类型
-                .metadata("dbId", id.toString())                // 数据库ID
-                .metadata("type", "scamcase")                  // 文档类型
+                .text(fullContent)
+                .id(uuid)
+                .metadata("source", "诈骗案例")
+                .metadata("title", title)
+                .metadata("caseType", type)
+                .metadata("dbId", id.toString())
+                .metadata("type", "scamcase")
                 .build();
-        
-        // 将文档添加到向量库
+
         vectorStore.add(List.of(doc));
     }
 
@@ -155,8 +159,8 @@ public class RagService {
      * @param id 知识库条目 ID
      */
     public void deleteKnowledgeDocument(Long id) {
-        // 构建文档ID并从向量库删除
-        vectorStore.delete(List.of("knowledge_" + id));
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata ->> 'dbId' = ? AND metadata ->> 'type' = 'knowledge'",
+                id.toString());
     }
 
     /**
@@ -165,7 +169,28 @@ public class RagService {
      * @param id 案例 ID
      */
     public void deleteScamCaseDocument(Long id) {
-        // 构建文档ID并从向量库删除
-        vectorStore.delete(List.of("scamcase_" + id));
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata ->> 'dbId' = ? AND metadata ->> 'type' = 'scamcase'",
+                id.toString());
+    }
+
+    /**
+     * 清空知识库向量
+     */
+    public void clearKnowledgeVector() {
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata ->> 'type' = 'knowledge'");
+    }
+
+    /**
+     * 清空诈骗案例向量
+     */
+    public void clearScamCaseVector() {
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata ->> 'type' = 'scamcase'");
+    }
+
+    /**
+     * 清空所有向量
+     */
+    public void clearAllVector() {
+        jdbcTemplate.update("TRUNCATE vector_store");
     }
 }

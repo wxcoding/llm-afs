@@ -2,6 +2,9 @@ package com.afs.controller;
 
 import com.afs.entity.User;
 import com.afs.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,12 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 用户控制器
- *
- * 提供用户相关的 REST API 接口，包括注册、登录、个人信息管理等。
- * 所有接口均支持跨域访问（CORS）。
- */
+@Tag(name = "用户管理", description = "用户注册、登录、个人信息管理、管理员用户管理等接口")
 @RestController
 @RequestMapping("/api/user")
 @CrossOrigin
@@ -24,12 +22,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    /**
-     * 用户注册
-     *
-     * @param params 包含 username 和 password 的请求体
-     * @return 注册结果，包含成功状态、消息和用户信息
-     */
+    @Operation(summary = "用户注册")
     @PostMapping("/register")
     public Map<String, Object> register(@RequestBody Map<String, String> params) {
         Map<String, Object> result = new HashMap<>();
@@ -47,12 +40,7 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 用户登录
-     *
-     * @param params 包含 username 和 password 的请求体
-     * @return 登录结果，包含成功状态、消息和用户信息
-     */
+    @Operation(summary = "用户登录")
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody Map<String, String> params) {
         Map<String, Object> result = new HashMap<>();
@@ -70,14 +58,10 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 获取用户详情
-     *
-     * @param id 用户 ID
-     * @return 用户详细信息
-     */
+    @Operation(summary = "获取用户详情")
     @GetMapping("/{id}")
-    public Map<String, Object> getUser(@PathVariable Long id) {
+    public Map<String, Object> getUser(
+            @Parameter(description = "用户 ID", required = true) @PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         try {
             User user = userService.getUserById(id);
@@ -104,12 +88,7 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 更新当前用户信息
-     *
-     * @param params 包含要更新的字段（nickname、phone、email、avatar）
-     * @return 更新结果
-     */
+    @Operation(summary = "更新当前用户信息")
     @PutMapping("/update")
     public Map<String, Object> updateUser(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -153,11 +132,7 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 获取所有用户列表（管理员接口）
-     *
-     * @return 用户列表
-     */
+    @Operation(summary = "获取所有用户列表（管理员接口）")
     @GetMapping("/list")
     public Map<String, Object> getAllUsers() {
         Map<String, Object> result = new HashMap<>();
@@ -183,12 +158,7 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 创建用户（管理员接口）
-     *
-     * @param user 用户对象
-     * @return 创建结果
-     */
+    @Operation(summary = "创建用户（管理员接口）")
     @PostMapping("/create")
     public Map<String, Object> createUser(@RequestBody User user) {
         Map<String, Object> result = new HashMap<>();
@@ -213,15 +183,11 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 管理员更新用户信息
-     *
-     * @param id   用户 ID
-     * @param user 包含要更新的字段的用户对象
-     * @return 更新结果
-     */
+    @Operation(summary = "管理员更新用户信息")
     @PutMapping("/admin/update/{id}")
-    public Map<String, Object> updateUserByAdmin(@PathVariable Long id, @RequestBody User user) {
+    public Map<String, Object> updateUserByAdmin(
+            @Parameter(description = "用户 ID", required = true) @PathVariable Long id,
+            @RequestBody User user) {
         Map<String, Object> result = new HashMap<>();
         try {
             User updatedUser = userService.updateUserByAdmin(id, user);
@@ -244,14 +210,10 @@ public class UserController {
         return result;
     }
 
-    /**
-     * 删除用户（管理员接口）
-     *
-     * @param id 用户 ID
-     * @return 删除结果
-     */
+    @Operation(summary = "删除用户（管理员接口）")
     @DeleteMapping("/delete/{id}")
-    public Map<String, Object> deleteUser(@PathVariable Long id) {
+    public Map<String, Object> deleteUser(
+            @Parameter(description = "用户 ID", required = true) @PathVariable Long id) {
         Map<String, Object> result = new HashMap<>();
         try {
             userService.deleteUser(id);

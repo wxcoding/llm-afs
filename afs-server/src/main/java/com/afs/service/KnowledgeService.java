@@ -2,12 +2,16 @@ package com.afs.service;
 
 import com.afs.entity.Knowledge;
 import com.afs.mapper.KnowledgeMapper;
+import com.afs.util.DocumentParser;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 知识库服务
@@ -144,16 +148,19 @@ public class KnowledgeService {
      * @return 匹配的知识列表
      */
     public List<Knowledge> searchKnowledge(String keyword) {
-        // 构建查询条件，在标题、内容、分类中模糊匹配关键词
         return knowledgeMapper.selectList(
                 new QueryWrapper<Knowledge>()
-                        .like("title", keyword)      // 标题中包含关键词
-                        .or()                        // 或者
-                        .like("content", keyword)    // 内容中包含关键词
-                        .or()                        // 或者
-                        .like("category", keyword)   // 分类中包含关键词
-                        .orderByDesc("create_time")  // 按创建时间倒序排列
+                        .like("title", keyword)
+                        .or()
+                        .like("content", keyword)
+                        .or()
+                        .like("category", keyword)
+                        .orderByDesc("create_time")
         );
+    }
+
+    public List<Map<String, Object>> semanticSearch(String query, int topK) {
+        return ragService.searchWithMetadata(query, topK);
     }
 
     /**
@@ -337,21 +344,175 @@ public class KnowledgeService {
      * 用于初始化或修复向量库数据。
      */
     public void syncAllToVectorStore() {
-        // 获取所有知识
         List<Knowledge> allKnowledge = knowledgeMapper.selectList(new QueryWrapper<>());
-        
-        // 逐个同步到向量库
+
+        ragService.clearKnowledgeVector();
+
         for (Knowledge k : allKnowledge) {
             if (k.getContent() != null && !k.getContent().isEmpty()) {
-                try {
-                    // 先删除旧文档
-                    ragService.deleteKnowledgeDocument(k.getId());
-                } catch (Exception ignored) {
-                    // 忽略删除失败的情况
-                }
-                // 添加新文档
                 ragService.addKnowledgeDocument(k.getId(), k.getTitle(), k.getCategory(), k.getContent());
             }
         }
+    }
+
+    /**
+     * 最大文件大小限制（10MB）
+     */
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    /**
+     * 上传文档
+     *
+     * @param file     上传的文件
+     * @param category 分类（可选）
+     * @param title    标题（可选）
+     * @return 上传结果，包含 success、message、knowledge 等字段
+     */
+    public Map<String, Object> uploadDocument(MultipartFile file, String category, String title) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 验证文件
+            if (file.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "请选择要上传的文件");
+                return result;
+            }
+
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || fileName.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "文件名不能为空");
+                return result;
+            }
+
+            // 验证文件格式
+            String lowerFileName = fileName.toLowerCase();
+            if (!lowerFileName.endsWith(".pdf") && !lowerFileName.endsWith(".docx") &&
+                    !lowerFileName.endsWith(".doc") && !lowerFileName.endsWith(".md") &&
+                    !lowerFileName.endsWith(".markdown") && !lowerFileName.endsWith(".txt") &&
+                    !lowerFileName.endsWith(".xlsx") && !lowerFileName.endsWith(".xls")) {
+                result.put("success", false);
+                result.put("message", "不支持的文件格式，请上传 PDF、Word、Markdown、Excel 或文本文件");
+                return result;
+            }
+
+            // 验证文件大小
+            if (file.getSize() > MAX_FILE_SIZE) {
+                result.put("success", false);
+                result.put("message", "文件大小超过限制（最大 10MB）");
+                return result;
+            }
+
+            // 解析文档
+            Map<String, Object> parseResult = DocumentParser.parseDocument(file);
+            String content = (String) parseResult.get("content");
+            String documentType = (String) parseResult.get("documentType");
+
+            if (content == null || content.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("message", "无法从文档中提取内容");
+                return result;
+            }
+
+            // 清理内容
+            content = content.trim().replaceAll("\\s+", " ");
+
+            // 自动提取标题（如果未提供）
+            if (title == null || title.trim().isEmpty()) {
+                title = DocumentParser.extractTitle(fileName);
+            }
+
+            // 自动建议分类（如果未提供）
+            if (category == null || category.trim().isEmpty()) {
+                category = DocumentParser.suggestCategory(fileName, content);
+            }
+
+            // 创建知识对象
+            Knowledge knowledge = new Knowledge();
+            knowledge.setTitle(title);
+            knowledge.setCategory(category);
+            knowledge.setContent(content);
+            knowledge.setDocumentType(documentType);
+            knowledge.setSourceFile(fileName);
+            knowledge.setFileSize(file.getSize());
+            knowledge.setCharCount((Integer) parseResult.get("charCount"));
+
+            // 保存知识
+            Knowledge created = addKnowledge(knowledge);
+
+            // 设置成功结果
+            result.put("success", true);
+            result.put("message", "文档上传成功");
+            result.put("knowledge", created);
+            result.put("documentType", documentType);
+            result.put("charCount", parseResult.get("charCount"));
+            result.put("fileName", fileName);
+            result.put("fileSize", file.getSize());
+
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "文档处理失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * 批量上传文档
+     *
+     * @param files    上传的文件数组
+     * @param category 分类（可选，统一应用于所有文件）
+     * @return 上传结果，包含 successCount、failCount、failMessages 等字段
+     */
+    public Map<String, Object> uploadDocumentsBatch(MultipartFile[] files, String category) {
+        Map<String, Object> result = new HashMap<>();
+
+        if (files == null || files.length == 0) {
+            result.put("success", false);
+            result.put("message", "请选择要上传的文件");
+            return result;
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+        StringBuilder failMessages = new StringBuilder();
+
+        for (MultipartFile file : files) {
+            String fileName = file.getOriginalFilename();
+            try {
+                Map<String, Object> uploadResult = uploadDocument(file, category, null);
+                if ((Boolean) uploadResult.get("success")) {
+                    successCount++;
+                } else {
+                    failCount++;
+                    if (failMessages.length() > 0) {
+                        failMessages.append("; ");
+                    }
+                    failMessages.append(fileName).append(": ").append(uploadResult.get("message"));
+                }
+            } catch (Exception e) {
+                failCount++;
+                if (failMessages.length() > 0) {
+                    failMessages.append("; ");
+                }
+                failMessages.append(fileName).append(": ").append(e.getMessage());
+            }
+        }
+
+        result.put("success", failCount == 0);
+        result.put("successCount", successCount);
+        result.put("failCount", failCount);
+
+        if (failCount == 0) {
+            result.put("message", "全部上传成功");
+        } else if (successCount == 0) {
+            result.put("message", "全部上传失败: " + failMessages);
+        } else {
+            result.put("message", "部分上传成功");
+            result.put("failMessages", failMessages.toString());
+        }
+
+        return result;
     }
 }

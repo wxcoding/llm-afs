@@ -37,6 +37,21 @@ public class Knowledge {
     /** 知识正文内容 */
     private String content;
 
+    /** 文档类型: pdf, word, markdown, excel, text */
+    private String documentType;
+
+    /** 原始文件名 */
+    private String sourceFile;
+
+    /** 文件大小(字节) */
+    private Long fileSize;
+
+    /** 文档字符数 */
+    private Integer charCount;
+
+    /** 更新时间 */
+    private LocalDateTime updateTime;
+
     /** 知识添加时间 */
     private LocalDateTime createTime;
 }
