@@ -12,6 +12,7 @@
           <el-option label="防范技巧" value="防范技巧" />
           <el-option label="诈骗类型" value="诈骗类型" />
           <el-option label="应对方法" value="应对方法" />
+          <el-option label="文档资料" value="文档资料" />
         </el-select>
         <el-input
           v-model="searchKeyword"
@@ -27,6 +28,7 @@
       </div>
       <div class="filter-right">
         <el-button type="primary" @click="showAddDialog">+ 新增知识</el-button>
+        <el-button type="success" @click="showUploadDialog">📎 上传文档</el-button>
         <el-button type="warning" @click="syncVectorStore" :loading="syncing">同步向量库</el-button>
       </div>
     </div>
@@ -63,7 +65,7 @@
         <template #header>
           <div class="card-header">
             <div class="card-header-left">
-              <el-tag type="success">{{ k.category }}</el-tag>
+              <el-tag :type="getCategoryTagType(k.category)">{{ k.category }}</el-tag>
               <h3>{{ k.title }}</h3>
             </div>
             <div class="card-header-right">
@@ -78,6 +80,10 @@
       </el-card>
     </div>
 
+    <el-empty v-if="knowledgeList.length === 0 && searchMode === 'keyword'" description="暂无知识内容">
+      <el-button type="primary" @click="showUploadDialog">上传文档</el-button>
+    </el-empty>
+
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑知识' : '新增知识'" width="600px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="标题">
@@ -88,6 +94,7 @@
             <el-option label="防范技巧" value="防范技巧" />
             <el-option label="诈骗类型" value="诈骗类型" />
             <el-option label="应对方法" value="应对方法" />
+            <el-option label="文档资料" value="文档资料" />
           </el-select>
         </el-form-item>
         <el-form-item label="内容">
@@ -97,6 +104,51 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="uploadDialogVisible" title="上传文档" width="600px">
+      <div class="upload-tip">
+        <el-alert type="info" :closable="false">
+          <template #title>
+            支持的文件格式：PDF、Word（.doc/.docx）、Markdown（.md）、Excel（.xls/.xlsx）、文本文件（.txt）
+          </template>
+        </el-alert>
+      </div>
+      <el-form :model="uploadForm" label-width="80px" style="margin-top: 16px">
+        <el-form-item label="上传文件">
+          <el-upload
+            ref="uploadRef"
+            class="upload-component"
+            :auto-upload="false"
+            :limit="10"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="fileList"
+            accept=".pdf,.doc,.docx,.md,.markdown,.txt,.xls,.xlsx"
+            multiple
+          >
+            <el-button type="primary">选择文件</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持批量上传，单个文件不超过10MB</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="uploadForm.category" placeholder="不选择则自动分类" clearable style="width: 100%">
+            <el-option label="自动分类" value="" />
+            <el-option label="防范技巧" value="防范技巧" />
+            <el-option label="诈骗类型" value="诈骗类型" />
+            <el-option label="应对方法" value="应对方法" />
+            <el-option label="文档资料" value="文档资料" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleUpload" :loading="uploading">
+          上传 {{ fileList.length > 0 ? `(${fileList.length}个文件)` : '' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -116,14 +168,21 @@ export default {
     const searchMode = ref('keyword')
     const semanticResults = ref([])
     const dialogVisible = ref(false)
+    const uploadDialogVisible = ref(false)
     const isEdit = ref(false)
     const submitting = ref(false)
     const syncing = ref(false)
+    const uploading = ref(false)
+    const uploadRef = ref(null)
+    const fileList = ref([])
     const form = ref({
       id: null,
       title: '',
       category: '',
       content: ''
+    })
+    const uploadForm = ref({
+      category: ''
     })
 
     const loadKnowledge = async () => {
@@ -227,6 +286,97 @@ export default {
       }
     }
 
+    const showUploadDialog = () => {
+      fileList.value = []
+      uploadForm.value.category = ''
+      uploadDialogVisible.value = true
+    }
+
+    const handleFileChange = (file, files) => {
+      fileList.value = files
+    }
+
+    const handleFileRemove = (file, files) => {
+      fileList.value = files
+    }
+
+    const handleUpload = async () => {
+      if (fileList.value.length === 0) {
+        ElMessage.warning('请选择要上传的文件')
+        return
+      }
+
+      uploading.value = true
+      let successCount = 0
+      let failCount = 0
+      let failDetails = []
+
+      try {
+        for (const fileItem of fileList.value) {
+          const file = fileItem.raw
+          const formData = new FormData()
+          formData.append('file', file)
+          if (uploadForm.value.category) {
+            formData.append('category', uploadForm.value.category)
+          }
+
+          try {
+            const res = await axios.post('/api/knowledge/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            })
+            console.log('上传响应:', res)
+            console.log('响应数据:', res.data)
+            
+            const responseData = res.data || {}
+            const successField = responseData.success
+            
+            console.log('success字段:', successField, typeof successField)
+            
+            const isSuccess = successField === true || successField === 'true' || successField === 1
+            
+            if (isSuccess) {
+              successCount++
+              console.log('文件上传成功:', file.name)
+            } else {
+              failCount++
+              const errorMsg = responseData.message || responseData.msg || '上传失败'
+              failDetails.push(`${file.name}: ${errorMsg}`)
+              console.log('文件上传失败:', file.name, errorMsg)
+            }
+          } catch (e) {
+            failCount++
+            console.error('上传异常:', e)
+            failDetails.push(`${file.name}: ${e.message || '上传失败'}`)
+          }
+        }
+
+        let msg = `上传完成：成功 ${successCount} 个`
+        if (failCount > 0) {
+          msg += `，失败 ${failCount} 个`
+          console.error('上传失败详情:', failDetails)
+        }
+        ElMessage.success(msg)
+
+        if (successCount > 0) {
+          uploadDialogVisible.value = false
+          fileList.value = []
+          loadKnowledge()
+        }
+      } finally {
+        uploading.value = false
+      }
+    }
+
+    const getCategoryTagType = (category) => {
+      const map = {
+        '防范技巧': 'success',
+        '诈骗类型': 'danger',
+        '应对方法': 'warning',
+        '文档资料': 'info'
+      }
+      return map[category] || ''
+    }
+
     onMounted(() => {
       loadKnowledge()
     })
@@ -238,10 +388,15 @@ export default {
       searchMode,
       semanticResults,
       dialogVisible,
+      uploadDialogVisible,
       isEdit,
       submitting,
       syncing,
+      uploading,
+      uploadRef,
+      fileList,
       form,
+      uploadForm,
       loadKnowledge,
       handleSearch,
       handleSearchModeChange,
@@ -249,7 +404,12 @@ export default {
       showEditDialog,
       handleSubmit,
       handleDelete,
-      syncVectorStore
+      syncVectorStore,
+      showUploadDialog,
+      handleFileChange,
+      handleFileRemove,
+      handleUpload,
+      getCategoryTagType
     }
   }
 }
@@ -379,5 +539,13 @@ export default {
   font-family: inherit;
   line-height: 1.8;
   color: #666;
+}
+
+.upload-tip {
+  margin-bottom: 0;
+}
+
+.upload-component {
+  width: 100%;
 }
 </style>
