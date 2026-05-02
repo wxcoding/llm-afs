@@ -4,7 +4,18 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    branches: [main, master]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: 'prod'
+        required: true
 
 env:
   # 项目配置
@@ -28,6 +39,7 @@ jobs:
   build:
     name: 构建应用
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     steps:
       - name: 检出代码
         uses: actions/checkout@v4

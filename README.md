@@ -15,8 +15,13 @@
 | 多轮对话 | 支持上下文记忆，连续追问 |
 | 诈骗案例库 | 收录电信诈骗、网络诈骗、情感诈骗等典型案例 |
 | 防诈骗知识库 | 分类整理防诈骗知识，支持关键词和语义检索 |
+| 文档上传 | 支持 PDF、Word、Markdown 等格式文档上传 |
 | 用户管理 | 注册登录、个人信息、管理员用户管理 |
 | 数据统计 | 用户数、知识数、案例数、对话数实时统计 |
+| API 文档 | Swagger UI 在线接口文档 |
+| 系统监控 | Actuator 健康检查、指标监控 |
+| 日志审计 | AOP 切面日志记录，操作轨迹追踪 |
+| 全局异常 | 统一异常处理，友好错误提示 |
 
 ---
 
@@ -30,6 +35,9 @@
 - PostgreSQL 17 + pgvector 扩展
 - Flyway 9.22.3（数据库版本管理）
 - 阿里云通义千问（qwen-turbo / text-embedding-v3）
+- Swagger / OpenAPI 3（API 文档）
+- Spring Boot Actuator（系统监控）
+- Spring AOP（日志切面）
 
 ### 前端
 
@@ -135,7 +143,9 @@ llm-afs/
 │   │   ├── AfsApplication.java        # 启动类
 │   │   ├── config/
 │   │   │   ├── AiConfig.java          # Spring AI 配置
-│   │   │   └── DataInitializer.java   # 数据初始化
+│   │   │   ├── DataInitializer.java   # 数据初始化
+│   │   │   ├── WebConfig.java         # Web 配置（CORS、异步）
+│   │   │   └── OpenApiConfig.java     # Swagger 配置
 │   │   ├── controller/
 │   │   │   ├── ChatController.java    # 聊天接口（SSE 流式）
 │   │   │   ├── KnowledgeController.java
@@ -144,12 +154,19 @@ llm-afs/
 │   │   │   └── StatsController.java
 │   │   ├── entity/                    # 实体类
 │   │   ├── mapper/                    # MyBatis Plus Mapper
-│   │   └── service/
-│   │       ├── ChatService.java       # 聊天 + RAG 检索
-│   │       ├── RagService.java        # 向量检索核心
-│   │       ├── KnowledgeService.java
-│   │       ├── ScamCaseService.java
-│   │       └── UserService.java
+│   │   ├── service/
+│   │   │   ├── ChatService.java       # 聊天 + RAG 检索
+│   │   │   ├── RagService.java        # 向量检索核心
+│   │   │   ├── KnowledgeService.java
+│   │   │   ├── ScamCaseService.java
+│   │   │   └── UserService.java
+│   │   ├── common/
+│   │   │   ├── Result.java            # 统一响应格式
+│   │   │   └── GlobalExceptionHandler.java  # 全局异常处理
+│   │   ├── aspect/
+│   │   │   └── LogAspect.java         # 日志切面
+│   │   └── util/
+│   │       └── DocumentParser.java    # 文档解析工具
 │   ├── src/main/resources/
 │   │   ├── application.yml            # 配置文件
 │   │   └── db/migration/             # Flyway 数据库迁移脚本
@@ -329,7 +346,9 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 
 ```
 afs-server/src/main/resources/db/migration/
-└── V1__init.sql    # 初始表结构
+├── V1__init.sql              # 初始表结构
+├── V2__create_case_images.sql  # 案例图片表
+└── V3__create_operation_log.sql # 操作日志表
 ```
 
 **脚本命名规则**：`V<版本号>__<描述>.sql`
@@ -348,12 +367,29 @@ afs-server/src/main/resources/db/migration/
 | `chat_message` | 聊天消息表（含 sources 引用来源） |
 | `knowledge` | 防诈骗知识表 |
 | `scam_case` | 诈骗案例表 |
+| `case_image` | 案例图片表 |
+| `operation_log` | 操作日志表 |
 | `vector_store` | pgVector 向量存储表（Spring AI 自动管理） |
 | `flyway_schema_history` | Flyway 迁移历史表 |
 
 ---
 
 ## API 接口
+
+### Swagger UI 在线文档
+
+启动后端服务启动后，访问 **Swagger UI** 文档地址：
+```
+http://localhost:8080/swagger-ui.html
+```
+
+### Actuator 监控端点
+
+| 端点 | 说明 |
+|------|------|
+| `/actuator/health` | 健康检查 |
+| `/actuator/info` | 应用信息 |
+| `/actuator/metrics` | 系统指标 |
 
 ### 用户 `/api/user`
 
@@ -384,6 +420,7 @@ afs-server/src/main/resources/db/migration/
 | GET | `/` | 知识列表（支持 category、keyword 参数） |
 | GET | `/{id}` | 知识详情 |
 | POST | `/` | 添加知识 |
+| POST | `/upload` | 上传文档（PDF/Word/Markdown） |
 | PUT | `/{id}` | 更新知识 |
 | DELETE | `/{id}` | 删除知识 |
 | GET | `/search/semantic` | 语义检索（基于向量相似度） |
@@ -429,6 +466,9 @@ afs-server/src/main/resources/db/migration/
 |------|------|
 | RAG 检索增强 | 基于 PGVector 向量检索，结合知识库提升回答准确性 |
 | SSE 流式响应 | 实时推送 AI 回复，支持逐字显示效果 |
+| 文档智能解析 | 支持 PDF、Word、Markdown 等格式上传和自动解析 |
 | 自动化部署 | CI/CD 全流程自动化，部署时间从 30min 缩短至 4min |
 | 镜像加速 | 阿里云 ACR 替代 GHCR，国内服务器拉取速度提升 80% |
 | 数据库版本管理 | Flyway 支持增量迁移和回滚，多人协作安全 |
+| 企业级特性 | 全局异常处理、统一响应格式、Swagger API 文档、AOP 日志审计 |
+| 系统监控 | Actuator 提供健康检查、指标监控，生产环境必备 |
