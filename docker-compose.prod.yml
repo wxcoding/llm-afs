@@ -18,7 +18,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./afs-server/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # 使用 Flyway 进行数据库迁移，无需单独挂载 schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
