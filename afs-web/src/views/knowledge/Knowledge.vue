@@ -9,10 +9,12 @@
       <div class="filter-left">
         <el-select v-model="selectedCategory" placeholder="选择分类" @change="loadKnowledge" style="width: 150px">
           <el-option label="全部分类" value="" />
-          <el-option label="防范技巧" value="防范技巧" />
-          <el-option label="诈骗类型" value="诈骗类型" />
-          <el-option label="应对方法" value="应对方法" />
-          <el-option label="文档资料" value="文档资料" />
+          <el-option 
+            v-for="option in categoryOptions" 
+            :key="option.value" 
+            :label="option.label" 
+            :value="option.value" 
+          />
         </el-select>
         <el-input
           v-model="searchKeyword"
@@ -56,28 +58,31 @@
     </div>
 
     <div v-else class="knowledge-list">
-      <el-card
+      <div
         v-for="k in knowledgeList"
         :key="k.id"
-        class="knowledge-card"
-        shadow="hover"
+        class="knowledge-item"
+        :class="{ expanded: expandedIds.includes(k.id) }"
       >
-        <template #header>
-          <div class="card-header">
-            <div class="card-header-left">
-              <el-tag :type="getCategoryTagType(k.category)">{{ k.category }}</el-tag>
-              <h3>{{ k.title }}</h3>
-            </div>
-            <div class="card-header-right">
-              <el-button type="primary" size="small" @click="showEditDialog(k)">编辑</el-button>
-              <el-button type="danger" size="small" @click="handleDelete(k.id)">删除</el-button>
-            </div>
+        <div class="knowledge-item-header" @click="toggleExpand(k.id)">
+          <div class="knowledge-item-left">
+            <el-tag :type="getCategoryTagType(k.category)" size="small">{{ k.category }}</el-tag>
+            <h3 class="knowledge-item-title">{{ k.title }}</h3>
+            <el-tag :type="getStatusTagType(k.status)" size="small">{{ getStatusText(k.status) }}</el-tag>
           </div>
-        </template>
-        <div class="knowledge-content">
+          <div class="knowledge-item-right">
+            <el-button type="primary" size="small" @click.stop="showEditDialog(k)">编辑</el-button>
+            <el-button type="danger" size="small" @click.stop="handleDelete(k.id)">删除</el-button>
+            <i :class="expandedIds.includes(k.id) ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="expand-icon"></i>
+          </div>
+        </div>
+        <div class="knowledge-item-summary" v-show="!expandedIds.includes(k.id)">
+          {{ getSummary(k.content) }}
+        </div>
+        <div class="knowledge-item-content" v-show="expandedIds.includes(k.id)">
           <pre>{{ k.content }}</pre>
         </div>
-      </el-card>
+      </div>
     </div>
 
     <el-empty v-if="knowledgeList.length === 0 && searchMode === 'keyword'" description="暂无知识内容">
@@ -91,19 +96,27 @@
         </el-form-item>
         <el-form-item label="分类">
           <el-select v-model="form.category" placeholder="请选择分类" style="width: 100%">
-            <el-option label="防范技巧" value="防范技巧" />
-            <el-option label="诈骗类型" value="诈骗类型" />
-            <el-option label="应对方法" value="应对方法" />
-            <el-option label="文档资料" value="文档资料" />
+            <el-option 
+              v-for="option in categoryOptions" 
+              :key="option.value" 
+              :label="option.label" 
+              :value="option.value" 
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="内容">
           <el-input v-model="form.content" type="textarea" :rows="10" placeholder="请输入知识内容" />
         </el-form-item>
+        <el-form-item label="提交方式">
+          <el-radio-group v-model="submitMode">
+            <el-radio value="direct">直接保存</el-radio>
+            <el-radio value="audit">提交审核</el-radio>
+          </el-radio-group>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">{{ submitMode === 'audit' ? '提交审核' : '确定' }}</el-button>
       </template>
     </el-dialog>
 
@@ -137,10 +150,12 @@
         <el-form-item label="分类">
           <el-select v-model="uploadForm.category" placeholder="不选择则自动分类" clearable style="width: 100%">
             <el-option label="自动分类" value="" />
-            <el-option label="防范技巧" value="防范技巧" />
-            <el-option label="诈骗类型" value="诈骗类型" />
-            <el-option label="应对方法" value="应对方法" />
-            <el-option label="文档资料" value="文档资料" />
+            <el-option 
+              v-for="option in categoryOptions" 
+              :key="option.value" 
+              :label="option.label" 
+              :value="option.value" 
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -155,14 +170,17 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { submitForAudit } from '@/api/knowledgeEnhanced'
+import dict from '@/utils/dict'
 
 export default {
   name: 'Knowledge',
   setup() {
     const knowledgeList = ref([])
+    const expandedIds = ref([])
     const selectedCategory = ref('')
     const searchKeyword = ref('')
     const searchMode = ref('keyword')
@@ -184,6 +202,22 @@ export default {
     const uploadForm = ref({
       category: ''
     })
+    const user = inject('user')
+    const submitMode = ref('direct') // 'direct' 直接保存 | 'audit' 提交审核
+    
+    // 字典数据
+    const categoryOptions = ref([])
+    const statusOptions = ref([])
+
+    // 初始化字典
+    const initDicts = async () => {
+      // 批量获取字典
+      await dict.getBatchDict(['knowledge_category', 'knowledge_status'])
+      
+      // 获取分类选项
+      categoryOptions.value = dict.getDictOptions('knowledge_category')
+      statusOptions.value = dict.getDictOptions('knowledge_status')
+    }
 
     const loadKnowledge = async () => {
       const params = {}
@@ -224,14 +258,30 @@ export default {
       }
     }
 
+    const toggleExpand = (id) => {
+      const idx = expandedIds.value.indexOf(id)
+      if (idx > -1) {
+        expandedIds.value.splice(idx, 1)
+      } else {
+        expandedIds.value.push(id)
+      }
+    }
+
+    const getSummary = (content) => {
+      if (!content) return ''
+      return content.length > 150 ? content.substring(0, 150) + '...' : content
+    }
+
     const showAddDialog = () => {
       isEdit.value = false
+      submitMode.value = 'direct'
       form.value = { id: null, title: '', category: '', content: '' }
       dialogVisible.value = true
     }
 
     const showEditDialog = (k) => {
       isEdit.value = true
+      submitMode.value = 'direct'
       form.value = { id: k.id, title: k.title, category: k.category, content: k.content }
       dialogVisible.value = true
     }
@@ -243,17 +293,31 @@ export default {
       }
       submitting.value = true
       try {
-        if (isEdit.value) {
-          await axios.put(`/api/knowledge/${form.value.id}`, form.value)
-          ElMessage.success('更新成功')
+        if (submitMode.value === 'audit') {
+          // 提交审核模式
+          const userId = user?.value?.id || parseInt(localStorage.getItem('userId') || '1')
+          await submitForAudit({
+            knowledgeId: isEdit.value ? form.value.id : null,
+            title: form.value.title,
+            content: form.value.content,
+            category: form.value.category,
+            submitUserId: userId
+          })
+          ElMessage.success('已提交审核，请等待管理员审核')
         } else {
-          await axios.post('/api/knowledge', form.value)
-          ElMessage.success('添加成功')
+          // 直接保存模式
+          if (isEdit.value) {
+            await axios.put(`/api/knowledge/${form.value.id}`, form.value)
+            ElMessage.success('更新成功')
+          } else {
+            await axios.post('/api/knowledge', form.value)
+            ElMessage.success('添加成功')
+          }
         }
         dialogVisible.value = false
         loadKnowledge()
       } catch (e) {
-        ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+        ElMessage.error(submitMode.value === 'audit' ? '提交审核失败' : (isEdit.value ? '更新失败' : '添加失败'))
       } finally {
         submitting.value = false
       }
@@ -377,12 +441,28 @@ export default {
       return map[category] || ''
     }
 
+    const getStatusText = (status) => {
+      return dict.getDictName('knowledge_status', status) || '已发布'
+    }
+
+    const getStatusTagType = (status) => {
+      const map = {
+        'DRAFT': 'info',
+        'PENDING_REVIEW': 'warning',
+        'ACTIVE': 'success',
+        'REJECTED': 'danger'
+      }
+      return map[status] || 'success'
+    }
+
     onMounted(() => {
+      initDicts()
       loadKnowledge()
     })
 
     return {
       knowledgeList,
+      expandedIds,
       selectedCategory,
       searchKeyword,
       searchMode,
@@ -397,6 +477,9 @@ export default {
       fileList,
       form,
       uploadForm,
+      submitMode,
+      categoryOptions,
+      statusOptions,
       loadKnowledge,
       handleSearch,
       handleSearchModeChange,
@@ -409,7 +492,11 @@ export default {
       handleFileChange,
       handleFileRemove,
       handleUpload,
-      getCategoryTagType
+      getCategoryTagType,
+      getStatusText,
+      getStatusTagType,
+      toggleExpand,
+      getSummary
     }
   }
 }
@@ -497,48 +584,95 @@ export default {
 .knowledge-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.knowledge-card {
-  border-radius: 12px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header-left {
-  display: flex;
-  align-items: center;
   gap: 12px;
 }
 
-.card-header-left h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #333;
+.knowledge-item {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
-.card-header-right {
+.knowledge-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.knowledge-item.expanded {
+  border-color: #409eff;
+}
+
+.knowledge-item-header {
   display: flex;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: background 0.2s ease;
 }
 
-.knowledge-content {
-  max-height: 300px;
-  overflow-y: auto;
+.knowledge-item-header:hover {
+  background: #f0f7ff;
 }
 
-.knowledge-content pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
+.knowledge-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.knowledge-item-title {
   margin: 0;
-  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.expand-icon {
+  font-size: 14px;
+  color: #909399;
+  margin-left: 8px;
+  transition: transform 0.3s ease;
+}
+
+.knowledge-item-summary {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+}
+
+.knowledge-item-content {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+}
+
+.knowledge-item-content pre {
+  margin: 0;
+  font-size: 14px;
   line-height: 1.8;
-  color: #666;
+  color: #262626;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .upload-tip {
