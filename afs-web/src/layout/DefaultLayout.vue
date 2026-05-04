@@ -18,11 +18,8 @@
             <el-menu-item index="/chat">智能问答</el-menu-item>
             <el-menu-item index="/knowledge">知识库</el-menu-item>
             <el-menu-item index="/cases">案例分析</el-menu-item>
-            <el-menu-item index="/favorites">我的收藏</el-menu-item>
-            <el-menu-item index="/templates">对话模板</el-menu-item>
             <el-menu-item index="/config">系统配置</el-menu-item>
             <el-menu-item index="/audit" v-if="user">知识审核</el-menu-item>
-            <el-menu-item index="/search-history">搜索历史</el-menu-item>
             <el-menu-item index="/users" v-if="user">用户管理</el-menu-item>
           </el-menu>
           <div class="user-area">

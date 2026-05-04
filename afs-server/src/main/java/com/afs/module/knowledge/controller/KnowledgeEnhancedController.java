@@ -86,8 +86,10 @@ public class KnowledgeEnhancedController {
     @Operation(summary = "提交审核", description = "提交知识库内容变更申请进行审核")
     @PostMapping("/audit/submit")
     public Result<KnowledgeAudit> submitForAudit(@RequestBody Map<String, Object> params) {
+        Object knowledgeIdObj = params.get("knowledgeId");
+        Long knowledgeId = knowledgeIdObj != null ? Long.valueOf(knowledgeIdObj.toString()) : null;
         return Result.success(enhancedService.submitForAudit(
-                Long.valueOf(params.get("knowledgeId").toString()),
+                knowledgeId,
                 (String) params.get("title"),
                 (String) params.get("content"),
                 (String) params.get("category"),

@@ -1,5 +1,6 @@
 package com.afs.module.knowledge.service;
 
+import com.afs.enums.KnowledgeStatus;
 import com.afs.module.knowledge.entity.Knowledge;
 import com.afs.module.knowledge.mapper.KnowledgeMapper;
 import com.afs.util.DocumentParser;
@@ -49,10 +50,14 @@ public class KnowledgeService {
      */
     public Knowledge addKnowledge(Knowledge knowledge) {
         knowledge.setCreateTime(LocalDateTime.now());
+        // 默认状态为 ACTIVE（直接发布）
+        if (knowledge.getStatus() == null || knowledge.getStatus().isEmpty()) {
+            knowledge.setStatus(KnowledgeStatus.ACTIVE.getCode());
+        }
         knowledgeMapper.insert(knowledge);
         
-        // 如果内容不为空，同步到向量库
-        if (knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
+        // 如果内容不为空且状态为 ACTIVE，同步到向量库
+        if (KnowledgeStatus.ACTIVE.getCode().equals(knowledge.getStatus()) && knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
             ragService.addKnowledgeDocument(
                     knowledge.getId(),
                     knowledge.getTitle(),

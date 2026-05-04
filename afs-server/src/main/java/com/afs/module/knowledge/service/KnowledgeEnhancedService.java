@@ -1,5 +1,6 @@
 package com.afs.module.knowledge.service;
 
+import com.afs.enums.KnowledgeStatus;
 import com.afs.module.knowledge.entity.Knowledge;
 import com.afs.module.knowledge.entity.KnowledgeTag;
 import com.afs.module.knowledge.entity.KnowledgeTagRelation;
@@ -39,6 +40,8 @@ public class KnowledgeEnhancedService {
     private KnowledgeAuditMapper auditMapper;
     @Autowired
     private KnowledgeMapper knowledgeMapper;
+    @Autowired
+    private RagService ragService;
 
     public KnowledgeTag createTag(String name, String color, String description) {
         KnowledgeTag tag = new KnowledgeTag();
@@ -116,6 +119,27 @@ public class KnowledgeEnhancedService {
     }
 
     public KnowledgeAudit submitForAudit(Long knowledgeId, String title, String content, String category, Long submitUserId) {
+        // 处理知识记录
+        Knowledge knowledge;
+        if (knowledgeId != null) {
+            // 更新已有知识
+            knowledge = knowledgeMapper.selectById(knowledgeId);
+            if (knowledge != null) {
+                knowledge.setStatus(KnowledgeStatus.PENDING_REVIEW.getCode());
+                knowledgeMapper.updateById(knowledge);
+            }
+        } else {
+            // 新增知识（待审核状态）
+            knowledge = new Knowledge();
+            knowledge.setTitle(title);
+            knowledge.setContent(content);
+            knowledge.setCategory(category);
+            knowledge.setStatus(KnowledgeStatus.PENDING_REVIEW.getCode());
+            knowledge.setCreateTime(LocalDateTime.now());
+            knowledgeMapper.insert(knowledge);
+            knowledgeId = knowledge.getId();
+        }
+
         KnowledgeAudit audit = new KnowledgeAudit();
         audit.setKnowledgeId(knowledgeId);
         audit.setTitle(title);
@@ -142,12 +166,58 @@ public class KnowledgeEnhancedService {
             audit.setAuditTime(LocalDateTime.now());
             auditMapper.updateById(audit);
 
-            Knowledge knowledge = new Knowledge();
-            knowledge.setId(audit.getKnowledgeId());
-            knowledge.setTitle(audit.getTitle());
-            knowledge.setContent(audit.getContent());
-            knowledge.setCategory(audit.getCategory());
-            knowledgeMapper.updateById(knowledge);
+            if (audit.getKnowledgeId() != null) {
+                // 更新现有知识
+                Knowledge knowledge = new Knowledge();
+                knowledge.setId(audit.getKnowledgeId());
+                knowledge.setTitle(audit.getTitle());
+                knowledge.setContent(audit.getContent());
+                knowledge.setCategory(audit.getCategory());
+                knowledge.setStatus(KnowledgeStatus.ACTIVE.getCode());
+                knowledgeMapper.updateById(knowledge);
+
+                // 同步向量库（失败不影响审核）
+                try {
+                    ragService.deleteKnowledgeDocument(audit.getKnowledgeId());
+                    if (audit.getContent() != null && !audit.getContent().isEmpty()) {
+                        ragService.addKnowledgeDocument(
+                                audit.getKnowledgeId(),
+                                audit.getTitle(),
+                                audit.getCategory(),
+                                audit.getContent()
+                        );
+                    }
+                } catch (Exception e) {
+                    System.err.println("同步向量库失败: " + e.getMessage());
+                }
+            } else {
+                // 新增知识
+                Knowledge knowledge = new Knowledge();
+                knowledge.setTitle(audit.getTitle());
+                knowledge.setContent(audit.getContent());
+                knowledge.setCategory(audit.getCategory());
+                knowledge.setStatus(KnowledgeStatus.ACTIVE.getCode());
+                knowledge.setCreateTime(LocalDateTime.now());
+                knowledge.setUpdateTime(LocalDateTime.now());
+                knowledgeMapper.insert(knowledge);
+                // 更新审核记录的知识ID
+                audit.setKnowledgeId(knowledge.getId());
+                auditMapper.updateById(audit);
+
+                // 同步向量库（失败不影响审核）
+                try {
+                    if (knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
+                        ragService.addKnowledgeDocument(
+                                knowledge.getId(),
+                                knowledge.getTitle(),
+                                knowledge.getCategory(),
+                                knowledge.getContent()
+                        );
+                    }
+                } catch (Exception e) {
+                    System.err.println("同步向量库失败: " + e.getMessage());
+                }
+            }
         }
         return audit;
     }
@@ -160,6 +230,15 @@ public class KnowledgeEnhancedService {
             audit.setAuditComment(comment);
             audit.setAuditTime(LocalDateTime.now());
             auditMapper.updateById(audit);
+
+            // 更新知识状态为已拒绝
+            if (audit.getKnowledgeId() != null) {
+                Knowledge knowledge = knowledgeMapper.selectById(audit.getKnowledgeId());
+                if (knowledge != null) {
+                    knowledge.setStatus(KnowledgeStatus.REJECTED.getCode());
+                    knowledgeMapper.updateById(knowledge);
+                }
+            }
         }
         return audit;
     }

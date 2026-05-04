@@ -68,34 +68,34 @@
               <i class="el-icon-chat-dot-round"></i>
               <span>智能问答</span>
             </el-menu-item>
-            <el-menu-item index="/knowledge">
-              <i class="el-icon-book-open"></i>
-              <span>知识库</span>
-            </el-menu-item>
+            <el-sub-menu index="knowledge">
+              <template #title>
+                <i class="el-icon-book-open"></i>
+                <span>知识库管理</span>
+              </template>
+              <el-menu-item index="/knowledge">
+                <span>知识库</span>
+              </el-menu-item>
+              <el-menu-item index="/knowledge/audit" v-if="user">
+                <span>知识审核</span>
+              </el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/cases">
               <i class="el-icon-folder-opened"></i>
               <span>案例分析</span>
             </el-menu-item>
-            <el-menu-item index="/favorites">
-              <i class="el-icon-star"></i>
-              <span>我的收藏</span>
-            </el-menu-item>
-            <el-menu-item index="/templates">
-              <i class="el-icon-file-text"></i>
-              <span>对话模板</span>
-            </el-menu-item>
-            <el-menu-item index="/config">
-              <i class="el-icon-setting"></i>
-              <span>系统配置</span>
-            </el-menu-item>
-            <el-menu-item index="/search-history">
-              <i class="el-icon-search"></i>
-              <span>搜索历史</span>
-            </el-menu-item>
-            <el-menu-item index="/audit" v-if="user">
-              <i class="el-icon-check-circle"></i>
-              <span>知识审核</span>
-            </el-menu-item>
+            <el-sub-menu index="config">
+              <template #title>
+                <i class="el-icon-setting"></i>
+                <span>系统配置</span>
+              </template>
+              <el-menu-item index="/config">
+                <span>模型配置</span>
+              </el-menu-item>
+              <el-menu-item index="/config/dict">
+                <span>数据字典</span>
+              </el-menu-item>
+            </el-sub-menu>
             <el-menu-item index="/users" v-if="user">
               <i class="el-icon-user"></i>
               <span>用户管理</span>
@@ -155,7 +155,7 @@ export default {
 <style>
 #app {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  background: #f0f2f5;
 }
 
 .app-container {
@@ -163,11 +163,11 @@ export default {
 }
 
 .header {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.1);
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   padding: 0;
   z-index: 100;
-  border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+  border-bottom: 1px solid #e6e6e6;
 }
 
 .header-content {
@@ -186,27 +186,23 @@ export default {
   gap: 12px;
   cursor: pointer;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
 .logo:hover {
-  background: rgba(64, 158, 255, 0.08);
-  transform: scale(1.02);
+  background: #f0f7ff;
 }
 
 .logo-icon {
-  font-size: 32px;
-  filter: drop-shadow(0 2px 8px rgba(64, 158, 255, 0.3));
+  font-size: 28px;
+  color: #1890ff;
 }
 
 .logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .header-right {
@@ -221,99 +217,155 @@ export default {
   gap: 10px;
   cursor: pointer;
   padding: 6px 14px;
-  border-radius: 25px;
+  border-radius: 4px;
   transition: all 0.3s ease;
-  background: rgba(64, 158, 255, 0.05);
 }
 
 .user-info:hover {
-  background: rgba(64, 158, 255, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+  background: #f5f7fa;
 }
 
 .user-avatar {
   cursor: pointer;
-  border: 2px solid rgba(64, 158, 255, 0.3);
+  border: 2px solid #d9d9d9;
   transition: all 0.3s ease;
 }
 
 .user-info:hover .user-avatar {
-  border-color: #409eff;
-  transform: scale(1.1);
+  border-color: #1890ff;
 }
 
 .username {
-  color: #333;
+  color: #303133;
   font-weight: 500;
   font-size: 14px;
 }
 
 .sidebar {
-  width: 220px;
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-  border-right: 1px solid rgba(64, 158, 255, 0.1);
-  padding: 20px 0;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+  width: 200px;
+  background: #304156;
+  border-right: none;
+  padding: 0;
+  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
 }
 
 .side-menu {
   border: none;
   height: 100%;
-  padding: 0 10px;
+  padding: 0;
+  background: #304156 !important;
 }
 
-.side-menu .el-menu-item {
-  margin: 6px 8px;
-  border-radius: 12px;
-  padding: 12px 20px;
-  transition: all 0.35s ease;
-  border: 1px solid transparent;
+/* 一级菜单项（无子菜单） */
+.side-menu > .el-menu-item {
+  margin: 0;
+  border-radius: 0;
+  padding: 0 20px;
+  transition: all 0s;
+  border: none;
+  height: 50px;
+  line-height: 50px;
+  color: #bfcbd9;
+  font-weight: 400;
+  background: #304156;
 }
 
-.side-menu .el-menu-item:hover {
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(103, 194, 58, 0.08) 100%);
-  transform: translateX(4px);
-  border-color: rgba(64, 158, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+.side-menu > .el-menu-item:hover {
+  color: #fff;
+  background: #263445;
 }
 
-.side-menu .el-menu-item.is-active {
-  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.4);
+/* 子菜单标题 */
+.side-menu .el-sub-menu__title {
+  margin: 0;
+  border-radius: 0;
+  padding: 0 20px;
+  transition: all 0s;
+  border: none;
+  height: 50px;
+  line-height: 50px;
+  color: #bfcbd9;
+  font-weight: 400;
+  background: #304156;
 }
 
-.side-menu .el-menu-item.is-active:hover {
-  transform: translateX(0);
-  box-shadow: 0 6px 25px rgba(64, 158, 255, 0.5);
+.side-menu .el-sub-menu__title:hover {
+  color: #fff;
+  background: #263445;
 }
 
-.side-menu .el-menu-item.is-active i {
-  filter: brightness(1.1);
-}
-
-.side-menu .el-menu-item i {
-  margin-right: 12px;
-  font-size: 18px;
-  transition: all 0.3s ease;
-}
-
-.side-menu .el-menu-item:hover i {
-  transform: scale(1.15);
-}
-
-.side-menu .el-menu-item span {
+/* 子菜单项 */
+.side-menu .el-sub-menu .el-menu-item {
+  margin: 0;
+  border-radius: 0;
+  padding: 0 50px !important;
+  transition: all 0s;
+  border: none;
+  height: 45px;
+  line-height: 45px;
+  color: #bfcbd9;
+  background: #1f2d3d !important;
   font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-weight: 400;
+}
+
+.side-menu .el-sub-menu .el-menu-item:hover {
+  color: #fff;
+  background: #1f2d3d !important;
+}
+
+/* 激活状态 */
+.side-menu .el-menu-item.is-active {
+  color: #fff;
+  background: #1890ff;
+  font-weight: 400;
+  border-right: 3px solid #1890ff;
+}
+
+.side-menu .el-sub-menu .el-menu-item.is-active {
+  color: #fff;
+  background: #1890ff !important;
+  font-weight: 400;
+  border-right: 3px solid #1890ff;
+}
+
+/* 图标样式 */
+.side-menu .el-menu-item i,
+.side-menu .el-sub-menu__title i {
+  margin-right: 10px;
+  font-size: 16px;
+  width: 16px;
+  text-align: center;
+}
+
+/* 文字样式 */
+.side-menu .el-menu-item span,
+.side-menu .el-sub-menu__title span {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* 子菜单展开/收起图标 */
+.side-menu .el-sub-menu__icon-arrow {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.side-menu .el-sub-menu.is-opened .el-sub-menu__icon-arrow {
+  transform: rotate(180deg);
+}
+
+/* 子菜单容器 */
+.side-menu .el-sub-menu,
+.side-menu .el-menu--inline {
+  background: #1f2d3d !important;
 }
 
 .main-content {
   flex: 1;
-  padding: 24px;
+  padding: 20px;
   overflow-y: auto;
+  background: #f0f2f5;
 }
 
 .user-popover-simple {
@@ -333,11 +385,11 @@ export default {
 .popover-name {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: #303133;
 }
 
 .popover-username {
   font-size: 12px;
-  color: #718096;
+  color: #909399;
 }
 </style>

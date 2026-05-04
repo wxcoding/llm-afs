@@ -30,4 +30,9 @@ public class Knowledge {
     private LocalDateTime updateTime;
 
     private LocalDateTime createTime;
+
+    /**
+     * 状态: DRAFT-草稿, PENDING_REVIEW-待审核, ACTIVE-已发布, REJECTED-已拒绝
+     */
+    private String status;
 }
