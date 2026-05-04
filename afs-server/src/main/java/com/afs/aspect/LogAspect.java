@@ -22,7 +22,7 @@ public class LogAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(LogAspect.class);
 
-    @Pointcut("execution(* com.afs.controller..*.*(..))")
+    @Pointcut("execution(* com.afs.module..controller..*.*(..))")
     public void controllerPointcut() {
     }
 
