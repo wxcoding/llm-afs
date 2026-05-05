@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo" @click="$router.push('/')">
             <span class="logo-icon">🛡️</span>
-            <span class="logo-text">防诈骗知识问答系统</span>
+            <span class="logo-text">防诈骗智能问答系统</span>
           </div>
           <el-menu
             mode="horizontal"
