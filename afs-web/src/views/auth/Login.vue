@@ -13,7 +13,7 @@
             <div class="brand-icon-ring"></div>
             <div class="brand-icon">🛡️</div>
           </div>
-          <h1 class="brand-title">防诈骗知识问答系统</h1>
+          <h1 class="brand-title">防诈骗智能问答系统</h1>
           <p class="brand-desc">基于大模型AI技术，智能识别诈骗手段，全方位守护您的财产安全</p>
           <div class="feature-list">
             <div class="feature-item">

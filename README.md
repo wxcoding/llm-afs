@@ -15,9 +15,11 @@
 | 多轮对话 | 支持上下文记忆，连续追问 |
 | 诈骗案例库 | 收录电信诈骗、网络诈骗、情感诈骗等典型案例 |
 | 防诈骗知识库 | 分类整理防诈骗知识，支持关键词和语义检索 |
+| 知识审核 | 新增/编辑知识需审核，支持审核通过/拒绝流程 |
 | 文档上传 | 支持 PDF、Word、Markdown 等格式文档上传 |
 | 用户管理 | 注册登录、个人信息、管理员用户管理 |
 | 数据统计 | 用户数、知识数、案例数、对话数实时统计 |
+| 数据字典 | 系统参数配置，支持字典类型和字典项管理 |
 | API 文档 | Swagger UI 在线接口文档 |
 | 系统监控 | Actuator 健康检查、指标监控 |
 | 日志审计 | AOP 切面日志记录，操作轨迹追踪 |
@@ -52,7 +54,6 @@
 - Docker + Docker Compose
 - Nginx（前端托管 + API 反向代理）
 - GitHub Actions CI/CD
-- 阿里云 ACR（容器镜像服务）
 
 ---
 
@@ -146,56 +147,57 @@ llm-afs/
 │   │   │   ├── DataInitializer.java   # 数据初始化
 │   │   │   ├── WebConfig.java         # Web 配置（CORS、异步）
 │   │   │   └── OpenApiConfig.java     # Swagger 配置
-│   │   ├── controller/
-│   │   │   ├── ChatController.java    # 聊天接口（SSE 流式）
-│   │   │   ├── KnowledgeController.java
-│   │   │   ├── ScamCaseController.java
-│   │   │   ├── UserController.java
-│   │   │   └── StatsController.java
-│   │   ├── entity/                    # 实体类
-│   │   ├── mapper/                    # MyBatis Plus Mapper
-│   │   ├── service/
-│   │   │   ├── ChatService.java       # 聊天 + RAG 检索
-│   │   │   ├── RagService.java        # 向量检索核心
-│   │   │   ├── KnowledgeService.java
-│   │   │   ├── ScamCaseService.java
-│   │   │   └── UserService.java
+│   │   ├── enums/                     # 枚举类
+│   │   │   └── KnowledgeStatus.java   # 知识状态枚举
+│   │   ├── exception/
+│   │   │   └── BusinessException.java # 业务异常
 │   │   ├── common/
 │   │   │   ├── Result.java            # 统一响应格式
+│   │   │   ├── PageResult.java        # 分页响应格式
 │   │   │   └── GlobalExceptionHandler.java  # 全局异常处理
 │   │   ├── aspect/
 │   │   │   └── LogAspect.java         # 日志切面
-│   │   └── util/
-│   │       └── DocumentParser.java    # 文档解析工具
+│   │   ├── util/
+│   │   │   └── DocumentParser.java    # 文档解析工具
+│   │   └── module/                    # 业务模块
+│   │       ├── chat/                  # 聊天模块
+│   │       ├── knowledge/             # 知识库模块（含审核）
+│   │       ├── scamcase/              # 诈骗案例模块
+│   │       ├── user/                  # 用户模块
+│   │       ├── system/                # 系统模块（字典）
+│   │       ├── config/                # 配置模块
+│   │       ├── stats/                 # 统计模块
+│   │       └── feedback/              # 反馈模块
 │   ├── src/main/resources/
 │   │   ├── application.yml            # 配置文件
 │   │   └── db/migration/             # Flyway 数据库迁移脚本
-│   │       └── V1__init.sql           # 初始表结构
 │   ├── Dockerfile
 │   └── pom.xml
 │
 ├── afs-web/                           # 前端 Vue 项目
 │   ├── src/
 │   │   ├── views/
-│   │   │   ├── Home.vue               # 首页
-│   │   │   ├── Login.vue              # 登录
-│   │   │   ├── Chat.vue               # AI 对话
-│   │   │   ├── Cases.vue              # 诈骗案例
-│   │   │   ├── Knowledge.vue          # 知识库
-│   │   │   ├── Profile.vue            # 个人中心
-│   │   │   └── UserManagement.vue     # 用户管理
-│   │   ├── router/index.js
+│   │   │   ├── home/index.vue         # 首页
+│   │   │   ├── auth/Login.vue         # 登录
+│   │   │   ├── chat/Chat.vue          # AI 对话
+│   │   │   ├── cases/Cases.vue        # 诈骗案例
+│   │   │   ├── knowledge/Knowledge.vue # 知识库
+│   │   │   ├── audit/index.vue        # 知识审核
+│   │   │   ├── dict/index.vue         # 数据字典
+│   │   │   ├── config/index.vue       # 系统配置
+│   │   │   ├── user/Profile.vue       # 个人中心
+│   │   │   └── user/UserManagement.vue # 用户管理
+│   │   ├── api/                       # API 接口封装
+│   │   ├── router/index.js            # 路由配置
+│   │   ├── utils/                     # 工具函数
+│   │   │   └── dict.js                # 字典工具
+│   │   ├── layout/                    # 布局组件
 │   │   ├── App.vue
 │   │   └── main.js
 │   ├── nginx.conf                     # Nginx 配置
 │   ├── Dockerfile
 │   ├── vite.config.js
 │   └── package.json
-│
-├── scripts/                           # 部署脚本
-│   ├── init-server.sh                 # 服务器初始化
-│   ├── deploy.sh                      # 部署管理
-│   └── health-check.sh               # 健康检查
 │
 ├── .github/workflows/ci-cd.yml       # GitHub Actions CI/CD
 ├── docker-compose.yml                 # 开发环境
@@ -248,7 +250,7 @@ mvn clean package -DskipTests
 java -jar target/afs-server-1.0.0.jar
 ```
 
-> **注意**：数据库表结构由 Flyway 自动创建，首次启动时会自动执行 `V1__init.sql` 脚本。
+> **注意**：数据库表结构由 Flyway 自动创建。
 
 ### 4. 启动前端
 
@@ -296,19 +298,6 @@ docker compose restart afs-server    # 重启后端
 docker compose down                  # 停止所有服务
 ```
 
-### 使用部署脚本
-
-```bash
-# 首次部署（空白服务器）
-sudo ./scripts/init-server.sh
-
-# 日常运维
-sudo ./scripts/deploy.sh deploy      # 部署
-sudo ./scripts/deploy.sh redeploy    # 重新部署
-sudo ./scripts/deploy.sh status      # 查看状态
-sudo ./scripts/deploy.sh logs        # 查看日志
-```
-
 ---
 
 ## CI/CD 自动部署
@@ -346,17 +335,15 @@ sudo ./scripts/deploy.sh logs        # 查看日志
 
 ```
 afs-server/src/main/resources/db/migration/
-├── V1__init.sql              # 初始表结构
-├── V2__create_case_images.sql  # 案例图片表
-└── V3__create_operation_log.sql # 操作日志表
+├── V1__init.sql                     # 初始表结构
+├── V2__add_document_fields.sql      # 添加文档字段
+├── V3__create_operation_log.sql     # 操作日志表
+├── V4__add_feedback_and_enhancement_tables.sql  # 反馈和增强表
+├── V5__remove_unused_tables.sql     # 删除无用表（收藏、模板、搜索历史）
+├── V6__fix_audit_comment_field.sql  # 修复审核备注字段
+├── V7__add_knowledge_status.sql     # 添加知识状态字段
+└── V8__create_dict_tables.sql       # 数据字典表
 ```
-
-**脚本命名规则**：`V<版本号>__<描述>.sql`
-
-**执行时机**：
-- 首次启动自动执行所有脚本
-- 后续启动只执行未应用的脚本
-- 版本记录到 `flyway_schema_history` 表
 
 ### 数据表结构
 
@@ -366,9 +353,12 @@ afs-server/src/main/resources/db/migration/
 | `chat_session` | 对话会话表 |
 | `chat_message` | 聊天消息表（含 sources 引用来源） |
 | `knowledge` | 防诈骗知识表 |
+| `knowledge_audit` | 知识审核记录表 |
 | `scam_case` | 诈骗案例表 |
-| `case_image` | 案例图片表 |
-| `operation_log` | 操作日志表 |
+| `sys_dict_type` | 字典类型表 |
+| `sys_dict_item` | 字典项表 |
+| `system_config` | 系统配置表 |
+| `message_feedback` | 消息反馈表 |
 | `vector_store` | pgVector 向量存储表（Spring AI 自动管理） |
 | `flyway_schema_history` | Flyway 迁移历史表 |
 
@@ -378,7 +368,7 @@ afs-server/src/main/resources/db/migration/
 
 ### Swagger UI 在线文档
 
-启动后端服务启动后，访问 **Swagger UI** 文档地址：
+启动后端服务后，访问：
 ```
 http://localhost:8080/swagger-ui.html
 ```
@@ -417,24 +407,34 @@ http://localhost:8080/swagger-ui.html
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/` | 知识列表（支持 category、keyword 参数） |
+| GET | `/` | 知识列表 |
 | GET | `/{id}` | 知识详情 |
 | POST | `/` | 添加知识 |
-| POST | `/upload` | 上传文档（PDF/Word/Markdown） |
+| POST | `/upload` | 上传文档 |
 | PUT | `/{id}` | 更新知识 |
 | DELETE | `/{id}` | 删除知识 |
-| GET | `/search/semantic` | 语义检索（基于向量相似度） |
+| GET | `/search/semantic` | 语义检索 |
 | POST | `/sync-vector` | 同步知识到向量库 |
 
-### 诈骗案例 `/api/cases`
+### 知识审核 `/api/knowledge/audit`
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/` | 案例列表（支持 type 参数） |
-| GET | `/{id}` | 案例详情 |
-| POST | `/` | 添加案例 |
-| PUT | `/{id}` | 更新案例 |
-| DELETE | `/{id}` | 删除案例 |
+| GET | `/list` | 审核列表 |
+| PUT | `/approve/{id}` | 审核通过 |
+| PUT | `/reject/{id}` | 审核拒绝 |
+
+### 数据字典 `/api/sys/dict`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/types` | 获取字典类型列表 |
+| GET | `/{dictCode}` | 获取字典项列表 |
+| POST | `/type` | 新增字典类型 |
+| POST | `/item` | 新增字典项 |
+| PUT | `/type/{id}` | 更新字典类型 |
+| PUT | `/item/{id}` | 更新字典项 |
+| DELETE | `/item/{id}` | 删除字典项 |
 
 ### 统计 `/api/stats`
 
@@ -455,8 +455,6 @@ http://localhost:8080/swagger-ui.html
 | `AI_DASHSCOPE_MODEL` | 对话模型 | qwen-turbo |
 | `SERVER_PORT` | 后端端口 | 8080 |
 | `WEB_PORT` | 前端端口 | 3000 |
-| `REGISTRY` | Docker 镜像仓库 | 阿里云 ACR 地址 |
-| `IMAGE_TAG` | 镜像版本 | latest |
 
 ---
 
@@ -467,8 +465,9 @@ http://localhost:8080/swagger-ui.html
 | RAG 检索增强 | 基于 PGVector 向量检索，结合知识库提升回答准确性 |
 | SSE 流式响应 | 实时推送 AI 回复，支持逐字显示效果 |
 | 文档智能解析 | 支持 PDF、Word、Markdown 等格式上传和自动解析 |
-| 自动化部署 | CI/CD 全流程自动化，部署时间从 30min 缩短至 4min |
-| 镜像加速 | 阿里云 ACR 替代 GHCR，国内服务器拉取速度提升 80% |
-| 数据库版本管理 | Flyway 支持增量迁移和回滚，多人协作安全 |
+| 知识审核流程 | 完善的审核机制，确保知识质量 |
+| 数据字典系统 | 灵活的系统参数配置管理 |
+| 自动化部署 | CI/CD 全流程自动化 |
+| 数据库版本管理 | Flyway 支持增量迁移，多人协作安全 |
 | 企业级特性 | 全局异常处理、统一响应格式、Swagger API 文档、AOP 日志审计 |
-| 系统监控 | Actuator 提供健康检查、指标监控，生产环境必备 |
+| 系统监控 | Actuator 提供健康检查、指标监控 |
