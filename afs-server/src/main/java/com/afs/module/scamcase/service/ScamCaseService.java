@@ -1,6 +1,6 @@
 package com.afs.module.scamcase.service;
 
-import com.afs.module.knowledge.service.RagService;
+import com.afs.module.rag.RagService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

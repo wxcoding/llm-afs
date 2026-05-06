@@ -69,8 +69,8 @@
                 </div>
                 <div v-show="msg.showSources" class="sources-list">
                   <div v-for="(src, si) in msg.sources" :key="si" class="source-item">
-                    <el-tag :type="src.source === 'knowledge' ? 'success' : 'warning'" size="small">
-                      {{ src.source === 'knowledge' ? '知识库' : '案例库' }}
+                    <el-tag :type="src.type === 'knowledge' ? 'success' : 'warning'" size="small">
+                      {{ src.type === 'knowledge' ? '知识库' : '案例库' }}
                     </el-tag>
                     <span class="source-title">{{ src.title || '无标题' }}</span>
                     <span class="source-score">{{ (src.score * 100).toFixed(1) }}%</span>

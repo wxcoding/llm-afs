@@ -469,5 +469,5 @@ http://localhost:8080/swagger-ui.html
 | 数据字典系统 | 灵活的系统参数配置管理 |
 | 自动化部署 | CI/CD 全流程自动化 |
 | 数据库版本管理 | Flyway 支持增量迁移，多人协作安全 |
-| 企业级特性 | 全局异常处理、统一响应格式、Swagger API 文档、AOP 日志审计 |
+| 核心特性 | 全局异常处理、统一响应格式、Swagger API 文档、AOP 日志审计 |
 | 系统监控 | Actuator 提供健康检查、指标监控 |

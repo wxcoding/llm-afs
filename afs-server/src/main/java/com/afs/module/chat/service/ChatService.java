@@ -1,6 +1,6 @@
 package com.afs.module.chat.service;
 
-import com.afs.module.knowledge.service.RagService;
+import com.afs.module.rag.RagService;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;
 import com.afs.module.chat.mapper.ChatMessageMapper;
@@ -74,9 +74,16 @@ public class ChatService {
         userMsg.setCreateTime(LocalDateTime.now());
         messageMapper.insert(userMsg);
 
-        // 通过RAG服务构建上下文，从知识库检索相关内容
-        String context = ragService.buildContext(content, 5);
-        List<Map<String, Object>> sources = ragService.searchWithMetadata(content, 5);
+        // 通过RAG服务构建上下文，从知识库检索相关内容（带降级机制）
+        String context = "";
+        List<Map<String, Object>> sources = new ArrayList<>();
+        try {
+            context = ragService.buildContext(content, 5);
+            sources = ragService.searchWithMetadata(content, 5);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("[警告] RAG 检索失败，已降级为纯 AI 对话模式");
+        }
 
         // 发送会话ID信息
         Map<String, Object> sessionInfo = new HashMap<>();
