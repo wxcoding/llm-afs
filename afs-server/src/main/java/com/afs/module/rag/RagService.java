@@ -1,4 +1,4 @@
-package com.afs.module.knowledge.service;
+package com.afs.module.rag;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -86,6 +86,7 @@ public class RagService {
                     map.put("source", doc.getMetadata().getOrDefault("source", "未知来源"));
                     map.put("title", doc.getMetadata().getOrDefault("title", ""));
                     map.put("id", doc.getMetadata().getOrDefault("dbId", ""));
+                    map.put("type", doc.getMetadata().getOrDefault("type", "knowledge"));
                     map.put("score", doc.getMetadata().getOrDefault("distance", 0.0));
                     return map;
                 })

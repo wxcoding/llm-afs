@@ -3,6 +3,7 @@ package com.afs.module.knowledge.service;
 import com.afs.enums.KnowledgeStatus;
 import com.afs.module.knowledge.entity.Knowledge;
 import com.afs.module.knowledge.mapper.KnowledgeMapper;
+import com.afs.module.rag.RagService;
 import com.afs.util.DocumentParser;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
