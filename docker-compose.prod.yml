@@ -37,7 +37,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-afs}?stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
