@@ -8,7 +8,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
     username: postgres
-    password: guanwx
+    password: postgres123
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
