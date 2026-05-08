@@ -30,7 +30,7 @@ env:
   
   # 环境变量
   POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres123
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   POSTGRES_DB: afs
   AI_DASHSCOPE_MODEL: qwen-turbo
 
