@@ -1,8 +1,6 @@
-# 防诈骗智能问答系统
+# 智安反诈平台
 
-基于 Spring Boot 3.4 + Vue 3 + RAG 的防诈骗知识问答平台，集成大语言模型与向量检索，为用户提供智能防诈骗咨询服务。
-
-**线上地址**：http://116.196.79.7:3000 （测试账号：admin，密码：admin123）
+基于 Spring Boot 3.4 + Vue 3 + RAG 的智能防诈骗问答平台，集成大语言模型与向量检索技术，为用户提供专业的智能防诈骗咨询服务。
 
 ---
 
@@ -369,6 +367,7 @@ afs-server/src/main/resources/db/migration/
 ### Swagger UI 在线文档
 
 启动后端服务后，访问：
+
 ```
 http://localhost:8080/swagger-ui.html
 ```
