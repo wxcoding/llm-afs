@@ -1,21 +1,21 @@
 name: CI/CD 自动化部署流程
 
-on:
-  push:
-    branches: [main, master]
-  pull_request:
-    types: [closed]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: '部署环境'
-        type: choice
-        options:
-          - dev
-          - test
-          - prod
-        default: 'prod'
-        required: true
+# on:
+#   push:
+#     branches: [main, master]
+#   pull_request:
+#     types: [closed]
+#   workflow_dispatch:
+#     inputs:
+#       environment:
+#         description: '部署环境'
+#         type: choice
+#         options:
+#           - dev
+#           - test
+#           - prod
+#         default: 'prod'
+#         required: true
 
 env:
   # 项目配置
