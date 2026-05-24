@@ -5,19 +5,21 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: afs
       TZ: Asia/Shanghai
     ports:
       - "5432:5432"
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-      - ./afs-server/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d afs"]
       interval: 10s
       timeout: 5s
       retries: 12
+      start_period: 30s
+    networks:
+      - afs-network
 
   afs-server:
     build:
@@ -31,11 +33,22 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-}
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
+      JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:
       - "8080:8080"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - afs-network
 
   afs-web:
     build:
@@ -47,3 +60,19 @@ services:
       - afs-server
     ports:
       - "3000:80"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - afs-network
+
+volumes:
+  postgres_data:
+
+networks:
+  afs-network:
+    driver: bridge
