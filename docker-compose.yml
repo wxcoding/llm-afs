@@ -1,48 +1,62 @@
-services:
-  postgres:
-    image: pgvector/pgvector:pg17
-    container_name: afs-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: afs
-      TZ: Asia/Shanghai
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d afs"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-    networks:
-      - afs-network
+# AFS 智能防诈骗系统 - Docker Compose 开发环境配置
+# 使用方式:
+#   1. 复制 .env.example 为 .env 并填写配置
+#   2. 启动: docker compose up -d --build
+#   3. 停止: docker compose down
+#   4. 查看日志: docker compose logs -f
+#
+# 服务说明:
+#   - postgres: PostgreSQL 数据库（带 pgvector 向量扩展）
+#   - afs-server: Spring Boot 后端服务
+#   - afs-web: Vue 3 前端服务（基于 Nginx）
 
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: pgvector/pgvector:pg17  # 使用带 pgvector 扩展的 PostgreSQL 17
+    container_name: afs-postgres
+    restart: unless-stopped  # 除非手动停止，否则自动重启
+    environment:
+      POSTGRES_USER: postgres  # 数据库用户名
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # 数据库密码（从 .env 读取）
+      POSTGRES_DB: afs  # 数据库名
+      TZ: Asia/Shanghai  # 时区配置
+    ports:
+      - "5432:5432"  # 端口映射：主机:容器
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # 数据持久化
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d afs"]  # 健康检查命令
+      interval: 10s  # 检查间隔
+      timeout: 5s  # 超时时间
+      retries: 12  # 重试次数
+      start_period: 30s  # 首次检查等待时间
+    networks:
+      - afs-network  # 使用自定义网络
+
+  # Spring Boot 后端服务
   afs-server:
     build:
-      context: ./afs-server
-      dockerfile: Dockerfile
+      context: ./afs-server  # 构建上下文
+      dockerfile: Dockerfile  # Dockerfile 路径
     container_name: afs-server
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy  # 等待 postgres 健康检查通过后再启动
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified  # JDBC 连接
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
-      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL}
-      JAVA_OPTS: "-Xmx512m -Xms256m"
+      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}  # 通义千问 API Key
+      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL}  # AI 模型
+      JAVA_OPTS: "-Xmx512m -Xms256m"  # JVM 内存配置
     ports:
       - "8080:8080"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/localtime:ro  # 时区同步
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]  # 健康检查
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,6 +64,7 @@ services:
     networks:
       - afs-network
 
+  # Vue 3 前端服务（Nginx）
   afs-web:
     build:
       context: ./afs-web
@@ -57,22 +72,24 @@ services:
     container_name: afs-web
     restart: unless-stopped
     depends_on:
-      - afs-server
+      - afs-server  # 等待后端启动
     ports:
       - "3000:80"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]  # 健康检查
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
       - afs-network
 
+# 数据卷配置（持久化数据）
 volumes:
-  postgres_data:
+  postgres_data:  # PostgreSQL 数据卷
 
+# 网络配置（服务间通信）
 networks:
   afs-network:
-    driver: bridge
+    driver: bridge  # 桥接网络
