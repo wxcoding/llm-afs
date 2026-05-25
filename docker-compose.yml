@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: afs
       TZ: Asia/Shanghai
     ports:
@@ -33,9 +33,9 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY:-}
-      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
+      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL}
       JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:
       - "8080:8080"
