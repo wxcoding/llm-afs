@@ -4,21 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources/data_sources_history.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/CacheConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/pnpm-workspace.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/copilotDiffState.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
+      <change beforePath="$PROJECT_DIR$/afs-web/pnpm-workspace.yaml" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -123,11 +110,24 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1781297599090</updated>
-      <workItem from="1781297600235" duration="22188000" />
+      <workItem from="1781297600235" duration="22491000" />
     </task>
+    <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
+      <option name="closed" value="true" />
+      <created>1781382973232</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1781382973233</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理" />
   </component>
 </project>
