@@ -7,10 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,30 +23,20 @@ public class ChatController {
     @Autowired
     private ChatService chatService;
 
-    @Operation(summary = "发送消息并获取流式响应", description = "使用 SSE（Server-Sent Events）技术进行流式输出，实时推送 AI 回复内容")
-    @PostMapping("/send")
-    public void send(@RequestBody Map<String, Object> params, HttpServletResponse response) {
-        try {
-            Long userId = Long.valueOf(params.get("userId").toString());
-            Long sessionId = params.get("sessionId") != null ?
-                    Long.valueOf(params.get("sessionId").toString()) : null;
-            String content = params.get("content").toString();
+    @Operation(summary = "发送消息并获取流式响应", description = "通过 SSE (Server-Sent Events) 技术实时推送 AI 回复内容")
+    @PostMapping(value = "/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public void send(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletResponse response) throws Exception {
+        Long userId = Long.valueOf(params.get("userId").toString());
+        Long sessionId = params.get("sessionId") != null ?
+                Long.valueOf(params.get("sessionId").toString()) : null;
+        String content = params.get("content").toString();
 
-            response.setContentType("text/event-stream");
-            response.setCharacterEncoding("UTF-8");
-            response.setHeader("Cache-Control", "no-cache");
-            response.setHeader("Connection", "keep-alive");
-
-            PrintWriter writer = response.getWriter();
-
-            chatService.sendMessageStream(userId, sessionId, content, writer);
-
-            writer.write("data: [DONE]\n\n");
-            writer.flush();
-            writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // 设置 SSE 响应头
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        
+        // 调用 Service 进行流式响应
+        chatService.sendMessageStream(userId, sessionId, content, response.getWriter());
     }
 
     @Operation(summary = "获取用户的所有会话列表")

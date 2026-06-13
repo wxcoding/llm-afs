@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+<DataSourcesHistory>
+  <DataSourceFromHistory isRemovedFromProject="false">
     <data-source source="LOCAL" name="postgres@localhost" uuid="e68e9a7a-c86b-4545-a553-d5b892f099d7">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="POSTGRES" />
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <imported>true</imported>
-      <remarks>$PROJECT_DIR$/afs-server/src/main/resources/application.yml</remarks>
+      <remarks>E:/guanwx/Workspace/personal/llm-afs/afs-server/src/main/resources/application.yml</remarks>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
       <jdbc-url>jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified</jdbc-url>
       <jdbc-additional-properties>
@@ -13,7 +13,8 @@
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
         <property name="com.intellij.clouds.kubernetes.db.container.port" />
       </jdbc-additional-properties>
+      <schema-mapping />
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-  </component>
-</project>
+  </DataSourceFromHistory>
+</DataSourcesHistory>

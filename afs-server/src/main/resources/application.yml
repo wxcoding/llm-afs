@@ -21,6 +21,10 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     validate-on-migrate: false
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=10m
   ai:
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -33,12 +37,26 @@ spring:
       embedding:
         options:
           model: text-embedding-v3
+      # 重试配置
+      retry:
+        max-attempts: 3              # 最多重试3次
+        backoff:
+          initial-interval: 2000     # 初始等待2秒
+          multiplier: 2              # 指数退避：2s → 4s → 8s
+          max-interval: 30000        # 最大等待30秒
+      # HTTP客户端超时配置
+      client:
+        http:
+          connect-timeout: 5000      # 连接超时5秒
+          read-timeout: 60000        # 读取超时60秒（Embedding可能较慢）
+          write-timeout: 30000       # 写入超时30秒
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1024
         initialize-schema: true
+        filter: true  # 启用 FilterExpression 支持（Spring AI 1.1.7）
 
 mybatis-plus:
   configuration:
@@ -70,17 +88,12 @@ management:
     db:
       enabled: true
 
-#logging:
-#  level:
-#    root: INFO
-#    com.afs: DEBUG
-#    com.afs.controller: INFO
-#    com.afs.service: INFO
-#    com.afs.aspect: DEBUG
-#  pattern:
-#    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-#    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-#  file:
-#    name: logs/afs-server.log
-#    max-size: 10MB
-#    max-history: 30
+
+logging:
+  level:
+    root: INFO
+    com.afs: DEBUG
+    org.springframework.ai: WARN
+    org.springframework.ai.retry: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

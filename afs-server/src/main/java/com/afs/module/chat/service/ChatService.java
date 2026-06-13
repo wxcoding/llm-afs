@@ -75,11 +75,16 @@ public class ChatService {
         messageMapper.insert(userMsg);
 
         // 通过RAG服务构建上下文，从知识库检索相关内容（带降级机制）
+        // 优化：只搜索一次，避免重复调用向量数据库
         String context = "";
         List<Map<String, Object>> sources = new ArrayList<>();
         try {
-            context = ragService.buildContext(content, 5);
+            // 先获取带元数据的结果
             sources = ragService.searchWithMetadata(content, 5);
+            // 再从结果构建上下文（避免二次搜索）
+            if (!sources.isEmpty()) {
+                context = buildContextFromSources(sources);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("[警告] RAG 检索失败，已降级为纯 AI 对话模式");
@@ -163,9 +168,9 @@ public class ChatService {
                 data.put("content", chunk);
                 writer.write("data: " + new ObjectMapper().writeValueAsString(data) + "\n\n");
                 writer.flush();
-
-                // 模拟流式输出延迟
-                Thread.sleep(100);
+                
+                // 注意：移除了 Thread.sleep(100)，避免阻塞线程降低并发能力
+                // 如果需要模拟打字效果，建议前端实现
             }
 
             return responseBuilder.toString();
@@ -207,6 +212,32 @@ public class ChatService {
             }
         }
         return messages;
+    }
+
+    /**
+     * 从搜索结果构建上下文文本（避免重复搜索）
+     * 
+     * @param sources 带元数据的搜索结果
+     * @return 格式化的上下文文本
+     */
+    private String buildContextFromSources(List<Map<String, Object>> sources) {
+        StringBuilder context = new StringBuilder();
+        for (int i = 0; i < sources.size(); i++) {
+            Map<String, Object> source = sources.get(i);
+            String content = (String) source.get("content");
+            String title = (String) source.getOrDefault("title", "");
+            String sourceType = (String) source.getOrDefault("source", "未知来源");
+            
+            if (i > 0) {
+                context.append("\n\n");
+            }
+            context.append("【").append(sourceType);
+            if (!title.isEmpty()) {
+                context.append(" - ").append(title);
+            }
+            context.append("】\n").append(content);
+        }
+        return context.toString();
     }
 
     private String getMockResponse(String lastUserMsg) {
