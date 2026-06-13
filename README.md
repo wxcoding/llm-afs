@@ -30,7 +30,7 @@
 ### 后端
 
 - Spring Boot 3.4.4
-- Spring AI 1.0.0（OpenAI 兼容接口 + pgVector 向量存储）
+- Spring AI 1.1.7（OpenAI 兼容接口 + pgVector 向量存储）
 - MyBatis Plus 3.5.5
 - PostgreSQL 17 + pgvector 扩展
 - Flyway 9.22.3（数据库版本管理）
@@ -130,6 +130,55 @@
 │  提问    │    │   编码      │    │  相似度检索 │    │            │    │   回答     │    │   输出     │
 └──────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
 ```
+
+### RAG 核心技术（Spring AI 1.1.7）
+
+#### 1. TokenTextSplitter 智能文档切分
+
+```java
+TokenTextSplitter splitter = new TokenTextSplitter(
+    800,    // 每段最大 Token 数
+    400,    // 重叠 Token 数（保持上下文连续）
+    5,      // 最小句子长度
+    100,    // 最大段数
+    true    // 保留分隔符
+);
+
+// 使用切分器处理文档
+List<Document> chunks = splitter.apply(List.of(doc));
+vectorStore.add(chunks);
+```
+
+**优势**：
+- 基于 Token 数量切分，适配 LLM 上下文窗口
+- 智能重叠保持语义完整
+- 提高检索精度和上下文利用效率
+
+#### 2. Filter.Expression 元数据过滤
+
+```java
+// 使用 Filter.Expression 构建过滤条件
+Filter.Expression filter = Filter.and(
+    Filter.eq("dbId", id.toString()),
+    Filter.eq("type", "knowledge")
+);
+
+// 删除匹配的文档
+vectorStore.delete(filter);
+```
+
+**优势**：
+- 避免直接 SQL 操作，更安全
+- 跨向量库兼容
+- 代码更简洁规范
+
+**常用操作符**：
+| 操作符 | 说明 | 示例 |
+|--------|------|------|
+| `Filter.eq()` | 等于 | `Filter.eq("type", "knowledge")` |
+| `Filter.and()` | 逻辑与 | `Filter.and(expr1, expr2)` |
+| `Filter.or()` | 逻辑或 | `Filter.or(expr1, expr2)` |
+| `Filter.not()` | 逻辑非 | `Filter.not(expr)` |
 
 ---
 
@@ -454,19 +503,3 @@ http://localhost:8080/swagger-ui.html
 | `AI_DASHSCOPE_MODEL` | 对话模型 | qwen-turbo |
 | `SERVER_PORT` | 后端端口 | 8080 |
 | `WEB_PORT` | 前端端口 | 3000 |
-
----
-
-## 项目亮点
-
-| 亮点 | 说明 |
-|------|------|
-| RAG 检索增强 | 基于 PGVector 向量检索，结合知识库提升回答准确性 |
-| SSE 流式响应 | 实时推送 AI 回复，支持逐字显示效果 |
-| 文档智能解析 | 支持 PDF、Word、Markdown 等格式上传和自动解析 |
-| 知识审核流程 | 完善的审核机制，确保知识质量 |
-| 数据字典系统 | 灵活的系统参数配置管理 |
-| 自动化部署 | CI/CD 全流程自动化 |
-| 数据库版本管理 | Flyway 支持增量迁移，多人协作安全 |
-| 核心特性 | 全局异常处理、统一响应格式、Swagger API 文档、AOP 日志审计 |
-| 系统监控 | Actuator 提供健康检查、指标监控 |
