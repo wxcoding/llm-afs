@@ -1,0 +1,79 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Spring Boot
+application-local.yml
+application-local.properties
+
+# Docker
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+dist/
+build/
+npm-debug.log
+yarn-error.log
+
+# Database
+*.sql
+!src/main/resources/db/migration/*.sql
+
+# Flyway
+flyway_schema_history
+
+# Backend
+afs-server/target/
+afs-server/.mvn/
+
+# Frontend
+afs-web/node_modules/
+afs-web/dist/
+afs-web/.nuxt/
+
+# Backup files
+*.bak
+*.backup
+
+# Coverage reports
+coverage/
+*.lcov
