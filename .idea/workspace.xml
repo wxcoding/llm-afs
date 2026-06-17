@@ -4,18 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/data_sources_history.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/llm-afs.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序">
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +26,7 @@
   <component name="CopilotPersistence">
     <persistenceIdMap>
       <entry key="_E:/guanwx/Workspace/personal/llm-afs" value="3F3J0lMZZwfUzDjT68r728HIuGD" />
+      <entry key="_E:/guanwx/Workspace/personal/llm-afs/afs-server" value="3FFgyFEH0KSqUT2bviWcrHu8qQv" />
     </persistenceIdMap>
   </component>
   <component name="FileTemplateManagerImpl">
@@ -103,6 +105,15 @@
   }
 }</component>
   <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
     <configuration name="AfsApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <envs>
         <env name="AI_DASHSCOPE_API_KEY" value="sk-5430ea69052c4f46a48fd8d9ce275939" />
@@ -122,7 +133,9 @@
       <option name="presentableId" value="Default" />
       <updated>1781297599090</updated>
       <workItem from="1781297600235" duration="23965000" />
-      <workItem from="1781534013621" duration="1062000" />
+      <workItem from="1781534013621" duration="2162000" />
+      <workItem from="1781559814969" duration="13741000" />
+      <workItem from="1781676499322" duration="15708000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -148,7 +161,15 @@
       <option name="project" value="LOCAL" />
       <updated>1781384512441</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="docs：升级SpringAI1.1.7，调整文档">
+      <option name="closed" value="true" />
+      <created>1781535179614</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1781535179614</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -156,6 +177,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理" />
+    <MESSAGE value="docs：升级SpringAI1.1.7，调整文档" />
+    <MESSAGE value="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序" />
   </component>
 </project>

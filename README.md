@@ -17,6 +17,9 @@
 | **知识审核** | 新增/编辑知识需审核，保证质量 | 审核工作流 |
 | **文档解析** | 支持 PDF/Word/Markdown 多格式 | Apache POI + PDFBox |
 | **向量检索** | 语义相似度匹配 | pgVector HNSW 索引 |
+| **混合检索** | BM25 + 向量融合 | PostgreSQL 全文检索 + RRF |
+| **查询改写** | 同义词扩展，口语化转换 | QueryExpander |
+| **ReRank 重排序** | 交叉编码器精细化排序 | Jina/Cohere Rerank API |
 | **数据统计** | 实时数据看板 | 聚合查询 |
 | **系统监控** | 健康检查、指标监控 | Spring Actuator |
 
@@ -284,6 +287,104 @@ vectorStore.delete(filter);
 - 避免直接 SQL 操作，更安全
 - 跨向量库兼容
 - 代码更简洁规范
+
+### 3. 查询改写与扩展（QueryExpander）
+
+解决用户用词与文档用词不一致的问题：
+
+```java
+@Autowired
+private QueryExpander queryExpander;
+
+// 用户问："被骗了钱怎么办"
+List<String> expandedQueries = queryExpander.expand("被骗了钱怎么办");
+// 结果：
+// [
+//   "被骗了钱怎么办",
+//   "被骗了钱如何处理 解决方案 上当 被坑 被套路 遭遇诈骗 损失",
+//   "钱 资金 款项 金额 存款 财产 积蓄",
+//   "怎么办 如何处理 解决方案"
+// ]
+```
+
+**支持的转换**：
+- 同义词扩展：被骗 → 上当、被坑、遭遇诈骗
+- 口语化转书面语：怎么办 → 如何处理、解决方案
+- 关键词扩展：钱 → 资金、款项、存款
+
+### 4. 混合检索 BM25 + 向量（HybridSearchService）
+
+结合关键词检索和向量检索的优势：
+
+```java
+@Autowired
+private HybridSearchService hybridSearchService;
+
+// 混合检索
+List<Document> results = hybridSearchService.search("如何防范网络诈骗", null);
+```
+
+**检索策略**：
+
+```
+用户查询 → 查询改写 → BM25 检索 ─┬─→ RRF 融合 → ReRank → 最终结果
+                                 │
+                    向量检索 ─────┘
+```
+
+**RRF (Reciprocal Rank Fusion) 算法**：
+
+```java
+/**
+ * RRF 分数计算公式
+ * score(d) = Σ 1/(k + rank_i(d))
+ * 
+ * 例如：
+ * - 文档 A 在 BM25 中排名第 1，向量检索中排名第 3
+ * - RRF 分数 = 1/(60+1) + 1/(60+3) = 0.0164 + 0.0159 = 0.0323
+ */
+```
+
+### 5. ReRank 重排序（ReRankService）
+
+对初步检索结果进行精细化排序：
+
+```java
+@Autowired
+private ReRankService reRankService;
+
+// ReRank 重排序
+List<Document> reranked = reRankService.rerank(query, candidates);
+```
+
+**支持的 Provider**：
+- **Jina Rerank**（推荐）：https://jina.ai/reranker/
+- **Cohere Rerank**：https://cohere.com/rerank
+- **Mock Rerank**（测试用）：基于关键词匹配
+
+### 6. 检索策略配置
+
+通过配置文件灵活控制检索策略：
+
+```yaml
+spring:
+  ai:
+    # 混合检索配置
+    vectorstore:
+      hybrid-search:
+        enabled: false          # 是否启用混合检索
+        query-expansion: true  # 是否启用查询扩展
+        vector-top-k: 20       # 向量检索返回数量
+        bm25-top-k: 20         # BM25 检索返回数量
+        final-top-k: 5         # 最终返回数量
+    # ReRank 配置
+    rerank:
+      enabled: false           # 是否启用 ReRank
+      provider: jina           # Provider: jina / cohere / mock
+      top-n: 3                # ReRank 返回的 Top N
+      jina:
+        api-key: ${JINA_API_KEY:}
+```
 
 ---
 

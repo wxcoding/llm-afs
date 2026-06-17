@@ -6,6 +6,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
@@ -13,22 +14,35 @@ import org.springframework.cache.annotation.Cacheable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.afs.module.rag.base.ReRankService;
+import com.afs.module.rag.strategy.SearchStrategyFactory;
 
 /**
  * RAG服务类
  * 
  * 负责向量数据库的管理，包括文档向量化、相似度搜索、上下文构建等功能。
  * 
+ * 技术演进：
+ * 1. 基础版：纯向量检索
+ * 2. 增强版：混合检索（BM25 + 向量）+ ReRank 重排序
+ * 3. 智能版：查询改写 + 混合检索 + ReRank
+ * 
  * 升级说明（Spring AI 1.1.7）：
  * - 使用 TokenTextSplitter 实现智能文档切分
  * - 使用 FilterExpression 实现元数据过滤
- * - 移除了直接 SQL 操作，改用统一的 VectorStore API
- * - 添加了异常处理和缓存机制
+ * - 使用策略模式管理检索策略
+ * - 集成 ReRankService 实现重排序
+ * 
+ * 策略模式设计：
+ * - SearchStrategy: 检索策略接口
+ * - VectorSearchStrategy: 纯向量检索策略
+ * - HybridSearchStrategy: 混合检索策略
+ * - SearchStrategyFactory: 策略工厂
  */
 @Service
 public class RagService {
@@ -40,6 +54,18 @@ public class RagService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private SearchStrategyFactory strategyFactory;
+
+    @Autowired(required = false)
+    private ReRankService reRankService;
+
+    /**
+     * 是否启用 ReRank 重排序
+     */
+    @Value("${spring.ai.rerank.enabled:false}")
+    private boolean reRankEnabled;
 
     /**
      * 过滤表达式构建器（DSL，类型安全）
@@ -61,10 +87,12 @@ public class RagService {
     /**
      * 向量相似度搜索（增强版）
      * 
-     * 特性：
-     * 1. 添加查询结果缓存，减少重复API调用
-     * 2. 完善的异常处理和日志记录
-     * 3. 支持降级策略
+     * 使用策略模式进行检索策略的选择和执行
+     * 
+     * 检索策略：
+     * 1. 纯向量检索：简单直接，对语义相似度高
+     * 2. 混合检索：BM25 + 向量，兼顾关键词和语义
+     * 3. ReRank 重排序：对检索结果精细化排序
      * 
      * @param query 搜索查询词
      * @param topK 返回结果数量
@@ -75,25 +103,28 @@ public class RagService {
         long startTime = System.currentTimeMillis();
         
         try {
-            log.debug("开始向量搜索，查询词: {}, topK: {}", query, topK);
+            // 获取当前策略
+            var strategy = strategyFactory.getStrategy();
+            log.debug("开始检索，查询词: {}, topK: {}, 策略: {}, ReRank: {}", 
+                     query, topK, strategy.getName(), reRankEnabled);
             
-            List<Document> results = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                    .query(query)
-                    .topK(topK)
-                    .similarityThreshold(0.5)
-                    .build()
-            );
+            // 执行检索
+            List<Document> results = strategy.search(query, null, topK);
+            
+            // ReRank 重排序（如启用）
+            if (reRankEnabled && reRankService != null) {
+                results = reRankService.rerank(query, results);
+            }
             
             long duration = System.currentTimeMillis() - startTime;
-            log.info("向量搜索成功，查询词: {}, 结果数: {}, 耗时: {}ms", 
-                     query, results.size(), duration);
+            log.info("检索成功，查询词: {}, 结果数: {}, 策略: {}, 耗时: {}ms", 
+                     query, results.size(), strategy.getName(), duration);
             
             return results;
             
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("向量搜索失败，查询词: {}, topK: {}, 耗时: {}ms, 错误: {}", 
+            log.error("检索失败，查询词: {}, topK: {}, 耗时: {}ms, 错误: {}", 
                      query, topK, duration, e.getMessage(), e);
             
             // 根据错误类型决定是否需要降级
@@ -102,7 +133,14 @@ public class RagService {
                 return handleNetworkFailure(query, topK);
             }
             
-            throw new RuntimeException("向量搜索失败: " + e.getMessage(), e);
+            // 降级为默认策略
+            log.warn("检索失败，降级为默认策略");
+            try {
+                return strategyFactory.getStrategy("vector").search(query, null, topK);
+            } catch (Exception fallbackEx) {
+                log.error("降级策略也失败: {}", fallbackEx.getMessage());
+                return List.of();
+            }
         }
     }
     
@@ -352,5 +390,17 @@ public class RagService {
         var filter = filterBuilder.eq("type", type).build();
 
         vectorStore.delete(filter);
+    }
+
+    /**
+     * 获取检索策略信息（用于调试）
+     */
+    public Map<String, Object> getSearchStrategyInfo() {
+        Map<String, Object> info = new HashMap<>();
+        info.put("reRankEnabled", reRankEnabled);
+        info.put("reRankServiceAvailable", reRankService != null);
+        info.put("availableStrategies", strategyFactory.getAvailableStrategies());
+        info.put("currentStrategy", strategyFactory.getStrategy().getName());
+        return info;
     }
 }

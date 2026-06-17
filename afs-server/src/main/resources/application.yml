@@ -57,6 +57,24 @@ spring:
         dimensions: 1024
         initialize-schema: true
         filter: true  # 启用 FilterExpression 支持（Spring AI 1.1.7）
+      # 混合检索配置（BM25 + 向量）
+      hybrid-search:
+        enabled: false  # 是否启用混合检索
+        query-expansion: true  # 是否启用查询扩展
+        vector-top-k: 20  # 向量检索返回数量
+        bm25-top-k: 20  # BM25 检索返回数量
+        final-top-k: 5  # 最终返回数量
+    # ReRank 重排序配置
+    rerank:
+      enabled: false  # 是否启用 ReRank
+      provider: jina  # Provider: jina / cohere / mock
+      top-n: 3  # ReRank 返回的 Top N
+      jina:
+        endpoint: https://api.jina.ai/v1/rerank
+        api-key: ${JINA_API_KEY:}
+      cohere:
+        endpoint: https://api.cohere.ai/v1/rerank
+        api-key: ${COHERE_API_KEY:}
 
 mybatis-plus:
   configuration:
