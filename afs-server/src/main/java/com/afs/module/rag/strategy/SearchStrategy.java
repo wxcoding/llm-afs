@@ -10,12 +10,10 @@ import java.util.Map;
  * 
  * 定义检索策略的统一接口，支持不同的检索算法实现
  * 
- * 策略模式优势：
  * 1. 开闭原则：新增策略无需修改现有代码
  * 2. 单一职责：每个策略只关注一种检索方式
  * 3. 解耦合：策略实现与调用方解耦
- * 
- * @author AFS
+ *
  */
 public interface SearchStrategy {
     

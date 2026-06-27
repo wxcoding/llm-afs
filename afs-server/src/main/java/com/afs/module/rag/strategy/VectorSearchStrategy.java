@@ -21,7 +21,6 @@ import java.util.Map;
  * - 优点：语义理解能力强
  * - 缺点：对关键词变化敏感，召回率可能较低
  * 
- * @author AFS
  */
 @Slf4j
 @Component("vectorSearchStrategy")

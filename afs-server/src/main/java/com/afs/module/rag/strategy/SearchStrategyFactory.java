@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * List<Document> results = strategy.search(query, filters, topK);
  * </pre>
  * 
- * @author AFS
  */
 @Slf4j
 @Component

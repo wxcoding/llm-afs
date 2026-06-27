@@ -23,7 +23,6 @@ import java.util.Map;
  * 2. 向量检索：根据语义相似度计算相关性分数
  * 3. RRF 融合：将两种检索结果按排名融合
  * 
- * @author AFS
  */
 @Slf4j
 @Component("hybridSearchStrategy")

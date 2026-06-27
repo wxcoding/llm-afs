@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
  * - rank_i(d): 文档在第 i 种检索结果中的排名（从1开始）
  * - k: 融合参数，通常取 60，k 越大，各检索结果的权重越均衡
  * 
- * @author AFS
  */
 @Slf4j
 @Service

@@ -16,7 +16,6 @@ import java.util.*;
  * 1. 同义词扩展：将用户查询扩展为多个同义词
  * 2. 口语化转书面语：将口语词汇转换为书面语
  * 
- * @author AFS
  */
 @Component
 public class QueryExpander {

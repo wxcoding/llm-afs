@@ -5,18 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序">
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,7 +70,7 @@
             <option name="modelValue" value="auto" />
           </model>
         </option>
-        <option name="targetType" value="LOCAL" />
+        <option name="targetType" value="BACKGROUND" />
       </template>
     </option>
   </component>
@@ -96,24 +92,19 @@
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;Spring Boot.AfsApplication.executor&quot;: &quot;Run&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;copilot.chat.legacySessionMetadata.migrated&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;E:/guanwx/Workspace/personal/llm-afs&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.github.copilot.settings.customization.CustomizationConfigurable&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;项目&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;MavenSettings&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RunManager">
-    <configuration default="true" type="JetRunConfigurationType">
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <option name="filePath" />
-      <method v="2" />
-    </configuration>
     <configuration name="AfsApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <envs>
         <env name="AI_DASHSCOPE_API_KEY" value="sk-5430ea69052c4f46a48fd8d9ce275939" />
@@ -136,6 +127,9 @@
       <workItem from="1781534013621" duration="2162000" />
       <workItem from="1781559814969" duration="13741000" />
       <workItem from="1781676499322" duration="15708000" />
+      <workItem from="1781861921372" duration="56000" />
+      <workItem from="1781862003278" duration="2494000" />
+      <workItem from="1782583628963" duration="1584000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />

@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
  * 1. Jina Reranker: https://jina.ai/reranker/ (免费 1 万 token)
  * 2. Cohere Rerank: https://cohere.com/rerank (免费 API)
  * 
- * @author AFS
  */
 @Slf4j
 @Service
