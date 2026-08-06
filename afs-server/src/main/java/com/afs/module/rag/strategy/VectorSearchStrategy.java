@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +41,7 @@ public class VectorSearchStrategy implements SearchStrategy {
 
         // 如果有过滤条件，构建过滤表达式
         if (filters != null && !filters.isEmpty()) {
-            var filterBuilder = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
+            FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
             var filter = filterBuilder.eq(filters.keySet().iterator().next(), 
                     filters.values().iterator().next().toString()).build();
             builder.filterExpression(filter);

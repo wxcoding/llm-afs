@@ -1,5 +1,6 @@
 package com.afs.module.rag.strategy;
 
+import com.afs.module.rag.base.HybridSearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class HybridSearchStrategy implements SearchStrategy {
 
     @Autowired(required = false)
-    private com.afs.module.rag.base.HybridSearchService hybridSearchService;
+    private HybridSearchService hybridSearchService;
 
     @Value("${spring.ai.vectorstore.hybrid-search.enabled:false}")
     private boolean hybridSearchEnabled;
