@@ -1,5 +1,6 @@
 package com.afs.module.rag;
 
+import com.afs.module.rag.strategy.SearchStrategy;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -104,7 +105,7 @@ public class RagService {
         
         try {
             // 获取当前策略
-            var strategy = strategyFactory.getStrategy();
+            SearchStrategy strategy = strategyFactory.getStrategy();
             log.debug("开始检索，查询词: {}, topK: {}, 策略: {}, ReRank: {}", 
                      query, topK, strategy.getName(), reRankEnabled);
             
