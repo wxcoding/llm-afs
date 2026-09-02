@@ -3,16 +3,12 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackgroundAgentGlobalSettings">
+    <option name="selectedModelId" value="auto" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序">
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：冗余代码删除">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,11 +62,12 @@
         <option name="modeId" value="Ask" />
         <option name="model">
           <model>
-            <option name="modelType" value="builtin_family" />
+            <option name="modelType" value="builtin_id" />
             <option name="modelValue" value="auto" />
           </model>
         </option>
         <option name="targetType" value="BACKGROUND" />
+        <option name="worktreeMode" value="WORKSPACE" />
       </template>
     </option>
   </component>
@@ -100,7 +97,7 @@
     &quot;project.structure.last.edited&quot;: &quot;项目&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;MavenSettings&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -129,7 +126,21 @@
       <workItem from="1781676499322" duration="15708000" />
       <workItem from="1781861921372" duration="56000" />
       <workItem from="1781862003278" duration="2494000" />
-      <workItem from="1782583628963" duration="1584000" />
+      <workItem from="1782583628963" duration="3386000" />
+      <workItem from="1785480978328" duration="4733000" />
+      <workItem from="1785679840954" duration="2699000" />
+      <workItem from="1785859757562" duration="1201000" />
+      <workItem from="1785861015510" duration="19147000" />
+      <workItem from="1786034017076" duration="4175000" />
+      <workItem from="1787504265177" duration="1070000" />
+      <workItem from="1787510735286" duration="596000" />
+      <workItem from="1787513410400" duration="1233000" />
+      <workItem from="1787769588274" duration="5678000" />
+      <workItem from="1787843938986" duration="12531000" />
+      <workItem from="1788117023229" duration="1001000" />
+      <workItem from="1788144964216" duration="2627000" />
+      <workItem from="1788294898178" duration="722000" />
+      <workItem from="1788312328856" duration="623000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -163,7 +174,31 @@
       <option name="project" value="LOCAL" />
       <updated>1781535179614</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="feat：冗余代码删除">
+      <option name="closed" value="true" />
+      <created>1782585284932</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1782585284933</updated>
+    </task>
+    <task id="LOCAL-00006" summary="feat：冗余代码删除">
+      <option name="closed" value="true" />
+      <created>1785977770505</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1785977770506</updated>
+    </task>
+    <task id="LOCAL-00007" summary="feat：冗余代码删除">
+      <option name="closed" value="true" />
+      <created>1787859128886</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1787859128886</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -173,6 +208,62 @@
     <MESSAGE value="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理" />
     <MESSAGE value="docs：升级SpringAI1.1.7，调整文档" />
     <MESSAGE value="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat：优化检索RAG链路，查询改写、BM25 + 向量混合检索（RRF结果融合）、ReRank重排序" />
+    <MESSAGE value="feat：冗余代码删除" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat：冗余代码删除" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java</url>
+          <line>112</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java</url>
+          <line>34</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java</url>
+          <line>103</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java</url>
+          <line>250</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeController.java</url>
+          <line>154</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
+          <line>317</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
+          <line>378</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
+          <line>52</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java</url>
+          <line>27</line>
+          <properties class="com.afs.module.rag.strategy.SearchStrategy" method="search">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

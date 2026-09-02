@@ -1,6 +1,6 @@
-package com.afs.common;
+package com.afs.exception;
 
-import com.afs.exception.BusinessException;
+import com.afs.common.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
