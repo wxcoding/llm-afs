@@ -1,5 +1,6 @@
 package com.afs.module.chat.controller;
 
+import com.afs.common.Result;
 import com.afs.module.chat.dto.SendMessageDTO;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;
@@ -12,9 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Tag(name = "智能对话", description = "聊天对话、会话管理、历史记录等接口，使用 SSE 实现流式响应")
 @RequiredArgsConstructor
@@ -38,49 +37,23 @@ public class ChatController {
 
     @Operation(summary = "获取用户的所有会话列表")
     @GetMapping("/sessions/{userId}")
-    public Map<String, Object> getSessions(
+    public Result<List<ChatSession>> getSessions(
             @Parameter(description = "用户 ID", required = true) @PathVariable Long userId) {
-        Map<String, Object> result = new HashMap<>();
-        try {
-            List<ChatSession> sessions = chatService.getUserSessions(userId);
-            result.put("success", true);
-            result.put("sessions", sessions);
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", e.getMessage());
-        }
-        return result;
+        return Result.success(chatService.getUserSessions(userId));
     }
 
     @Operation(summary = "获取会话的聊天历史记录")
     @GetMapping("/history/{sessionId}")
-    public Map<String, Object> getHistory(
+    public Result<List<ChatMessage>> getHistory(
             @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId) {
-        Map<String, Object> result = new HashMap<>();
-        try {
-            List<ChatMessage> messages = chatService.getSessionMessages(sessionId);
-            result.put("success", true);
-            result.put("messages", messages);
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", e.getMessage());
-        }
-        return result;
+        return Result.success(chatService.getSessionMessages(sessionId));
     }
 
     @Operation(summary = "删除会话")
     @DeleteMapping("/session/{sessionId}")
-    public Map<String, Object> deleteSession(
+    public Result<Void> deleteSession(
             @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId) {
-        Map<String, Object> result = new HashMap<>();
-        try {
-            chatService.deleteSession(sessionId);
-            result.put("success", true);
-            result.put("message", "删除成功");
-        } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", e.getMessage());
-        }
-        return result;
+        chatService.deleteSession(sessionId);
+        return Result.success("删除成功");
     }
 }

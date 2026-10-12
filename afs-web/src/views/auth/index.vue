@@ -112,8 +112,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { login, register } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -160,18 +160,17 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    const url = isRegister.value ? '/api/user/register' : '/api/user/login'
-    const res = await axios.post(url, form.value)
+    const res = isRegister.value
+      ? await register(form.value)
+      : await login(form.value)
 
-    if (res.data.success) {
+    if (res.success) {
       ElMessage.success(isRegister.value ? '注册成功' : '登录成功')
-      userStore.setUser(res.data.user)
+      userStore.setUser(res.data)
       router.push('/chat')
-    } else {
-      ElMessage.error(res.data.message)
     }
   } catch (e) {
-    ElMessage.error('请求失败，请检查网络')
+    // 拦截器已统一提示错误
   } finally {
     loading.value = false
   }

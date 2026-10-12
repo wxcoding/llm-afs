@@ -37,8 +37,8 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getChatSessions, getSessionMessages, deleteSession as deleteSessionApi } from '@/api/chat'
 import SessionList from '@/components/business/SessionList.vue'
 import MessageBubble from '@/components/business/MessageBubble.vue'
 import ChatInput from '@/components/business/ChatInput.vue'
@@ -66,16 +66,16 @@ const quickQuestions = [
 
 const loadSessions = async () => {
   if (!userStore.isLoggedIn) return
-  const res = await axios.get(`/api/chat/sessions/${userStore.userId}`)
-  if (res.data.success) {
-    sessions.value = res.data.sessions
+  const res = await getChatSessions(userStore.userId)
+  if (res.success) {
+    sessions.value = res.data || []
   }
 }
 
 const loadHistory = async (id) => {
-  const res = await axios.get(`/api/chat/history/${id}`)
-  if (res.data.success) {
-    messages.value = res.data.messages.map(m => ({
+  const res = await getSessionMessages(id)
+  if (res.success) {
+    messages.value = (res.data || []).map(m => ({
       ...m,
       sources: m.sources ? (typeof m.sources === 'string' ? JSON.parse(m.sources) : m.sources) : [],
       showSources: false
@@ -102,7 +102,7 @@ const deleteSession = async (id) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await axios.delete(`/api/chat/session/${id}`)
+    await deleteSessionApi(id)
     sessions.value = sessions.value.filter(s => s.id !== id)
     if (sessionId.value === id) {
       newChat()

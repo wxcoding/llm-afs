@@ -89,8 +89,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { getUserById, updateUser } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -128,9 +128,9 @@ const loadUserInfo = async () => {
   form.value.username = user.value.username
 
   try {
-    const res = await axios.get(`/api/user/${user.value.id}`)
-    if (res.data.success) {
-      const userData = res.data.user
+    const res = await getUserById(user.value.id)
+    if (res.success) {
+      const userData = res.data
       form.value.nickname = userData.nickname || ''
       form.value.avatar = userData.avatar || ''
       form.value.phone = userData.phone || ''
@@ -170,7 +170,7 @@ const saveProfile = async () => {
 
   saving.value = true
   try {
-    const res = await axios.put('/api/user/update', {
+    const res = await updateUser({
       id: form.value.id,
       nickname: form.value.nickname,
       phone: form.value.phone,
@@ -178,15 +178,13 @@ const saveProfile = async () => {
       avatar: form.value.avatar
     })
 
-    if (res.data.success) {
+    if (res.success) {
       ElMessage.success('保存成功')
-      userStore.updateUser(res.data.user)
+      userStore.updateUser(res.data)
       editing.value = false
-    } else {
-      ElMessage.error(res.data.message || '保存失败')
     }
   } catch (e) {
-    ElMessage.error('保存失败，请检查网络')
+    // 拦截器已统一提示错误
   } finally {
     saving.value = false
   }

@@ -85,8 +85,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getAllCases, getCasesByType, addCase, updateCase, deleteCase } from '@/api/cases'
 
 const cases = ref([])
 const selectedType = ref('')
@@ -104,12 +104,11 @@ const form = ref({
 })
 
 const loadCases = async () => {
-  const url = selectedType.value
-    ? `/api/cases?type=${selectedType.value}`
-    : '/api/cases'
-  const res = await axios.get(url)
-  if (res.data.success) {
-    cases.value = res.data.cases
+  const res = selectedType.value
+    ? await getCasesByType(selectedType.value)
+    : await getAllCases()
+  if (res.success) {
+    cases.value = res.data || []
   }
 }
 
@@ -138,16 +137,16 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (isEdit.value) {
-      await axios.put(`/api/cases/${form.value.id}`, form.value)
+      await updateCase(form.value.id, form.value)
       ElMessage.success('更新成功')
     } else {
-      await axios.post('/api/cases', form.value)
+      await addCase(form.value)
       ElMessage.success('添加成功')
     }
     formVisible.value = false
     loadCases()
   } catch (e) {
-    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+    // 拦截器已统一提示错误
   } finally {
     submitting.value = false
   }
@@ -160,11 +159,13 @@ const handleDelete = async (id) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await axios.delete(`/api/cases/${id}`)
+    await deleteCase(id)
     ElMessage.success('删除成功')
     loadCases()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    if (e !== 'cancel') {
+      // 拦截器已统一提示错误
+    }
   }
 }
 

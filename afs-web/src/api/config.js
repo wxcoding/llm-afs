@@ -1,14 +1,4 @@
-import axios from 'axios'
-
-const request = axios.create({
-  baseURL: '/api',
-  timeout: 10000
-})
-
-request.interceptors.response.use(
-  response => response.data,
-  error => Promise.reject(error)
-)
+import request from '@/utils/request'
 
 export const getAllConfigs = () => {
   return request.get('/config/all')

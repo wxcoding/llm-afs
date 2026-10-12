@@ -1,33 +1,33 @@
 import request from '@/utils/request'
 
 export const login = (data) => {
-  return request.post('/api/user/login', data)
+  return request.post('/user/login', data)
 }
 
 export const register = (data) => {
-  return request.post('/api/user/register', data)
+  return request.post('/user/register', data)
 }
 
 export const getUserById = (id) => {
-  return request.get(`/api/user/${id}`)
+  return request.get(`/user/${id}`)
 }
 
 export const updateUser = (data) => {
-  return request.put('/api/user/update', data)
+  return request.put('/user/update', data)
 }
 
 export const getAllUsers = () => {
-  return request.get('/api/user/list')
+  return request.get('/user/list')
 }
 
 export const createUser = (data) => {
-  return request.post('/api/user/create', data)
+  return request.post('/user/create', data)
 }
 
 export const updateUserByAdmin = (id, data) => {
-  return request.put(`/api/user/admin/update/${id}`, data)
+  return request.put(`/user/admin/update/${id}`, data)
 }
 
 export const deleteUser = (id) => {
-  return request.delete(`/api/user/delete/${id}`)
+  return request.delete(`/user/delete/${id}`)
 }

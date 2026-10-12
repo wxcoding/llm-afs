@@ -83,9 +83,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { submitForAudit } from '@/api/knowledge'
+import {
+  getAllKnowledge,
+  getKnowledgeByCategory,
+  searchKnowledge,
+  semanticSearch,
+  addKnowledge,
+  updateKnowledge,
+  deleteKnowledge,
+  syncVectorStore as syncVectorStoreApi,
+  uploadDocument,
+  submitForAudit
+} from '@/api/knowledge'
 import dict from '@/utils/dict'
 import { useUserStore } from '@/stores/user'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -121,12 +131,16 @@ const initDicts = async () => {
 }
 
 const loadKnowledge = async () => {
-  const params = {}
-  if (selectedCategory.value) params.category = selectedCategory.value
-  if (searchKeyword.value && searchMode.value === 'keyword') params.keyword = searchKeyword.value
-  const res = await axios.get('/api/knowledge', { params })
-  if (res.data.success) {
-    knowledgeList.value = res.data.list
+  let res
+  if (searchKeyword.value && searchMode.value === 'keyword') {
+    res = await searchKnowledge(searchKeyword.value)
+  } else if (selectedCategory.value) {
+    res = await getKnowledgeByCategory(selectedCategory.value)
+  } else {
+    res = await getAllKnowledge()
+  }
+  if (res.success) {
+    knowledgeList.value = res.data || []
   }
 }
 
@@ -141,14 +155,12 @@ const handleSearch = () => {
 const doSemanticSearch = async () => {
   if (!searchKeyword.value) return
   try {
-    const res = await axios.get('/api/knowledge/search/semantic', {
-      params: { query: searchKeyword.value, topK: 10 }
-    })
-    if (res.data.success) {
-      semanticResults.value = res.data.results
+    const res = await semanticSearch(searchKeyword.value, 10)
+    if (res.success) {
+      semanticResults.value = res.data || []
     }
   } catch (e) {
-    ElMessage.error('语义搜索失败')
+    // 拦截器已统一提示错误
   }
 }
 
@@ -201,17 +213,17 @@ const handleSubmit = async (payload) => {
       ElMessage.success('已提交审核，请等待管理员审核')
     } else {
       if (isEdit.value) {
-        await axios.put(`/api/knowledge/${payload.id}`, payload)
+        await updateKnowledge(payload.id, payload)
         ElMessage.success('更新成功')
       } else {
-        await axios.post('/api/knowledge', payload)
+        await addKnowledge(payload)
         ElMessage.success('添加成功')
       }
     }
     dialogVisible.value = false
     loadKnowledge()
   } catch (e) {
-    ElMessage.error(submitMode.value === 'audit' ? '提交审核失败' : (isEdit.value ? '更新失败' : '添加失败'))
+    // 拦截器已统一提示错误
   } finally {
     submitting.value = false
   }
@@ -224,21 +236,23 @@ const handleDelete = async (id) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await axios.delete(`/api/knowledge/${id}`)
+    await deleteKnowledge(id)
     ElMessage.success('删除成功')
     loadKnowledge()
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
+    if (e !== 'cancel') {
+      // 拦截器已统一提示错误
+    }
   }
 }
 
 const syncVectorStore = async () => {
   syncing.value = true
   try {
-    await axios.post('/api/knowledge/sync-vector')
+    await syncVectorStoreApi()
     ElMessage.success('向量库同步完成')
   } catch (e) {
-    ElMessage.error('同步失败')
+    // 拦截器已统一提示错误
   } finally {
     syncing.value = false
   }
@@ -270,25 +284,9 @@ const handleUpload = async (category) => {
 
   try {
     for (const fileItem of fileList.value) {
-      const file = fileItem.raw
-      const formData = new FormData()
-      formData.append('file', file)
-      if (category) {
-        formData.append('category', category)
-      }
-
       try {
-        const res = await axios.post('/api/knowledge/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        const responseData = res.data || {}
-        const isSuccess = responseData.success === true || responseData.success === 'true' || responseData.success === 1
-
-        if (isSuccess) {
-          successCount++
-        } else {
-          failCount++
-        }
+        await uploadDocument(fileItem.raw, category)
+        successCount++
       } catch (e) {
         failCount++
       }

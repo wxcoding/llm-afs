@@ -108,7 +108,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { getStats } from '@/api/stats'
+import { getAllCases } from '@/api/cases'
 
 const stats = ref({
   knowledgeCount: 0,
@@ -121,8 +122,8 @@ const recentCases = ref([])
 
 const loadStats = async () => {
   try {
-    const res = await axios.get('/api/stats')
-    if (res.data && res.data.success) {
+    const res = await getStats()
+    if (res.success && res.data) {
       stats.value = res.data
     }
   } catch (e) {
@@ -132,9 +133,9 @@ const loadStats = async () => {
 
 const loadRecentCases = async () => {
   try {
-    const res = await axios.get('/api/cases', { params: { page: 1, pageSize: 3 } })
-    if (res.data && res.data.success) {
-      recentCases.value = res.data.list || []
+    const res = await getAllCases()
+    if (res.success) {
+      recentCases.value = (res.data || []).slice(0, 3)
     }
   } catch (e) {
     console.log('暂无案例数据')

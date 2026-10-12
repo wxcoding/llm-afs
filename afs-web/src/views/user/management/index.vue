@@ -135,7 +135,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import axios from 'axios'
+import { getAllUsers, createUser, updateUserByAdmin, deleteUser } from '@/api/user'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
@@ -192,12 +192,10 @@ const loadUsers = async () => {
   }
   loading.value = true
   try {
-    const response = await axios.get('/api/user/list')
-    if (response.data.success) {
-      users.value = response.data.users
-      total.value = response.data.total
-    } else {
-      ElMessage.error(response.data.message)
+    const res = await getAllUsers()
+    if (res.success) {
+      users.value = res.data || []
+      total.value = users.value.length
     }
   } catch (error) {
     ElMessage.error('加载用户列表失败')
@@ -257,26 +255,24 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        let response
+        let res
         if (isEdit.value) {
-          response = await axios.put(`/api/user/admin/update/${formData.id}`, formData)
+          res = await updateUserByAdmin(formData.id, formData)
         } else {
           if (!formData.password) {
             ElMessage.warning('请输入密码')
             return
           }
-          response = await axios.post('/api/user/create', formData)
+          res = await createUser(formData)
         }
 
-        if (response.data.success) {
-          ElMessage.success(response.data.message)
+        if (res.success) {
+          ElMessage.success(res.message)
           dialogVisible.value = false
           loadUsers()
-        } else {
-          ElMessage.error(response.data.message)
         }
       } catch (error) {
-        ElMessage.error('操作失败')
+        // 拦截器已统一提示错误
       }
     }
   })
@@ -293,15 +289,13 @@ const handleDelete = (user) => {
     }
   ).then(async () => {
     try {
-      const response = await axios.delete(`/api/user/delete/${user.id}`)
-      if (response.data.success) {
+      const res = await deleteUser(user.id)
+      if (res.success) {
         ElMessage.success('删除成功')
         loadUsers()
-      } else {
-        ElMessage.error(response.data.message)
       }
     } catch (error) {
-      ElMessage.error('删除失败')
+      // 拦截器已统一提示错误
     }
   }).catch(() => {})
 }
