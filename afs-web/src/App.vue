@@ -57,8 +57,8 @@
           <el-menu
             mode="vertical"
             :default-active="activeIndex"
-            @select="handleMenuSelect"
             class="side-menu"
+            @select="handleMenuSelect"
           >
             <el-menu-item index="/">
               <i class="el-icon-s-home"></i>
@@ -76,7 +76,7 @@
               <el-menu-item index="/knowledge">
                 <span>知识库</span>
               </el-menu-item>
-              <el-menu-item index="/audit" v-if="user">
+              <el-menu-item v-if="user" index="/audit">
                 <span>知识审核</span>
               </el-menu-item>
             </el-sub-menu>
@@ -96,7 +96,7 @@
                 <span>数据字典</span>
               </el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="/users" v-if="user">
+            <el-menu-item v-if="user" index="/users">
               <i class="el-icon-user"></i>
               <span>用户管理</span>
             </el-menu-item>
@@ -110,45 +110,34 @@
   </div>
 </template>
 
-<script>
-import { computed, inject } from 'vue'
+<script setup>
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/stores/user'
 
-export default {
-  name: 'App',
-  setup() {
-    const router = useRouter()
-    const route = useRoute()
-    const user = inject('user')
+const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
+const { user } = storeToRefs(userStore)
 
-    const activeIndex = computed(() => route.path)
+const activeIndex = computed(() => route.path)
 
-    const handleMenuSelect = (index) => {
-      router.push(index)
-    }
+const handleMenuSelect = (index) => {
+  router.push(index)
+}
 
-    const handleCommand = (command) => {
-      if (command === 'profile') {
-        router.push('/profile')
-      } else if (command === 'logout') {
-        logout()
-      }
-    }
-
-    const logout = () => {
-      localStorage.removeItem('user')
-      user.value = null
-      router.push('/login')
-    }
-
-    return {
-      user,
-      activeIndex,
-      handleMenuSelect,
-      handleCommand,
-      logout
-    }
+const handleCommand = (command) => {
+  if (command === 'profile') {
+    router.push('/profile')
+  } else if (command === 'logout') {
+    logout()
   }
+}
+
+const logout = () => {
+  userStore.clearUser()
+  router.push('/login')
 }
 </script>
 

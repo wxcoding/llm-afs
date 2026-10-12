@@ -56,7 +56,7 @@
             <h2>{{ isRegister ? '加入我们' : '欢迎回来' }}</h2>
             <p>{{ isRegister ? '创建您的专属账号，开启智能防诈之旅' : '登录您的账号，继续守护财产安全' }}</p>
           </div>
-          <el-form :model="form" @submit.prevent="handleSubmit" class="login-form">
+          <el-form :model="form" class="login-form" @submit.prevent="handleSubmit">
             <div class="form-item-wrapper">
               <div class="input-wrapper">
                 <div class="input-prefix">👤</div>
@@ -85,9 +85,9 @@
               <el-button 
                 type="primary" 
                 class="login-btn"
-                @click="handleSubmit"
                 :loading="loading"
                 size="large"
+                @click="handleSubmit"
               >
                 <span class="btn-text">{{ isRegister ? '立即注册' : '立即登录' }}</span>
                 <span class="btn-arrow">→</span>
@@ -99,7 +99,7 @@
               <span class="divider-text">或者</span>
             </div>
             <span class="switch-label">{{ isRegister ? '已有账号？' : '还没有账号？' }}</span>
-            <el-button type="primary" text @click="switchMode" class="switch-btn">
+            <el-button type="primary" text class="switch-btn" @click="switchMode">
               {{ isRegister ? '立即登录' : '立即注册' }}
             </el-button>
           </div>
@@ -110,13 +110,14 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const user = inject('user')
+const userStore = useUserStore()
 const isRegister = ref(false)
 const loading = ref(false)
 const formRef = ref(null)
@@ -164,8 +165,7 @@ const handleSubmit = async () => {
 
     if (res.data.success) {
       ElMessage.success(isRegister.value ? '注册成功' : '登录成功')
-      localStorage.setItem('user', JSON.stringify(res.data.user))
-      user.value = res.data.user
+      userStore.setUser(res.data.user)
       router.push('/chat')
     } else {
       ElMessage.error(res.data.message)

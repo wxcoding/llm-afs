@@ -1,11 +1,11 @@
 package com.afs.module.rag.strategy;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,12 +23,12 @@ import java.util.Map;
  * - 缺点：对关键词变化敏感，召回率可能较低
  * 
  */
+@RequiredArgsConstructor
 @Slf4j
 @Component("vectorSearchStrategy")
 public class VectorSearchStrategy implements SearchStrategy {
 
-    @Autowired
-    private VectorStore vectorStore;
+    private final VectorStore vectorStore;
 
     @Override
     public List<Document> search(String query, Map<String, Object> filters, int topK) {

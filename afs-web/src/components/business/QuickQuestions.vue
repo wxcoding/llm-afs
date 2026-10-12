@@ -7,8 +7,8 @@
       <el-tag
         v-for="q in questions"
         :key="q"
-        @click="$emit('select', q)"
         class="quick-tag"
+        @click="$emit('select', q)"
       >
         {{ q }}
       </el-tag>

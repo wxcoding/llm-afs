@@ -35,10 +35,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getPendingAudits, approveAudit, rejectAudit } from '@/api/knowledgeEnhanced'
+import { getPendingAudits, approveAudit, rejectAudit } from '@/api/knowledge'
+import { useUserStore } from '@/stores/user'
 
+const userStore = useUserStore()
 const pendingAudits = ref([])
-const auditUserId = ref(parseInt(localStorage.getItem('userId') || '1'))
 
 const loadAudits = async () => {
   try {
@@ -51,7 +52,7 @@ const loadAudits = async () => {
 
 const handleApprove = async (item) => {
   try {
-    await approveAudit(item.id, auditUserId.value, item.auditComment)
+    await approveAudit(item.id, userStore.userId, item.auditComment)
     ElMessage.success('审核通过')
     loadAudits()
   } catch (error) {
@@ -61,7 +62,7 @@ const handleApprove = async (item) => {
 
 const handleReject = async (item) => {
   try {
-    await rejectAudit(item.id, auditUserId.value, item.auditComment)
+    await rejectAudit(item.id, userStore.userId, item.auditComment)
     ElMessage.success('已拒绝')
     loadAudits()
   } catch (error) {

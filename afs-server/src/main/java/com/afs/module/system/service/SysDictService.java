@@ -5,7 +5,7 @@ import com.afs.module.system.entity.SysDictType;
 import com.afs.module.system.mapper.SysDictItemMapper;
 import com.afs.module.system.mapper.SysDictTypeMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -16,15 +16,14 @@ import java.util.stream.Collectors;
 /**
  * 字典服务（含内存缓存）
  */
+@RequiredArgsConstructor
 @Service
 public class SysDictService {
-    
-    @Autowired
-    private SysDictTypeMapper dictTypeMapper;
-    
-    @Autowired
-    private SysDictItemMapper dictItemMapper;
-    
+
+    private final SysDictTypeMapper dictTypeMapper;
+
+    private final SysDictItemMapper dictItemMapper;
+
     /**
      * 字典缓存（内存缓存）
      * key: dictCode

@@ -10,7 +10,7 @@
       />
 
       <div class="chat-main">
-        <div class="chat-messages" ref="messagesContainer">
+        <div ref="messagesContainer" class="chat-messages">
           <QuickQuestions v-if="messages.length === 0" :questions="quickQuestions" @select="sendQuickQuestion" />
 
           <MessageBubble
@@ -43,9 +43,10 @@ import SessionList from '@/components/business/SessionList.vue'
 import MessageBubble from '@/components/business/MessageBubble.vue'
 import ChatInput from '@/components/business/ChatInput.vue'
 import QuickQuestions from '@/components/business/QuickQuestions.vue'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
-const user = JSON.parse(localStorage.getItem('user') || 'null')
+const userStore = useUserStore()
 
 const sessionId = ref(null)
 const sessions = ref([])
@@ -64,8 +65,8 @@ const quickQuestions = [
 ]
 
 const loadSessions = async () => {
-  if (!user) return
-  const res = await axios.get(`/api/chat/sessions/${user.id}`)
+  if (!userStore.isLoggedIn) return
+  const res = await axios.get(`/api/chat/sessions/${userStore.userId}`)
   if (res.data.success) {
     sessions.value = res.data.sessions
   }
@@ -126,7 +127,7 @@ const scrollToBottom = () => {
 
 const sendMessage = async (content) => {
   if (!content || loading.value) return
-  if (!user) {
+  if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
     return
   }
@@ -135,7 +136,7 @@ const sendMessage = async (content) => {
 
   try {
     const params = {
-      userId: user.id,
+      userId: userStore.userId,
       content: content,
       sessionId: sessionId.value
     }

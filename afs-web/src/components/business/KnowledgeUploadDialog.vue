@@ -7,10 +7,9 @@
         </template>
       </el-alert>
     </div>
-    <el-form :model="uploadForm" label-width="80px" style="margin-top: 16px">
+    <el-form label-width="80px" style="margin-top: 16px">
       <el-form-item label="上传文件">
         <el-upload
-          ref="uploadRef"
           class="upload-component"
           :auto-upload="false"
           :limit="10"
@@ -27,7 +26,7 @@
         </el-upload>
       </el-form-item>
       <el-form-item label="分类">
-        <el-select v-model="uploadForm.category" placeholder="不选择则自动分类" clearable style="width: 100%">
+        <el-select v-model="draftCategory" placeholder="不选择则自动分类" clearable style="width: 100%">
           <el-option label="自动分类" value="" />
           <el-option
             v-for="option in categoryOptions"
@@ -40,7 +39,7 @@
     </el-form>
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
-      <el-button type="primary" @click="$emit('upload')" :loading="uploading">
+      <el-button type="primary" :loading="uploading" @click="$emit('upload', draftCategory)">
         上传 {{ fileList.length > 0 ? `(${fileList.length}个文件)` : '' }}
       </el-button>
     </template>
@@ -48,19 +47,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
-defineProps({
+const props = defineProps({
   visible: { type: Boolean, default: false },
   uploading: { type: Boolean, default: false },
-  uploadForm: { type: Object, required: true },
+  defaultCategory: { type: String, default: '' },
   fileList: { type: Array, default: () => [] },
   categoryOptions: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['update:visible', 'upload', 'file-change', 'file-remove'])
 
-const uploadRef = ref(null)
+// 本地草稿：打开对话框时重置分类选择，提交时 emit，避免直接修改 props
+const draftCategory = ref(props.defaultCategory)
+
+watch(() => props.visible, (val) => {
+  if (val) {
+    draftCategory.value = props.defaultCategory
+  }
+})
 
 const handleFileChange = (file, files) => {
   emit('file-change', file, files)

@@ -1,11 +1,18 @@
 package com.afs.module.knowledge.controller;
 
+import com.afs.common.Result;
+import com.afs.module.knowledge.dto.AuditSubmitDTO;
+import com.afs.module.knowledge.dto.CreateTagDTO;
+import com.afs.module.knowledge.dto.KnowledgeUpsertDTO;
 import com.afs.module.knowledge.entity.Knowledge;
+import com.afs.module.knowledge.entity.KnowledgeAudit;
+import com.afs.module.knowledge.entity.KnowledgeTag;
+import com.afs.module.knowledge.entity.KnowledgeVersion;
 import com.afs.module.knowledge.service.KnowledgeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,16 +20,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "知识库管理", description = "知识库的增删改查、文档上传、向量同步等接口")
+@Tag(name = "知识库管理", description = "知识库的增删改查、文档上传、向量同步、标签管理、版本控制、审核流程等接口")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/knowledge")
 @CrossOrigin
 public class KnowledgeController {
 
-    @Autowired
-    private KnowledgeService knowledgeService;
+    private final KnowledgeService knowledgeService;
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    // ==================== 基础 CRUD ====================
 
     @Operation(summary = "获取知识库列表", description = "支持按分类或关键词筛选")
     @GetMapping
@@ -66,9 +75,13 @@ public class KnowledgeController {
 
     @Operation(summary = "添加知识库")
     @PostMapping
-    public Map<String, Object> addKnowledge(@RequestBody Knowledge knowledge) {
+    public Map<String, Object> addKnowledge(@RequestBody KnowledgeUpsertDTO request) {
         Map<String, Object> result = new HashMap<>();
         try {
+            Knowledge knowledge = new Knowledge();
+            knowledge.setTitle(request.getTitle());
+            knowledge.setCategory(request.getCategory());
+            knowledge.setContent(request.getContent());
             Knowledge created = knowledgeService.addKnowledge(knowledge);
             result.put("success", true);
             result.put("message", "添加成功");
@@ -84,9 +97,13 @@ public class KnowledgeController {
     @PutMapping("/{id}")
     public Map<String, Object> updateKnowledge(
             @Parameter(description = "知识库 ID", required = true) @PathVariable Long id,
-            @RequestBody Knowledge knowledge) {
+            @RequestBody KnowledgeUpsertDTO request) {
         Map<String, Object> result = new HashMap<>();
         try {
+            Knowledge knowledge = new Knowledge();
+            knowledge.setTitle(request.getTitle());
+            knowledge.setCategory(request.getCategory());
+            knowledge.setContent(request.getContent());
             Knowledge updated = knowledgeService.updateKnowledge(id, knowledge);
             result.put("success", true);
             result.put("message", "更新成功");
@@ -113,6 +130,8 @@ public class KnowledgeController {
         }
         return result;
     }
+
+    // ==================== 搜索与向量同步 ====================
 
     @Operation(summary = "语义搜索", description = "基于向量相似度的语义搜索")
     @GetMapping("/search/semantic")
@@ -145,6 +164,8 @@ public class KnowledgeController {
         }
         return result;
     }
+
+    // ==================== 文档上传 ====================
 
     @Operation(summary = "上传文档", description = "支持 PDF、Word、Markdown、Excel、TXT 等格式")
     @PostMapping("/upload")
@@ -181,5 +202,106 @@ public class KnowledgeController {
         result.put("maxFileSize", MAX_FILE_SIZE);
         result.put("maxFileSizeMB", MAX_FILE_SIZE / 1024 / 1024);
         return result;
+    }
+
+    // ==================== 标签管理 ====================
+
+    @Operation(summary = "创建标签", description = "创建知识库分类标签")
+    @PostMapping("/tags")
+    public Result<KnowledgeTag> createTag(@RequestBody CreateTagDTO request) {
+        return Result.success(knowledgeService.createTag(
+                request.getName(), request.getColor(), request.getDescription()));
+    }
+
+    @Operation(summary = "获取所有标签", description = "获取系统中所有知识库标签")
+    @GetMapping("/tags")
+    public Result<List<KnowledgeTag>> getAllTags() {
+        return Result.success(knowledgeService.getAllTags());
+    }
+
+    @Operation(summary = "删除标签", description = "删除指定标签，同时解除与知识库的关联")
+    @DeleteMapping("/tags/{tagId}")
+    public Result<Void> deleteTag(
+            @Parameter(description = "标签 ID", required = true) @PathVariable Long tagId) {
+        knowledgeService.deleteTag(tagId);
+        return Result.success();
+    }
+
+    @Operation(summary = "为知识库添加标签", description = "建立知识库与标签的关联关系")
+    @PostMapping("/tags/knowledge/{knowledgeId}")
+    public Result<Void> addTagToKnowledge(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId,
+            @Parameter(description = "标签 ID", required = true) @RequestParam Long tagId) {
+        knowledgeService.addTagToKnowledge(knowledgeId, tagId);
+        return Result.success();
+    }
+
+    @Operation(summary = "移除知识库标签", description = "解除知识库与标签的关联关系")
+    @DeleteMapping("/tags/knowledge/{knowledgeId}")
+    public Result<Void> removeTagFromKnowledge(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId,
+            @Parameter(description = "标签 ID", required = true) @RequestParam Long tagId) {
+        knowledgeService.removeTagFromKnowledge(knowledgeId, tagId);
+        return Result.success();
+    }
+
+    @Operation(summary = "获取知识库标签", description = "获取指定知识库关联的所有标签")
+    @GetMapping("/tags/knowledge/{knowledgeId}")
+    public Result<List<KnowledgeTag>> getTagsForKnowledge(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId) {
+        return Result.success(knowledgeService.getTagsForKnowledge(knowledgeId));
+    }
+
+    // ==================== 版本控制 ====================
+
+    @Operation(summary = "获取版本历史", description = "获取知识库文档的所有版本记录")
+    @GetMapping("/versions/{knowledgeId}")
+    public Result<List<KnowledgeVersion>> getVersionHistory(
+            @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId) {
+        return Result.success(knowledgeService.getVersionHistory(knowledgeId));
+    }
+
+    @Operation(summary = "回滚到指定版本", description = "将知识库文档恢复到指定版本")
+    @PostMapping("/versions/{versionId}/rollback")
+    public Result<KnowledgeVersion> rollbackToVersion(
+            @Parameter(description = "版本 ID", required = true) @PathVariable Long versionId) {
+        return Result.success(knowledgeService.rollbackToVersion(versionId));
+    }
+
+    // ==================== 审核流程 ====================
+
+    @Operation(summary = "提交审核", description = "提交知识库内容变更申请进行审核")
+    @PostMapping("/audit/submit")
+    public Result<KnowledgeAudit> submitForAudit(@RequestBody AuditSubmitDTO request) {
+        return Result.success(knowledgeService.submitForAudit(
+                request.getKnowledgeId(),
+                request.getTitle(),
+                request.getContent(),
+                request.getCategory(),
+                request.getSubmitUserId()));
+    }
+
+    @Operation(summary = "获取待审核列表", description = "获取所有待审核的知识库变更申请")
+    @GetMapping("/audit/pending")
+    public Result<List<KnowledgeAudit>> getPendingAudits() {
+        return Result.success(knowledgeService.getPendingAudits());
+    }
+
+    @Operation(summary = "审核通过", description = "批准知识库变更申请")
+    @PostMapping("/audit/{auditId}/approve")
+    public Result<KnowledgeAudit> approveAudit(
+            @Parameter(description = "审核 ID", required = true) @PathVariable Long auditId,
+            @Parameter(description = "审核人 ID", required = true) @RequestParam Long auditUserId,
+            @Parameter(description = "审核意见") @RequestParam(required = false) String comment) {
+        return Result.success(knowledgeService.approveAudit(auditId, auditUserId, comment));
+    }
+
+    @Operation(summary = "审核拒绝", description = "拒绝知识库变更申请")
+    @PostMapping("/audit/{auditId}/reject")
+    public Result<KnowledgeAudit> rejectAudit(
+            @Parameter(description = "审核 ID", required = true) @PathVariable Long auditId,
+            @Parameter(description = "审核人 ID", required = true) @RequestParam Long auditUserId,
+            @Parameter(description = "拒绝理由") @RequestParam(required = false) String comment) {
+        return Result.success(knowledgeService.rejectAudit(auditId, auditUserId, comment));
     }
 }

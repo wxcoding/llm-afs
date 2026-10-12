@@ -76,7 +76,7 @@
           </el-form-item>
           
           <el-form-item>
-            <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
+            <el-button type="primary" :loading="saving" @click="saveProfile">保存</el-button>
             <el-button @click="cancelEdit">取消</el-button>
           </el-form-item>
         </el-form>
@@ -86,13 +86,16 @@
 </template>
 
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const user = inject('user')
+const userStore = useUserStore()
+const { user } = storeToRefs(userStore)
 const saving = ref(false)
 const editing = ref(false)
 
@@ -177,8 +180,7 @@ const saveProfile = async () => {
 
     if (res.data.success) {
       ElMessage.success('保存成功')
-      user.value = { ...user.value, ...res.data.user }
-      localStorage.setItem('user', JSON.stringify(user.value))
+      userStore.updateUser(res.data.user)
       editing.value = false
     } else {
       ElMessage.error(res.data.message || '保存失败')

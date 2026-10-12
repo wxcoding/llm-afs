@@ -5,7 +5,7 @@ import com.afs.module.chat.mapper.ChatSessionMapper;
 import com.afs.module.knowledge.mapper.KnowledgeMapper;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
 import com.afs.module.user.mapper.UserMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -16,23 +16,19 @@ import java.util.Map;
  * 
  * 负责系统各模块数据统计功能
  */
+@RequiredArgsConstructor
 @Service
 public class StatsService {
 
-    @Autowired
-    private KnowledgeMapper knowledgeMapper;
+    private final KnowledgeMapper knowledgeMapper;
 
-    @Autowired
-    private ScamCaseMapper scamCaseMapper;
+    private final ScamCaseMapper scamCaseMapper;
 
-    @Autowired
-    private ChatSessionMapper chatSessionMapper;
+    private final ChatSessionMapper chatSessionMapper;
 
-    @Autowired
-    private ChatMessageMapper chatMessageMapper;
+    private final ChatMessageMapper chatMessageMapper;
 
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
     public Map<String, Object> getStats() {
         Map<String, Object> result = new HashMap<>();

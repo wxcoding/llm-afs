@@ -1,12 +1,14 @@
 package com.afs.module.chat.controller;
 
+import com.afs.module.chat.dto.SendMessageDTO;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;
 import com.afs.module.chat.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,28 +17,23 @@ import java.util.List;
 import java.util.Map;
 
 @Tag(name = "智能对话", description = "聊天对话、会话管理、历史记录等接口，使用 SSE 实现流式响应")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/chat")
 @CrossOrigin
 public class ChatController {
 
-    @Autowired
-    private ChatService chatService;
+    private final ChatService chatService;
 
     @Operation(summary = "发送消息并获取流式响应", description = "通过 SSE (Server-Sent Events) 技术实时推送 AI 回复内容")
     @PostMapping(value = "/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public void send(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletResponse response) throws Exception {
-        Long userId = Long.valueOf(params.get("userId").toString());
-        Long sessionId = params.get("sessionId") != null ?
-                Long.valueOf(params.get("sessionId").toString()) : null;
-        String content = params.get("content").toString();
-
+    public void send(@RequestBody SendMessageDTO request, HttpServletResponse response) throws Exception {
         // 设置 SSE 响应头
         response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
         response.setCharacterEncoding("UTF-8");
-        
+
         // 调用 Service 进行流式响应
-        chatService.sendMessageStream(userId, sessionId, content, response.getWriter());
+        chatService.sendMessageStream(request.getUserId(), request.getSessionId(), request.getContent(), response.getWriter());
     }
 
     @Operation(summary = "获取用户的所有会话列表")

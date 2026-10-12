@@ -4,7 +4,7 @@ import com.afs.module.user.entity.User;
 import com.afs.module.user.mapper.UserMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,11 +14,11 @@ import java.util.List;
  * 
  * 负责用户注册、登录、个人信息管理、管理员用户管理等功能
  */
+@RequiredArgsConstructor
 @Service
 public class UserService {
 
-    @Autowired
-    private UserMapper userMapper;
+    private final UserMapper userMapper;
 
     /**
      * 用户注册

@@ -35,11 +35,11 @@
           </div>
         </div>
         <div class="hero-actions">
-          <el-button type="primary" size="large" @click="$router.push('/chat')" class="primary-btn">
+          <el-button type="primary" size="large" class="primary-btn" @click="$router.push('/chat')">
             <span>开始智能咨询</span>
             <span class="btn-arrow">→</span>
           </el-button>
-          <el-button size="large" @click="$router.push('/knowledge')" class="secondary-btn">
+          <el-button size="large" class="secondary-btn" @click="$router.push('/knowledge')">
             <span>查看知识库</span>
           </el-button>
         </div>
@@ -86,8 +86,8 @@
         <h2>最新诈骗案例</h2>
         <p>了解真实案例，提高防骗意识</p>
       </div>
-      <div class="cases-preview-grid" v-if="recentCases.length > 0">
-        <div class="case-preview-card" v-for="c in recentCases" :key="c.id" @click="$router.push('/cases')">
+      <div v-if="recentCases.length > 0" class="cases-preview-grid">
+        <div v-for="c in recentCases" :key="c.id" class="case-preview-card" @click="$router.push('/cases')">
           <div class="case-preview-header">
             <el-tag :type="getCaseTypeTag(c.type)" size="small">{{ c.type }}</el-tag>
             <span class="case-preview-date">{{ formatDate(c.createTime) }}</span>
@@ -96,7 +96,7 @@
           <div class="case-preview-desc">{{ getCaseDesc(c.content) }}</div>
         </div>
       </div>
-      <div class="cases-preview-empty" v-else>
+      <div v-else class="cases-preview-empty">
         <el-empty description="暂无案例数据" :image-size="80"></el-empty>
       </div>
       <div class="cases-preview-more">

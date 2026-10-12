@@ -5,7 +5,7 @@ import com.afs.module.scamcase.service.ScamCaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 @Tag(name = "诈骗案例管理", description = "诈骗案例的增删改查，支持按类型筛选")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/cases")
 @CrossOrigin
 public class ScamCaseController {
 
-    @Autowired
-    private ScamCaseService scamCaseService;
+    private final ScamCaseService scamCaseService;
 
     @Operation(summary = "获取案例列表", description = "支持按案例类型筛选，如'电信诈骗'、'网络诈骗'等")
     @GetMapping

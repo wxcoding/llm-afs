@@ -5,15 +5,15 @@
       type="textarea"
       :rows="3"
       placeholder="请输入您的问题... (Ctrl+Enter 发送)"
-      @keydown.enter.ctrl="handleSend"
       :disabled="loading"
+      @keydown.enter.ctrl="handleSend"
     />
     <el-button
       type="primary"
-      @click="handleSend"
       :loading="loading"
       :disabled="!inputValue.trim()"
       class="send-btn"
+      @click="handleSend"
     >
       发送
     </el-button>

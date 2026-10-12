@@ -7,7 +7,7 @@
 
     <div class="filter-bar">
       <div class="filter-left">
-        <el-select v-model="selectedType" placeholder="选择类型" @change="loadCases" style="width: 150px">
+        <el-select v-model="selectedType" placeholder="选择类型" style="width: 150px" @change="loadCases">
           <el-option label="全部类型" value="" />
           <el-option label="电信诈骗" value="电信诈骗" />
           <el-option label="网络诈骗" value="网络诈骗" />
@@ -22,7 +22,7 @@
 
     <div class="cases-list">
       <el-row :gutter="20">
-        <el-col :span="12" v-for="c in cases" :key="c.id">
+        <el-col v-for="c in cases" :key="c.id" :span="12">
           <div class="case-card" @click="showDetail(c)">
             <div class="case-header">
               <span class="case-type">{{ c.type }}</span>
@@ -77,7 +77,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>

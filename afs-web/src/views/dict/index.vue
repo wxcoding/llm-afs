@@ -26,7 +26,7 @@
                 @click="selectType(type)"
               >
                 <div class="type-name">{{ type.dictName }}</div>
-                <div class="type-code" v-if="type.dictCode">{{ type.dictCode }}</div>
+                <div v-if="type.dictCode" class="type-code">{{ type.dictCode }}</div>
               </div>
             </div>
           </div>
@@ -37,12 +37,12 @@
             <div class="item-list-header">
               <div class="item-list-title">
                 <span class="title">{{ currentType ? currentType.dictName : '请选择字典类型' }}</span>
-                <span class="code" v-if="currentType">({{ currentType.dictCode }})</span>
+                <span v-if="currentType" class="code">({{ currentType.dictCode }})</span>
               </div>
-              <el-button type="primary" size="small" @click="handleAddItem" :disabled="!currentType">新增字典项</el-button>
+              <el-button type="primary" size="small" :disabled="!currentType" @click="handleAddItem">新增字典项</el-button>
             </div>
 
-            <el-table :data="dictItems" stripe style="width: 100%" v-loading="itemLoading">
+            <el-table v-loading="itemLoading" :data="dictItems" stripe style="width: 100%">
               <el-table-column prop="itemCode" label="编码" width="150"></el-table-column>
               <el-table-column prop="itemName" label="名称" width="150"></el-table-column>
               <el-table-column prop="itemValue" label="值" width="150"></el-table-column>
@@ -88,7 +88,7 @@
       </el-form>
       <template #footer>
         <el-button @click="typeDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveType" :loading="saving">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSaveType">保存</el-button>
       </template>
     </el-dialog>
 
@@ -119,7 +119,7 @@
       </el-form>
       <template #footer>
         <el-button @click="itemDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveItem" :loading="saving">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSaveItem">保存</el-button>
       </template>
     </el-dialog>
   </div>

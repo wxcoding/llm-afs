@@ -4,7 +4,7 @@ import com.afs.common.Result;
 import com.afs.module.system.entity.SysDictItem;
 import com.afs.module.system.entity.SysDictType;
 import com.afs.module.system.service.SysDictService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,13 +13,13 @@ import java.util.Map;
 /**
  * 字典管理接口
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/sys/dict")
 public class SysDictController {
-    
-    @Autowired
-    private SysDictService dictService;
-    
+
+    private final SysDictService dictService;
+
     // ========================================
     // 字典查询接口（供业务使用）
     // ========================================

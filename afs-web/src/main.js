@@ -1,4 +1,5 @@
-import { createApp, ref, onMounted } from 'vue'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import router from './router'
@@ -6,8 +7,7 @@ import App from './App.vue'
 import dict from './utils/dict'
 
 const app = createApp(App)
-const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
-app.provide('user', user)
+app.use(createPinia())
 app.use(ElementPlus)
 app.use(router)
 

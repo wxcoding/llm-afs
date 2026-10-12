@@ -4,7 +4,7 @@ import com.afs.module.rag.service.RagService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,14 +15,13 @@ import java.util.List;
  * 
  * 负责诈骗案例的增删改查、向量同步等业务逻辑
  */
+@RequiredArgsConstructor
 @Service
 public class ScamCaseService {
 
-    @Autowired
-    private ScamCaseMapper scamCaseMapper;
+    private final ScamCaseMapper scamCaseMapper;
 
-    @Autowired
-    private RagService ragService;
+    private final RagService ragService;
 
     public List<ScamCase> getAllCases() {
         return scamCaseMapper.selectList(new QueryWrapper<ScamCase>().orderByDesc("create_time"));

@@ -15,10 +15,10 @@
         <i :class="expanded ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="expand-icon"></i>
       </div>
     </div>
-    <div class="knowledge-item-summary" v-show="!expanded">
+    <div v-show="!expanded" class="knowledge-item-summary">
       {{ summary }}
     </div>
-    <div class="knowledge-item-content" v-show="expanded">
+    <div v-show="expanded" class="knowledge-item-content">
       <pre>{{ item.content }}</pre>
     </div>
   </div>

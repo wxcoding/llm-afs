@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.afs.module.rag.base.ReRankService;
@@ -44,18 +45,16 @@ import com.afs.module.rag.strategy.SearchStrategyFactory;
  * - HybridSearchStrategy: 混合检索策略
  * - SearchStrategyFactory: 策略工厂
  */
+@RequiredArgsConstructor
 @Slf4j
 @Service
 public class RagService {
 
-    @Autowired
-    private VectorStore vectorStore;
+    private final VectorStore vectorStore;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private SearchStrategyFactory strategyFactory;
+    private final SearchStrategyFactory strategyFactory;
 
     @Autowired(required = false)
     private ReRankService reRankService;

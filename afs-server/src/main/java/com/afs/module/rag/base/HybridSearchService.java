@@ -1,10 +1,12 @@
 package com.afs.module.rag.base;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
  * - k: 融合参数，通常取 60，k 越大，各检索结果的权重越均衡
  * 
  */
+@RequiredArgsConstructor
 @Slf4j
 @Service
 public class HybridSearchService {
@@ -46,14 +49,11 @@ public class HybridSearchService {
      */
     private static final int RRF_K = 60;
 
-    @Autowired
-    private VectorStore vectorStore;
+    private final VectorStore vectorStore;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private QueryExpander queryExpander;
+    private final QueryExpander queryExpander;
 
     /**
      * 是否启用混合检索
@@ -339,12 +339,12 @@ public class HybridSearchService {
     /**
      * 构建过滤表达式
      */
-    private org.springframework.ai.vectorstore.filter.Filter.Expression buildFilterExpression(Map<String, Object> filters) {
+    private Filter.Expression buildFilterExpression(Map<String, Object> filters) {
         if (filters == null || filters.isEmpty()) {
             return null;
         }
 
-        var filterBuilder = new org.springframework.ai.vectorstore.filter.FilterExpressionBuilder();
+        var filterBuilder = new FilterExpressionBuilder();
         
         // 如果只有一个条件
         if (filters.size() == 1) {
@@ -353,7 +353,7 @@ public class HybridSearchService {
         }
         
         // 多个条件：收集所有表达式然后用 AND 连接
-        List<org.springframework.ai.vectorstore.filter.FilterExpressionBuilder.Op> ops = new ArrayList<>();
+        List<FilterExpressionBuilder.Op> ops = new ArrayList<>();
         for (Map.Entry<String, Object> entry : filters.entrySet()) {
             ops.add(filterBuilder.eq(entry.getKey(), entry.getValue().toString()));
         }

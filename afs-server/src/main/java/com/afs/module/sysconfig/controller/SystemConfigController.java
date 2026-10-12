@@ -6,20 +6,20 @@ import com.afs.module.sysconfig.service.SystemConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @Tag(name = "系统配置", description = "系统参数配置管理接口")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/config")
 @CrossOrigin
 public class SystemConfigController {
 
-    @Autowired
-    private SystemConfigService configService;
+    private final SystemConfigService configService;
 
     @Operation(summary = "获取所有配置", description = "获取系统所有配置项")
     @GetMapping("/all")

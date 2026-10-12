@@ -7,49 +7,52 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="测试大模型API调用">
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/service/RagService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/controller/SystemConfigController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/entity/SystemConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/mapper/SystemConfigMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/service/SystemConfigService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/.editorconfig" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/.prettierrc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/eslint.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/jsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/ChatInput.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeFormDialog.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeItem.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeUploadDialog.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/MessageBubble.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/QuickQuestions.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/SemanticResultList.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/business/SessionList.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/common/FilterBar.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/afs-web/src/components/common/PageHeader.vue" afterDir="false" />
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="结构重构">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/aspect/LogAspect.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/aspect/LogAspect.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/DataInitializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/DataInitializer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/TestController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/WebConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/WebConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/config/controller/SystemConfigController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/config/entity/SystemConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/config/mapper/SystemConfigMapper.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/config/service/SystemConfigService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/feedback/controller/FeedbackController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/feedback/controller/FeedbackController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeEnhancedController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeEnhancedService.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/RagService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/service/RagService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/service/RagService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/controller/ScamCaseController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/controller/ScamCaseController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/service/ScamCaseService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/service/ScamCaseService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/controller/StatsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/controller/StatsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/service/StatsService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/service/StatsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/controller/SystemConfigController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/sysconfig/controller/SystemConfigController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/system/controller/SysDictController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/system/controller/SysDictController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/system/service/SysDictService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/system/service/SysDictService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/service/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/eslint.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/eslint.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/App.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/router/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/auth/Login.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/cases/Cases.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/chat/Chat.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/api/knowledge.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/knowledge.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/api/knowledgeEnhanced.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/ChatInput.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/ChatInput.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeFormDialog.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeFormDialog.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeItem.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeItem.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeUploadDialog.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/KnowledgeUploadDialog.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/QuickQuestions.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/QuickQuestions.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/composables/useChat.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/composables/useUser.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/layout/DefaultLayout.vue" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/store/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/audit/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/audit/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/knowledge/Knowledge.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/Profile.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/UserManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -195,7 +198,7 @@
       <workItem from="1791420787220" duration="1997000" />
       <workItem from="1791701630525" duration="1148000" />
       <workItem from="1791715379516" duration="3169000" />
-      <workItem from="1791794420214" duration="6599000" />
+      <workItem from="1791794420214" duration="9820000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -277,7 +280,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791062144416</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="结构重构">
+      <option name="closed" value="true" />
+      <created>1791805671246</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1791805671247</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -290,24 +301,25 @@
     <MESSAGE value="feat：冗余代码删除" />
     <MESSAGE value="feat：全局异常处理" />
     <MESSAGE value="测试大模型API调用" />
-    <option name="LAST_COMMIT_MESSAGE" value="测试大模型API调用" />
+    <MESSAGE value="结构重构" />
+    <option name="LAST_COMMIT_MESSAGE" value="结构重构" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>317</line>
+          <line>337</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>378</line>
+          <line>398</line>
           <option name="timeStamp" value="9" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>52</line>
+          <line>72</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-method">

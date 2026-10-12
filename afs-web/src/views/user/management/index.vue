@@ -6,7 +6,7 @@
           <div class="header-content">
             <h2 class="page-title">用户管理</h2>
           </div>
-          <el-button type="primary" @click="showCreateDialog" class="add-user-btn">
+          <el-button type="primary" class="add-user-btn" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
             添加用户
           </el-button>
@@ -18,12 +18,12 @@
           placeholder="搜索用户名、昵称、手机号或邮箱"
           clearable
           style="width: 350px"
+          class="search-input"
           @clear="loadUsers"
           @keyup.enter="searchUsers"
-          class="search-input"
         >
           <template #append>
-            <el-button @click="searchUsers" class="search-btn">
+            <el-button class="search-btn" @click="searchUsers">
               <el-icon><Search /></el-icon>
               搜索
             </el-button>
@@ -32,7 +32,7 @@
       </div>
 
       <div class="table-container">
-        <el-table :data="filteredUsers" style="width: 100%" v-loading="loading" class="user-table">
+        <el-table v-loading="loading" :data="filteredUsers" style="width: 100%" class="user-table">
           <el-table-column prop="id" label="ID" width="80" />
           <el-table-column label="头像" width="80">
             <template #default="{ row }">
@@ -57,8 +57,8 @@
           </el-table-column>
           <el-table-column label="操作" fixed="right" width="200">
             <template #default="{ row }">
-              <el-button size="small" @click="showEditDialog(row)" class="edit-btn">编辑</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(row)" class="delete-btn">删除</el-button>
+              <el-button size="small" class="edit-btn" @click="showEditDialog(row)">编辑</el-button>
+              <el-button size="small" type="danger" class="delete-btn" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -76,9 +76,9 @@
             :page-size-text="'每页条数'"
             :goto-text="'前往'"
             :pager-count="5"
+            class="pagination-component"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
-            class="pagination-component"
           />
         </div>
 
@@ -89,7 +89,7 @@
       </el-config-provider>
 
       <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="user-dialog">
-        <el-form :model="formData" :rules="rules" ref="formRef" label-width="80px" class="user-form">
+        <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px" class="user-form">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="formData.username" :disabled="isEdit" placeholder="请输入用户名" />
           </el-form-item>
@@ -132,13 +132,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, inject } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/stores/user'
 
-const user = inject('user')
+const { user } = storeToRefs(useUserStore())
 const loading = ref(false)
 const users = ref([])
 const searchText = ref('')

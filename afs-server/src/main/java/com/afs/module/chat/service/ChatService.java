@@ -7,11 +7,11 @@ import com.afs.module.chat.mapper.ChatMessageMapper;
 import com.afs.module.chat.mapper.ChatSessionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.PrintWriter;
@@ -27,20 +27,17 @@ import java.util.Map;
  * 负责处理对话管理、消息发送、历史记录查询等核心业务逻辑，
  * 集成RAG技术实现基于知识库的智能问答
  */
+@RequiredArgsConstructor
 @Service
 public class ChatService {
 
-    @Autowired
-    private ChatSessionMapper sessionMapper;
+    private final ChatSessionMapper sessionMapper;
 
-    @Autowired
-    private ChatMessageMapper messageMapper;
+    private final ChatMessageMapper messageMapper;
 
-    @Autowired
-    private ChatClient chatClient;
+    private final ChatClient chatClient;
 
-    @Autowired
-    private RagService ragService;
+    private final RagService ragService;
 
     /**
      * 发送消息并通过 SSE 流式返回 AI 响应

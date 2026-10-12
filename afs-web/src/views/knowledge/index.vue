@@ -4,7 +4,7 @@
 
     <FilterBar>
       <template #left>
-        <el-select v-model="selectedCategory" placeholder="选择分类" @change="loadKnowledge" style="width: 150px">
+        <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 150px" @change="loadKnowledge">
           <el-option label="全部分类" value="" />
           <el-option
             v-for="option in categoryOptions"
@@ -28,7 +28,7 @@
       <template #right>
         <el-button type="primary" @click="showAddDialog">+ 新增知识</el-button>
         <el-button type="success" @click="showUploadDialog">📎 上传文档</el-button>
-        <el-button type="warning" @click="syncVectorStore" :loading="syncing">同步向量库</el-button>
+        <el-button type="warning" :loading="syncing" @click="syncVectorStore">同步向量库</el-button>
       </template>
     </FilterBar>
 
@@ -71,7 +71,7 @@
     <KnowledgeUploadDialog
       v-model:visible="uploadDialogVisible"
       :uploading="uploading"
-      :upload-form="uploadForm"
+      :default-category="uploadForm.category"
       :file-list="fileList"
       :category-options="categoryOptions"
       @upload="handleUpload"
@@ -82,11 +82,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { submitForAudit } from '@/api/knowledgeEnhanced'
+import { submitForAudit } from '@/api/knowledge'
 import dict from '@/utils/dict'
+import { useUserStore } from '@/stores/user'
 import PageHeader from '@/components/common/PageHeader.vue'
 import FilterBar from '@/components/common/FilterBar.vue'
 import KnowledgeItem from '@/components/business/KnowledgeItem.vue'
@@ -109,7 +110,7 @@ const uploading = ref(false)
 const fileList = ref([])
 const form = ref({ id: null, title: '', category: '', content: '' })
 const uploadForm = ref({ category: '' })
-const user = inject('user')
+const userStore = useUserStore()
 const submitMode = ref('direct')
 
 const categoryOptions = ref([])
@@ -181,29 +182,29 @@ const showEditDialog = (k) => {
   dialogVisible.value = true
 }
 
-const handleSubmit = async () => {
-  if (!form.value.title || !form.value.category || !form.value.content) {
+const handleSubmit = async (payload) => {
+  if (!payload.title || !payload.category || !payload.content) {
     ElMessage.warning('请填写完整信息')
     return
   }
   submitting.value = true
   try {
     if (submitMode.value === 'audit') {
-      const userId = user?.value?.id || parseInt(localStorage.getItem('userId') || '1')
+      const userId = userStore.userId
       await submitForAudit({
-        knowledgeId: isEdit.value ? form.value.id : null,
-        title: form.value.title,
-        content: form.value.content,
-        category: form.value.category,
+        knowledgeId: isEdit.value ? payload.id : null,
+        title: payload.title,
+        content: payload.content,
+        category: payload.category,
         submitUserId: userId
       })
       ElMessage.success('已提交审核，请等待管理员审核')
     } else {
       if (isEdit.value) {
-        await axios.put(`/api/knowledge/${form.value.id}`, form.value)
+        await axios.put(`/api/knowledge/${payload.id}`, payload)
         ElMessage.success('更新成功')
       } else {
-        await axios.post('/api/knowledge', form.value)
+        await axios.post('/api/knowledge', payload)
         ElMessage.success('添加成功')
       }
     }
@@ -257,7 +258,7 @@ const handleFileRemove = (file, files) => {
   fileList.value = files
 }
 
-const handleUpload = async () => {
+const handleUpload = async (category) => {
   if (fileList.value.length === 0) {
     ElMessage.warning('请选择要上传的文件')
     return
@@ -272,8 +273,8 @@ const handleUpload = async () => {
       const file = fileItem.raw
       const formData = new FormData()
       formData.append('file', file)
-      if (uploadForm.value.category) {
-        formData.append('category', uploadForm.value.category)
+      if (category) {
+        formData.append('category', category)
       }
 
       try {

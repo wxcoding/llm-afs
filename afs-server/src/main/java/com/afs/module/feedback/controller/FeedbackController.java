@@ -6,17 +6,17 @@ import com.afs.module.feedback.service.MessageFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "用户反馈", description = "消息反馈、评分等接口")
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/feedback")
 @CrossOrigin
 public class FeedbackController {
 
-    @Autowired
-    private MessageFeedbackService feedbackService;
+    private final MessageFeedbackService feedbackService;
 
     @Operation(summary = "提交消息反馈", description = "对AI回复消息进行评分、标记是否有帮助、提交反馈内容")
     @PostMapping("/message/{messageId}")
