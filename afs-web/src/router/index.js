@@ -1,28 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/home/index.vue'
-import Login from '../views/auth/Login.vue'
-import Chat from '../views/chat/Chat.vue'
-import Cases from '../views/cases/Cases.vue'
-import Knowledge from '../views/knowledge/Knowledge.vue'
-import Profile from '../views/user/Profile.vue'
-import UserManagement from '../views/user/UserManagement.vue'
-import Config from '../views/config/index.vue'
-import Audit from '../views/audit/index.vue'
-import Dict from '../views/dict/index.vue'
 
 const routes = [
-  { path: '/', component: Home },
-  { path: '/login', component: Login },
-  { path: '/chat', component: Chat },
-  { path: '/chat/:sessionId', component: Chat },
-  { path: '/cases', component: Cases },
-  { path: '/knowledge', component: Knowledge },
-  { path: '/knowledge/audit', component: Audit },
-  { path: '/profile', component: Profile },
-  { path: '/users', component: UserManagement },
-  { path: '/config', component: Config },
-  { path: '/config/dict', component: Dict },
-  { path: '/audit', component: Audit }
+  { path: '/', component: () => import('@/views/home/index.vue') },
+  { path: '/login', component: () => import('@/views/auth/index.vue') },
+  { path: '/chat', component: () => import('@/views/chat/index.vue') },
+  { path: '/chat/:sessionId', component: () => import('@/views/chat/index.vue') },
+  { path: '/cases', component: () => import('@/views/cases/index.vue') },
+  { path: '/knowledge', component: () => import('@/views/knowledge/index.vue') },
+  { path: '/audit', component: () => import('@/views/audit/index.vue') },
+  { path: '/profile', component: () => import('@/views/user/profile/index.vue') },
+  { path: '/users', component: () => import('@/views/user/management/index.vue') },
+  { path: '/config', component: () => import('@/views/config/index.vue') },
+  { path: '/config/dict', component: () => import('@/views/dict/index.vue') },
+  // 兼容旧路径
+  { path: '/knowledge/audit', redirect: '/audit' }
 ]
 
 const router = createRouter({

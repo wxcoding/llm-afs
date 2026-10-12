@@ -1,7 +1,7 @@
-package com.afs.module.config.service;
+package com.afs.module.sysconfig.service;
 
-import com.afs.module.config.entity.SystemConfig;
-import com.afs.module.config.mapper.SystemConfigMapper;
+import com.afs.module.sysconfig.entity.SystemConfig;
+import com.afs.module.sysconfig.mapper.SystemConfigMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * 系统配置服务类
- * 
+ *
  * 负责系统参数配置的管理和初始化
  */
 @Service

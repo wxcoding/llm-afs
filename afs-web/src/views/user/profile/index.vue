@@ -85,135 +85,119 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, inject, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-export default {
-  name: 'Profile',
-  setup() {
-    const router = useRouter()
-    const user = inject('user')
-    const saving = ref(false)
-    const editing = ref(false)
-    
-    const form = ref({
-      id: null,
-      username: '',
-      nickname: '',
-      avatar: '',
-      phone: '',
-      email: ''
-    })
-    
-    const originalForm = ref({})
-    
-    const goBack = () => {
-      if (editing.value) {
-        form.value = { ...originalForm.value }
-        editing.value = false
-      } else {
-        router.back()
-      }
-    }
+const router = useRouter()
+const user = inject('user')
+const saving = ref(false)
+const editing = ref(false)
 
-    const loadUserInfo = async () => {
-      if (!user.value) {
-        router.push('/login')
-        return
-      }
-      form.value.id = user.value.id
-      form.value.username = user.value.username
-      
-      try {
-        const res = await axios.get(`/api/user/${user.value.id}`)
-        if (res.data.success) {
-          const userData = res.data.user
-          form.value.nickname = userData.nickname || ''
-          form.value.avatar = userData.avatar || ''
-          form.value.phone = userData.phone || ''
-          form.value.email = userData.email || ''
-          originalForm.value = { ...form.value }
-        }
-      } catch (e) {
-        ElMessage.error('获取用户信息失败')
-      }
-    }
+const form = ref({
+  id: null,
+  username: '',
+  nickname: '',
+  avatar: '',
+  phone: '',
+  email: ''
+})
 
-    const beforeAvatarUpload = (file) => {
-      const isImage = file.type.startsWith('image/')
-      const isLt2M = file.size / 1024 / 1024 < 2
-      
-      if (!isImage) {
-        ElMessage.error('只能上传图片文件!')
-        return false
-      }
-      if (!isLt2M) {
-        ElMessage.error('图片大小不能超过 2MB!')
-        return false
-      }
-      return true
-    }
+const originalForm = ref({})
 
-    const uploadAvatar = async ({ file }) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        form.value.avatar = e.target.result
-      }
-      reader.readAsDataURL(file)
-    }
-
-    const saveProfile = async () => {
-      if (!form.value.id) return
-      
-      saving.value = true
-      try {
-        const res = await axios.put('/api/user/update', {
-          id: form.value.id,
-          nickname: form.value.nickname,
-          phone: form.value.phone,
-          email: form.value.email,
-          avatar: form.value.avatar
-        })
-        
-        if (res.data.success) {
-          ElMessage.success('保存成功')
-          user.value = { ...user.value, ...res.data.user }
-          localStorage.setItem('user', JSON.stringify(user.value))
-          editing.value = false
-        } else {
-          ElMessage.error(res.data.message || '保存失败')
-        }
-      } catch (e) {
-        ElMessage.error('保存失败，请检查网络')
-      } finally {
-        saving.value = false
-      }
-    }
-    
-    const cancelEdit = () => {
-      form.value = { ...originalForm.value }
-      editing.value = false
-    }
-
-    onMounted(() => {
-      loadUserInfo()
-    })
-
-    return {
-      form,
-      saving,
-      editing,
-      goBack,
-      beforeAvatarUpload,
-      uploadAvatar,
-      saveProfile,
-      cancelEdit
-    }
+const goBack = () => {
+  if (editing.value) {
+    form.value = { ...originalForm.value }
+    editing.value = false
+  } else {
+    router.back()
   }
 }
+
+const loadUserInfo = async () => {
+  if (!user.value) {
+    router.push('/login')
+    return
+  }
+  form.value.id = user.value.id
+  form.value.username = user.value.username
+
+  try {
+    const res = await axios.get(`/api/user/${user.value.id}`)
+    if (res.data.success) {
+      const userData = res.data.user
+      form.value.nickname = userData.nickname || ''
+      form.value.avatar = userData.avatar || ''
+      form.value.phone = userData.phone || ''
+      form.value.email = userData.email || ''
+      originalForm.value = { ...form.value }
+    }
+  } catch (e) {
+    ElMessage.error('获取用户信息失败')
+  }
+}
+
+const beforeAvatarUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+const uploadAvatar = async ({ file }) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    form.value.avatar = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const saveProfile = async () => {
+  if (!form.value.id) return
+
+  saving.value = true
+  try {
+    const res = await axios.put('/api/user/update', {
+      id: form.value.id,
+      nickname: form.value.nickname,
+      phone: form.value.phone,
+      email: form.value.email,
+      avatar: form.value.avatar
+    })
+
+    if (res.data.success) {
+      ElMessage.success('保存成功')
+      user.value = { ...user.value, ...res.data.user }
+      localStorage.setItem('user', JSON.stringify(user.value))
+      editing.value = false
+    } else {
+      ElMessage.error(res.data.message || '保存失败')
+    }
+  } catch (e) {
+    ElMessage.error('保存失败，请检查网络')
+  } finally {
+    saving.value = false
+  }
+}
+
+const cancelEdit = () => {
+  form.value = { ...originalForm.value }
+  editing.value = false
+}
+
+onMounted(() => {
+  loadUserInfo()
+})
 </script>
 
 <style scoped>

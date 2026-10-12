@@ -76,7 +76,7 @@
               <el-menu-item index="/knowledge">
                 <span>知识库</span>
               </el-menu-item>
-              <el-menu-item index="/knowledge/audit" v-if="user">
+              <el-menu-item index="/audit" v-if="user">
                 <span>知识审核</span>
               </el-menu-item>
             </el-sub-menu>

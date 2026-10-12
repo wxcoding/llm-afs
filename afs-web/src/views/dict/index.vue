@@ -125,208 +125,180 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import axios from 'axios'
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-export default {
-  name: 'Dict',
-  setup() {
-    const dictTypes = ref([])
-    const dictItems = ref([])
-    const currentType = ref(null)
-    const typeDialogVisible = ref(false)
-    const itemDialogVisible = ref(false)
-    const isEditType = ref(false)
-    const isEditItem = ref(false)
-    const saving = ref(false)
-    const itemLoading = ref(false)
+const dictTypes = ref([])
+const dictItems = ref([])
+const currentType = ref(null)
+const typeDialogVisible = ref(false)
+const itemDialogVisible = ref(false)
+const isEditType = ref(false)
+const isEditItem = ref(false)
+const saving = ref(false)
+const itemLoading = ref(false)
 
-    const typeForm = ref({
-      dictCode: '',
-      dictName: '',
-      description: '',
-      status: 1
-    })
+const typeForm = ref({
+  dictCode: '',
+  dictName: '',
+  description: '',
+  status: 1
+})
 
-    const itemForm = ref({
-      itemCode: '',
-      itemName: '',
-      itemValue: '',
-      sort: 0,
-      status: 1,
-      remark: ''
-    })
+const itemForm = ref({
+  itemCode: '',
+  itemName: '',
+  itemValue: '',
+  sort: 0,
+  status: 1,
+  remark: ''
+})
 
-    const loadDictTypes = async () => {
-      try {
-        const res = await axios.get('/api/sys/dict/types')
-        if (res.data.success) {
-          dictTypes.value = res.data.data
-          if (dictTypes.value.length > 0 && !currentType.value) {
-            currentType.value = dictTypes.value[0]
-            loadDictItems()
-          }
-        }
-      } catch (error) {
-        console.error(error)
-        ElMessage.error('加载字典类型失败')
-      }
-    }
-
-    const loadDictItems = async () => {
-      if (!currentType.value) return
-      itemLoading.value = true
-      try {
-        const res = await axios.get(`/api/sys/dict/${currentType.value.dictCode}`)
-        if (res.data.success) {
-          dictItems.value = res.data.data
-        }
-      } catch (error) {
-        console.error(error)
-        ElMessage.error('加载字典项失败')
-      } finally {
-        itemLoading.value = false
-      }
-    }
-
-    const handleAddType = () => {
-      isEditType.value = false
-      typeForm.value = {
-        dictCode: '',
-        dictName: '',
-        description: '',
-        status: 1
-      }
-      typeDialogVisible.value = true
-    }
-
-    const handleAddItem = () => {
-      if (!currentType.value) return
-      isEditItem.value = false
-      itemForm.value = {
-        itemCode: '',
-        itemName: '',
-        itemValue: '',
-        sort: 0,
-        status: 1,
-        remark: ''
-      }
-      itemDialogVisible.value = true
-    }
-
-    const handleEditItem = (row) => {
-      isEditItem.value = true
-      itemForm.value = { ...row, id: row.id }
-      itemDialogVisible.value = true
-    }
-
-    const handleDeleteItem = async (row) => {
-      try {
-        await ElMessageBox.confirm('确定要删除这个字典项吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await axios.delete(`/api/sys/dict/item/${row.id}`)
-        ElMessage.success('删除成功')
+const loadDictTypes = async () => {
+  try {
+    const res = await axios.get('/api/sys/dict/types')
+    if (res.data.success) {
+      dictTypes.value = res.data.data
+      if (dictTypes.value.length > 0 && !currentType.value) {
+        currentType.value = dictTypes.value[0]
         loadDictItems()
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error(error)
-          ElMessage.error('删除失败')
-        }
       }
     }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('加载字典类型失败')
+  }
+}
 
-    const handleSaveType = async () => {
-      if (!typeForm.value.dictCode || !typeForm.value.dictName) {
-        ElMessage.warning('请填写完整信息')
-        return
-      }
-      saving.value = true
-      try {
-        if (isEditType.value) {
-          await axios.put(`/api/sys/dict/type/${typeForm.value.id}`, typeForm.value)
-        } else {
-          await axios.post('/api/sys/dict/type', typeForm.value)
-        }
-        ElMessage.success('保存成功')
-        typeDialogVisible.value = false
-        loadDictTypes()
-      } catch (error) {
-        console.error(error)
-        ElMessage.error('保存失败')
-      } finally {
-        saving.value = false
-      }
+const loadDictItems = async () => {
+  if (!currentType.value) return
+  itemLoading.value = true
+  try {
+    const res = await axios.get(`/api/sys/dict/${currentType.value.dictCode}`)
+    if (res.data.success) {
+      dictItems.value = res.data.data
     }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('加载字典项失败')
+  } finally {
+    itemLoading.value = false
+  }
+}
 
-    const handleSaveItem = async () => {
-      if (!itemForm.value.itemCode || !itemForm.value.itemName) {
-        ElMessage.warning('请填写完整信息')
-        return
-      }
-      saving.value = true
-      try {
-        const data = {
-          ...itemForm.value,
-          dictCode: currentType.value.dictCode
-        }
-        if (isEditItem.value) {
-          await axios.put(`/api/sys/dict/item/${itemForm.value.id}`, data)
-        } else {
-          await axios.post('/api/sys/dict/item', data)
-        }
-        ElMessage.success('保存成功')
-        itemDialogVisible.value = false
-        loadDictItems()
-      } catch (error) {
-        console.error(error)
-        ElMessage.error('保存失败')
-      } finally {
-        saving.value = false
-      }
-    }
+const handleAddType = () => {
+  isEditType.value = false
+  typeForm.value = {
+    dictCode: '',
+    dictName: '',
+    description: '',
+    status: 1
+  }
+  typeDialogVisible.value = true
+}
 
-    const selectType = (type) => {
-      currentType.value = type
-      loadDictItems()
-    }
+const handleAddItem = () => {
+  if (!currentType.value) return
+  isEditItem.value = false
+  itemForm.value = {
+    itemCode: '',
+    itemName: '',
+    itemValue: '',
+    sort: 0,
+    status: 1,
+    remark: ''
+  }
+  itemDialogVisible.value = true
+}
 
-    const handleRefresh = () => {
-      loadDictTypes()
-    }
+const handleEditItem = (row) => {
+  isEditItem.value = true
+  itemForm.value = { ...row, id: row.id }
+  itemDialogVisible.value = true
+}
 
-    onMounted(() => {
-      loadDictTypes()
+const handleDeleteItem = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个字典项吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     })
-
-    return {
-      dictTypes,
-      dictItems,
-      currentType,
-      typeDialogVisible,
-      itemDialogVisible,
-      isEditType,
-      isEditItem,
-      saving,
-      itemLoading,
-      typeForm,
-      itemForm,
-      loadDictItems,
-      handleAddType,
-      handleAddItem,
-      handleEditItem,
-      handleDeleteItem,
-      handleSaveType,
-      handleSaveItem,
-      handleRefresh,
-      selectType
+    await axios.delete(`/api/sys/dict/item/${row.id}`)
+    ElMessage.success('删除成功')
+    loadDictItems()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(error)
+      ElMessage.error('删除失败')
     }
   }
 }
+
+const handleSaveType = async () => {
+  if (!typeForm.value.dictCode || !typeForm.value.dictName) {
+    ElMessage.warning('请填写完整信息')
+    return
+  }
+  saving.value = true
+  try {
+    if (isEditType.value) {
+      await axios.put(`/api/sys/dict/type/${typeForm.value.id}`, typeForm.value)
+    } else {
+      await axios.post('/api/sys/dict/type', typeForm.value)
+    }
+    ElMessage.success('保存成功')
+    typeDialogVisible.value = false
+    loadDictTypes()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleSaveItem = async () => {
+  if (!itemForm.value.itemCode || !itemForm.value.itemName) {
+    ElMessage.warning('请填写完整信息')
+    return
+  }
+  saving.value = true
+  try {
+    const data = {
+      ...itemForm.value,
+      dictCode: currentType.value.dictCode
+    }
+    if (isEditItem.value) {
+      await axios.put(`/api/sys/dict/item/${itemForm.value.id}`, data)
+    } else {
+      await axios.post('/api/sys/dict/item', data)
+    }
+    ElMessage.success('保存成功')
+    itemDialogVisible.value = false
+    loadDictItems()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const selectType = (type) => {
+  currentType.value = type
+  loadDictItems()
+}
+
+const handleRefresh = () => {
+  loadDictTypes()
+}
+
+onMounted(() => {
+  loadDictTypes()
+})
 </script>
 
 <style scoped>

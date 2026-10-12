@@ -106,86 +106,67 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
-import { ArrowRight } from '@element-plus/icons-vue'
 import axios from 'axios'
 
-export default {
-  name: 'Home',
-  components: {
-    ArrowRight
-  },
-  setup() {
-    const stats = ref({
-      knowledgeCount: 0,
-      caseCount: 0,
-      sessionCount: 0,
-      messageCount: 0,
-      userCount: 0
-    })
-    const recentCases = ref([])
+const stats = ref({
+  knowledgeCount: 0,
+  caseCount: 0,
+  sessionCount: 0,
+  messageCount: 0,
+  userCount: 0
+})
+const recentCases = ref([])
 
-    const loadStats = async () => {
-      try {
-        const res = await axios.get('/api/stats')
-        if (res.data && res.data.success) {
-          stats.value = res.data
-        }
-      } catch (e) {
-        console.log('使用默认统计数据')
-      }
+const loadStats = async () => {
+  try {
+    const res = await axios.get('/api/stats')
+    if (res.data && res.data.success) {
+      stats.value = res.data
     }
-
-    const loadRecentCases = async () => {
-      try {
-        const res = await axios.get('/api/cases', { params: { page: 1, pageSize: 3 } })
-        if (res.data && res.data.success) {
-          recentCases.value = res.data.list || []
-        }
-      } catch (e) {
-        console.log('暂无案例数据')
-      }
-    }
-
-    const getCaseTypeTag = (type) => {
-      const map = {
-        '冒充客服': 'danger',
-        '刷单诈骗': 'warning',
-        '杀猪盘': 'danger',
-        '冒充公检法': 'danger',
-        '网络贷款': 'warning',
-        '虚假购物': 'info'
-      }
-      return map[type] || 'info'
-    }
-
-    const formatDate = (date) => {
-      if (!date) return ''
-      return new Date(date).toLocaleDateString('zh-CN')
-    }
-
-    const getCaseDesc = (content) => {
-      if (!content) return ''
-      return content.length > 80 ? content.substring(0, 80) + '...' : content
-    }
-
-    onMounted(() => {
-      loadStats()
-      loadRecentCases()
-    })
-
-    return {
-      stats,
-      recentCases,
-      loadStats,
-      loadRecentCases,
-      getCaseTypeTag,
-      formatDate,
-      getCaseDesc
-    }
+  } catch (e) {
+    console.log('使用默认统计数据')
   }
 }
+
+const loadRecentCases = async () => {
+  try {
+    const res = await axios.get('/api/cases', { params: { page: 1, pageSize: 3 } })
+    if (res.data && res.data.success) {
+      recentCases.value = res.data.list || []
+    }
+  } catch (e) {
+    console.log('暂无案例数据')
+  }
+}
+
+const getCaseTypeTag = (type) => {
+  const map = {
+    '冒充客服': 'danger',
+    '刷单诈骗': 'warning',
+    '杀猪盘': 'danger',
+    '冒充公检法': 'danger',
+    '网络贷款': 'warning',
+    '虚假购物': 'info'
+  }
+  return map[type] || 'info'
+}
+
+const formatDate = (date) => {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('zh-CN')
+}
+
+const getCaseDesc = (content) => {
+  if (!content) return ''
+  return content.length > 80 ? content.substring(0, 80) + '...' : content
+}
+
+onMounted(() => {
+  loadStats()
+  loadRecentCases()
+})
 </script>
 
 <style scoped>

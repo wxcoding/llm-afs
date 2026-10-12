@@ -1,8 +1,8 @@
-package com.afs.module.config.controller;
+package com.afs.module.sysconfig.controller;
 
 import com.afs.common.Result;
-import com.afs.module.config.entity.SystemConfig;
-import com.afs.module.config.service.SystemConfigService;
+import com.afs.module.sysconfig.entity.SystemConfig;
+import com.afs.module.sysconfig.service.SystemConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

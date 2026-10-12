@@ -1,18 +1,16 @@
 package com.afs.config;
 
-import com.afs.module.config.service.SystemConfigService;
+import com.afs.module.sysconfig.service.SystemConfigService;
 import com.afs.module.knowledge.service.KnowledgeService;
 import com.afs.module.scamcase.service.ScamCaseService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@Slf4j
 @Configuration
 public class DataInitializer {
-
-    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     @Bean
     public CommandLineRunner initData(ScamCaseService scamCaseService, KnowledgeService knowledgeService,

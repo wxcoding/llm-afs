@@ -1,4 +1,4 @@
-package com.afs.module.config.entity;
+package com.afs.module.sysconfig.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

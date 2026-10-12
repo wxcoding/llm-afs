@@ -131,232 +131,195 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, reactive, computed, onMounted, inject } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
-export default {
-  name: 'UserManagement',
-  components: {
-    Plus,
-    Search
-  },
-  setup() {
-    const user = inject('user')
-    const loading = ref(false)
-    const users = ref([])
-    const searchText = ref('')
-    const currentPage = ref(1)
-    const pageSize = ref(10)
-    const total = ref(0)
-    const dialogVisible = ref(false)
-    const dialogTitle = ref('添加用户')
-    const isEdit = ref(false)
-    const formRef = ref(null)
-    const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const user = inject('user')
+const loading = ref(false)
+const users = ref([])
+const searchText = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const dialogVisible = ref(false)
+const dialogTitle = ref('添加用户')
+const isEdit = ref(false)
+const formRef = ref(null)
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
-    const formData = reactive({
-      id: null,
-      username: '',
-      password: '',
-      nickname: '',
-      phone: '',
-      email: '',
-      avatar: ''
-    })
+const formData = reactive({
+  id: null,
+  username: '',
+  password: '',
+  nickname: '',
+  phone: '',
+  email: '',
+  avatar: ''
+})
 
-    const rules = {
-      username: [
-        { required: true, message: '请输入用户名', trigger: 'blur' },
-        { min: 3, max: 20, message: '用户名长度在3到20个字符', trigger: 'blur' }
-      ],
-      password: [
-        { required: false, message: '请输入密码', trigger: 'blur' },
-        { min: 6, max: 20, message: '密码长度在6到20个字符', trigger: 'blur' }
-      ],
-      email: [
-        { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-      ],
-      phone: [
-        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-      ]
+const rules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度在3到20个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: false, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度在6到20个字符', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+}
+
+const filteredUsers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return users.value.slice(start, end)
+})
+
+const loadUsers = async () => {
+  if (!user.value) {
+    return
+  }
+  loading.value = true
+  try {
+    const response = await axios.get('/api/user/list')
+    if (response.data.success) {
+      users.value = response.data.users
+      total.value = response.data.total
+    } else {
+      ElMessage.error(response.data.message)
     }
+  } catch (error) {
+    ElMessage.error('加载用户列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
-    const filteredUsers = computed(() => {
-      const start = (currentPage.value - 1) * pageSize.value
-      const end = start + pageSize.value
-      return users.value.slice(start, end)
-    })
+const searchUsers = () => {
+  if (!searchText.value.trim()) {
+    loadUsers()
+    return
+  }
+  const keyword = searchText.value.toLowerCase()
+  users.value = users.value.filter(user =>
+    user.username.toLowerCase().includes(keyword) ||
+    (user.nickname && user.nickname.toLowerCase().includes(keyword)) ||
+    (user.phone && user.phone.includes(keyword)) ||
+    (user.email && user.email.toLowerCase().includes(keyword))
+  )
+  total.value = users.value.length
+}
 
-    const loadUsers = async () => {
-      if (!user.value) {
-        return
-      }
-      loading.value = true
+const showCreateDialog = () => {
+  isEdit.value = false
+  dialogTitle.value = '添加用户'
+  Object.assign(formData, {
+    id: null,
+    username: '',
+    password: '',
+    nickname: '',
+    phone: '',
+    email: '',
+    avatar: ''
+  })
+  dialogVisible.value = true
+}
+
+const showEditDialog = (user) => {
+  isEdit.value = true
+  dialogTitle.value = '编辑用户'
+  Object.assign(formData, {
+    id: user.id,
+    username: user.username,
+    password: '',
+    nickname: user.nickname,
+    phone: user.phone,
+    email: user.email,
+    avatar: user.avatar
+  })
+  dialogVisible.value = true
+}
+
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  await formRef.value.validate(async (valid) => {
+    if (valid) {
       try {
-        const response = await axios.get('/api/user/list')
+        let response
+        if (isEdit.value) {
+          response = await axios.put(`/api/user/admin/update/${formData.id}`, formData)
+        } else {
+          if (!formData.password) {
+            ElMessage.warning('请输入密码')
+            return
+          }
+          response = await axios.post('/api/user/create', formData)
+        }
+
         if (response.data.success) {
-          users.value = response.data.users
-          total.value = response.data.total
+          ElMessage.success(response.data.message)
+          dialogVisible.value = false
+          loadUsers()
         } else {
           ElMessage.error(response.data.message)
         }
       } catch (error) {
-        ElMessage.error('加载用户列表失败')
-      } finally {
-        loading.value = false
+        ElMessage.error('操作失败')
       }
     }
-
-    const searchUsers = () => {
-      if (!searchText.value.trim()) {
-        loadUsers()
-        return
-      }
-      const keyword = searchText.value.toLowerCase()
-      users.value = users.value.filter(user => 
-        user.username.toLowerCase().includes(keyword) ||
-        (user.nickname && user.nickname.toLowerCase().includes(keyword)) ||
-        (user.phone && user.phone.includes(keyword)) ||
-        (user.email && user.email.toLowerCase().includes(keyword))
-      )
-      total.value = users.value.length
-    }
-
-    const showCreateDialog = () => {
-      isEdit.value = false
-      dialogTitle.value = '添加用户'
-      Object.assign(formData, {
-        id: null,
-        username: '',
-        password: '',
-        nickname: '',
-        phone: '',
-        email: '',
-        avatar: ''
-      })
-      dialogVisible.value = true
-    }
-
-    const showEditDialog = (user) => {
-      isEdit.value = true
-      dialogTitle.value = '编辑用户'
-      Object.assign(formData, {
-        id: user.id,
-        username: user.username,
-        password: '',
-        nickname: user.nickname,
-        phone: user.phone,
-        email: user.email,
-        avatar: user.avatar
-      })
-      dialogVisible.value = true
-    }
-
-    const handleSubmit = async () => {
-      if (!formRef.value) return
-      
-      await formRef.value.validate(async (valid) => {
-        if (valid) {
-          try {
-            let response
-            if (isEdit.value) {
-              response = await axios.put(`/api/user/admin/update/${formData.id}`, formData)
-            } else {
-              if (!formData.password) {
-                ElMessage.warning('请输入密码')
-                return
-              }
-              response = await axios.post('/api/user/create', formData)
-            }
-            
-            if (response.data.success) {
-              ElMessage.success(response.data.message)
-              dialogVisible.value = false
-              loadUsers()
-            } else {
-              ElMessage.error(response.data.message)
-            }
-          } catch (error) {
-            ElMessage.error('操作失败')
-          }
-        }
-      })
-    }
-
-    const handleDelete = (user) => {
-      ElMessageBox.confirm(
-        `确定要删除用户 "${user.username}" 吗？`,
-        '删除确认',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      ).then(async () => {
-        try {
-          const response = await axios.delete(`/api/user/delete/${user.id}`)
-          if (response.data.success) {
-            ElMessage.success('删除成功')
-            loadUsers()
-          } else {
-            ElMessage.error(response.data.message)
-          }
-        } catch (error) {
-          ElMessage.error('删除失败')
-        }
-      }).catch(() => {})
-    }
-
-    const handleSizeChange = (val) => {
-      pageSize.value = val
-    }
-
-    const handleCurrentChange = (val) => {
-      currentPage.value = val
-    }
-
-    const formatTime = (time) => {
-      if (!time) return '-'
-      return time.replace('T', ' ').substring(0, 19)
-    }
-
-    onMounted(() => {
-      loadUsers()
-    })
-
-    return {
-      user,
-      loading,
-      users,
-      searchText,
-      currentPage,
-      pageSize,
-      total,
-      dialogVisible,
-      dialogTitle,
-      isEdit,
-      formRef,
-      formData,
-      rules,
-      filteredUsers,
-      defaultAvatar,
-      zhCn,
-      loadUsers,
-      searchUsers,
-      showCreateDialog,
-      showEditDialog,
-      handleSubmit,
-      handleDelete,
-      handleSizeChange,
-      handleCurrentChange,
-      formatTime
-    }
-  }
+  })
 }
+
+const handleDelete = (user) => {
+  ElMessageBox.confirm(
+    `确定要删除用户 "${user.username}" 吗？`,
+    '删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      const response = await axios.delete(`/api/user/delete/${user.id}`)
+      if (response.data.success) {
+        ElMessage.success('删除成功')
+        loadUsers()
+      } else {
+        ElMessage.error(response.data.message)
+      }
+    } catch (error) {
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {})
+}
+
+const handleSizeChange = (val) => {
+  pageSize.value = val
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+}
+
+const formatTime = (time) => {
+  if (!time) return '-'
+  return time.replace('T', ' ').substring(0, 19)
+}
+
+onMounted(() => {
+  loadUsers()
+})
 </script>
 
 <style scoped>

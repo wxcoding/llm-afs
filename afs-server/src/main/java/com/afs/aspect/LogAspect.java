@@ -5,8 +5,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
@@ -16,11 +15,10 @@ import java.lang.reflect.Method;
  *
  * 记录所有 Controller 方法的执行时间、参数和结果。
  */
+@Slf4j
 @Aspect
 @Component
 public class LogAspect {
-
-    private static final Logger logger = LoggerFactory.getLogger(LogAspect.class);
 
     @Pointcut("execution(* com.afs.module..controller..*.*(..))")
     public void controllerPointcut() {
@@ -37,7 +35,7 @@ public class LogAspect {
         Object[] args = joinPoint.getArgs();
         String params = getParams(args);
 
-        logger.info("[操作日志] {}.{} 开始 | 参数: {}", className, methodName, params);
+        log.info("[操作日志] {}.{} 开始 | 参数: {}", className, methodName, params);
 
         Object result = null;
         Throwable error = null;
@@ -51,10 +49,10 @@ public class LogAspect {
         } finally {
             long costTime = System.currentTimeMillis() - startTime;
             if (error != null) {
-                logger.error("[操作日志] {}.{} 失败 | 耗时: {}ms | 错误: {}",
+                log.error("[操作日志] {}.{} 失败 | 耗时: {}ms | 错误: {}",
                         className, methodName, costTime, error.getMessage());
             } else {
-                logger.info("[操作日志] {}.{} 完成 | 耗时: {}ms", className, methodName, costTime);
+                log.info("[操作日志] {}.{} 完成 | 耗时: {}ms", className, methodName, costTime);
             }
         }
     }

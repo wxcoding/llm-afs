@@ -109,85 +109,71 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-export default {
-  name: 'Login',
-  setup() {
-    const router = useRouter()
-    const user = inject('user')
-    const isRegister = ref(false)
-    const loading = ref(false)
-    const formRef = ref(null)
-    const form = ref({
-      username: '',
-      password: ''
-    })
+const router = useRouter()
+const user = inject('user')
+const isRegister = ref(false)
+const loading = ref(false)
+const formRef = ref(null)
+const form = ref({
+  username: '',
+  password: ''
+})
 
-    const switchMode = () => {
-      isRegister.value = !isRegister.value
-      if (isRegister.value) {
-        form.value.username = ''
-        form.value.password = ''
-        if (formRef.value) {
-          formRef.value.clearValidate()
-        }
-      }
+const switchMode = () => {
+  isRegister.value = !isRegister.value
+  if (isRegister.value) {
+    form.value.username = ''
+    form.value.password = ''
+    if (formRef.value) {
+      formRef.value.clearValidate()
     }
+  }
+}
 
-    const handleSubmit = async () => {
-      if (!form.value.username || !form.value.password) {
-        ElMessage.warning('请填写用户名和密码')
-        return
-      }
+const handleSubmit = async () => {
+  if (!form.value.username || !form.value.password) {
+    ElMessage.warning('请填写用户名和密码')
+    return
+  }
 
-      if (isRegister.value) {
-        if (form.value.username.length < 3 || form.value.username.length > 20) {
-          ElMessage.warning('用户名长度应为3-20位')
-          return
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(form.value.username)) {
-          ElMessage.warning('用户名只能包含字母、数字、下划线')
-          return
-        }
-        if (form.value.password.length < 6 || form.value.password.length > 20) {
-          ElMessage.warning('密码长度应为6-20位')
-          return
-        }
-      }
-
-      loading.value = true
-      try {
-        const url = isRegister.value ? '/api/user/register' : '/api/user/login'
-        const res = await axios.post(url, form.value)
-        
-        if (res.data.success) {
-          ElMessage.success(isRegister.value ? '注册成功' : '登录成功')
-          localStorage.setItem('user', JSON.stringify(res.data.user))
-          user.value = res.data.user
-          router.push('/chat')
-        } else {
-          ElMessage.error(res.data.message)
-        }
-      } catch (e) {
-        ElMessage.error('请求失败，请检查网络')
-      } finally {
-        loading.value = false
-      }
+  if (isRegister.value) {
+    if (form.value.username.length < 3 || form.value.username.length > 20) {
+      ElMessage.warning('用户名长度应为3-20位')
+      return
     }
-
-    return {
-      isRegister,
-      loading,
-      form,
-      formRef,
-      switchMode,
-      handleSubmit
+    if (!/^[a-zA-Z0-9_]+$/.test(form.value.username)) {
+      ElMessage.warning('用户名只能包含字母、数字、下划线')
+      return
     }
+    if (form.value.password.length < 6 || form.value.password.length > 20) {
+      ElMessage.warning('密码长度应为6-20位')
+      return
+    }
+  }
+
+  loading.value = true
+  try {
+    const url = isRegister.value ? '/api/user/register' : '/api/user/login'
+    const res = await axios.post(url, form.value)
+
+    if (res.data.success) {
+      ElMessage.success(isRegister.value ? '注册成功' : '登录成功')
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      user.value = res.data.user
+      router.push('/chat')
+    } else {
+      ElMessage.error(res.data.message)
+    }
+  } catch (e) {
+    ElMessage.error('请求失败，请检查网络')
+  } finally {
+    loading.value = false
   }
 }
 </script>

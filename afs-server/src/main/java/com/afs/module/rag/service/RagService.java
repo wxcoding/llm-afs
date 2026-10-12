@@ -1,4 +1,4 @@
-package com.afs.module.rag;
+package com.afs.module.rag.service;
 
 import com.afs.module.rag.strategy.SearchStrategy;
 import org.springframework.ai.document.Document;
@@ -17,38 +17,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import com.afs.module.rag.base.ReRankService;
 import com.afs.module.rag.strategy.SearchStrategyFactory;
 
 /**
  * RAG服务类
- * 
+ *
  * 负责向量数据库的管理，包括文档向量化、相似度搜索、上下文构建等功能。
- * 
+ *
  * 技术演进：
  * 1. 基础版：纯向量检索
  * 2. 增强版：混合检索（BM25 + 向量）+ ReRank 重排序
  * 3. 智能版：查询改写 + 混合检索 + ReRank
- * 
+ *
  * 升级说明（Spring AI 1.1.7）：
  * - 使用 TokenTextSplitter 实现智能文档切分
  * - 使用 FilterExpression 实现元数据过滤
  * - 使用策略模式管理检索策略
  * - 集成 ReRankService 实现重排序
- * 
+ *
  * 策略模式设计：
  * - SearchStrategy: 检索策略接口
  * - VectorSearchStrategy: 纯向量检索策略
  * - HybridSearchStrategy: 混合检索策略
  * - SearchStrategyFactory: 策略工厂
  */
+@Slf4j
 @Service
 public class RagService {
-
-    private static final Logger log = LoggerFactory.getLogger(RagService.class);
 
     @Autowired
     private VectorStore vectorStore;
@@ -75,7 +73,7 @@ public class RagService {
 
     /**
      * TokenTextSplitter - Spring AI 文本分块器
-     * 
+     *
      * 使用默认配置：
      * - defaultChunkSize: 800 tokens（每段目标大小）
      * - minChunkSizeChars: 350 chars（最小字符数）
@@ -87,14 +85,14 @@ public class RagService {
 
     /**
      * 向量相似度搜索（增强版）
-     * 
+     *
      * 使用策略模式进行检索策略的选择和执行
-     * 
+     *
      * 检索策略：
      * 1. 纯向量检索：简单直接，对语义相似度高
      * 2. 混合检索：BM25 + 向量，兼顾关键词和语义
      * 3. ReRank 重排序：对检索结果精细化排序
-     * 
+     *
      * @param query 搜索查询词
      * @param topK 返回结果数量
      * @return 相关文档列表
@@ -102,38 +100,38 @@ public class RagService {
     @Cacheable(value = "vectorSearch", key = "#query + '_' + #topK", unless = "#result == null || #result.isEmpty()")
     public List<Document> searchRelevant(String query, int topK) {
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // 获取当前策略
             SearchStrategy strategy = strategyFactory.getStrategy();
-            log.debug("开始检索，查询词: {}, topK: {}, 策略: {}, ReRank: {}", 
+            log.debug("开始检索，查询词: {}, topK: {}, 策略: {}, ReRank: {}",
                      query, topK, strategy.getName(), reRankEnabled);
-            
+
             // 执行检索
             List<Document> results = strategy.search(query, null, topK);
-            
+
             // ReRank 重排序（如启用）
             if (reRankEnabled && reRankService != null) {
                 results = reRankService.rerank(query, results);
             }
-            
+
             long duration = System.currentTimeMillis() - startTime;
-            log.info("检索成功，查询词: {}, 结果数: {}, 策略: {}, 耗时: {}ms", 
+            log.info("检索成功，查询词: {}, 结果数: {}, 策略: {}, 耗时: {}ms",
                      query, results.size(), strategy.getName(), duration);
-            
+
             return results;
-            
+
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("检索失败，查询词: {}, topK: {}, 耗时: {}ms, 错误: {}", 
+            log.error("检索失败，查询词: {}, topK: {}, 耗时: {}ms, 错误: {}",
                      query, topK, duration, e.getMessage(), e);
-            
+
             // 根据错误类型决定是否需要降级
             if (isNetworkError(e)) {
                 log.warn("检测到网络错误，触发降级策略");
                 return handleNetworkFailure(query, topK);
             }
-            
+
             // 降级为默认策略
             log.warn("检索失败，降级为默认策略");
             try {
@@ -144,7 +142,7 @@ public class RagService {
             }
         }
     }
-    
+
     /**
      * 判断是否为网络相关错误
      */
@@ -157,10 +155,10 @@ public class RagService {
                message.contains("network") ||
                message.contains("i/o error");
     }
-    
+
     /**
      * 网络故障时的降级策略
-     * 
+     *
      * 做法：
      * 1. 返回空结果或缓存的历史结果
      * 2. 记录降级事件用于后续分析
@@ -168,34 +166,34 @@ public class RagService {
      */
     private List<Document> handleNetworkFailure(String query, int topK) {
         log.warn("使用降级策略：返回空结果列表。建议：1)检查网络连接 2)检查API密钥 3)查看DashScope服务状态");
-        
+
         // 可选：这里可以返回最近缓存的相似查询结果
         // 或者返回一个特殊的标记文档，告诉上层服务使用了降级
-        
+
         return List.of(); // 返回空列表，让上层服务知道没有检索到相关内容
     }
 
     /**
      * 构建上下文文本
-     * 
+     *
      * @param query 搜索查询词
      * @param topK 返回结果数量
      * @return 格式化的上下文文本
      */
     public String buildContext(String query, int topK) {
         List<Document> documents = searchRelevant(query, topK);
-        
+
         if (documents.isEmpty()) {
             return "";
         }
-        
+
         // 将检索到的文档格式化为上下文文本
         StringBuilder context = new StringBuilder();
         for (int i = 0; i < documents.size(); i++) {
             Document doc = documents.get(i);
             String source = String.valueOf(doc.getMetadata().getOrDefault("source", "未知来源"));
             String title = String.valueOf(doc.getMetadata().getOrDefault("title", ""));
-            
+
             if (i > 0) {
                 context.append("\n\n");
             }
@@ -210,14 +208,14 @@ public class RagService {
 
     /**
      * 带元数据的向量搜索
-     * 
+     *
      * @param query 搜索查询词
      * @param topK 返回结果数量
      * @return 包含元数据的搜索结果列表
      */
     public List<Map<String, Object>> searchWithMetadata(String query, int topK) {
         List<Document> documents = searchRelevant(query, topK);
-        
+
         // 将Document转换为包含元数据的Map
         return documents.stream()
             .map(doc -> {
@@ -235,12 +233,12 @@ public class RagService {
 
     /**
      * 添加知识文档（使用 TokenTextSplitter 智能切分）
-     * 
+     *
      * Spring AI 1.1.7 新增功能：
      * - 使用 TokenTextSplitter 将长文档智能切分为多个 chunk
      * - 每个 chunk 保留完整的元数据
      * - 提高检索精度和 LLM 上下文利用效率
-     * 
+     *
      * @param id 知识ID
      * @param title 知识标题
      * @param category 知识分类
@@ -266,7 +264,7 @@ public class RagService {
 
     /**
      * 添加诈骗案例文档（使用 TokenTextSplitter 智能切分）
-     * 
+     *
      * @param id 案例ID
      * @param title 案例标题
      * @param type 案例类型
@@ -296,9 +294,9 @@ public class RagService {
 
     /**
      * 删除知识文档（使用 Filter.Expression）
-     * 
+     *
      * Spring AI 1.1.x 使用 FilterExpressionBuilder 构建过滤表达式
-     * 
+     *
      * @param id 知识ID
      */
     public void deleteKnowledgeDocument(Long id) {
@@ -314,7 +312,7 @@ public class RagService {
 
     /**
      * 删除诈骗案例文档（使用 Filter.Expression）
-     * 
+     *
      * @param id 案例ID
      */
     public void deleteScamCaseDocument(Long id) {
@@ -360,7 +358,7 @@ public class RagService {
 
     /**
      * 根据分类检索知识（Filter.Expression 多条件查询示例）
-     * 
+     *
      * @param query 搜索查询词
      * @param category 分类名称
      * @param topK 返回结果数量
@@ -384,7 +382,7 @@ public class RagService {
 
     /**
      * 批量删除指定类型的文档（Filter.Expression 批量操作示例）
-     * 
+     *
      * @param type 文档类型（knowledge 或 scamcase）
      */
     public void deleteByType(String type) {

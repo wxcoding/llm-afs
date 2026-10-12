@@ -83,116 +83,94 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-export default {
-  name: 'Cases',
-  setup() {
-    const cases = ref([])
-    const selectedType = ref('')
-    const detailVisible = ref(false)
-    const formVisible = ref(false)
-    const isEdit = ref(false)
-    const submitting = ref(false)
-    const currentCase = ref(null)
-    const form = ref({
-      id: null,
-      title: '',
-      type: '',
-      content: '',
-      tips: ''
-    })
+const cases = ref([])
+const selectedType = ref('')
+const detailVisible = ref(false)
+const formVisible = ref(false)
+const isEdit = ref(false)
+const submitting = ref(false)
+const currentCase = ref(null)
+const form = ref({
+  id: null,
+  title: '',
+  type: '',
+  content: '',
+  tips: ''
+})
 
-    const loadCases = async () => {
-      const url = selectedType.value
-        ? `/api/cases?type=${selectedType.value}`
-        : '/api/cases'
-      const res = await axios.get(url)
-      if (res.data.success) {
-        cases.value = res.data.cases
-      }
-    }
-
-    const showDetail = (c) => {
-      currentCase.value = c
-      detailVisible.value = true
-    }
-
-    const showAddDialog = () => {
-      isEdit.value = false
-      form.value = { id: null, title: '', type: '', content: '', tips: '' }
-      formVisible.value = true
-    }
-
-    const showEditDialog = (c) => {
-      isEdit.value = true
-      form.value = { id: c.id, title: c.title, type: c.type, content: c.content, tips: c.tips }
-      formVisible.value = true
-    }
-
-    const handleSubmit = async () => {
-      if (!form.value.title || !form.value.type || !form.value.content) {
-        ElMessage.warning('请填写完整信息')
-        return
-      }
-      submitting.value = true
-      try {
-        if (isEdit.value) {
-          await axios.put(`/api/cases/${form.value.id}`, form.value)
-          ElMessage.success('更新成功')
-        } else {
-          await axios.post('/api/cases', form.value)
-          ElMessage.success('添加成功')
-        }
-        formVisible.value = false
-        loadCases()
-      } catch (e) {
-        ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
-      } finally {
-        submitting.value = false
-      }
-    }
-
-    const handleDelete = async (id) => {
-      try {
-        await ElMessageBox.confirm('确定要删除该案例吗？删除后将同时从向量库中移除。', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await axios.delete(`/api/cases/${id}`)
-        ElMessage.success('删除成功')
-        loadCases()
-      } catch (e) {
-        if (e !== 'cancel') ElMessage.error('删除失败')
-      }
-    }
-
-    onMounted(() => {
-      loadCases()
-    })
-
-    return {
-      cases,
-      selectedType,
-      detailVisible,
-      formVisible,
-      isEdit,
-      submitting,
-      currentCase,
-      form,
-      loadCases,
-      showDetail,
-      showAddDialog,
-      showEditDialog,
-      handleSubmit,
-      handleDelete
-    }
+const loadCases = async () => {
+  const url = selectedType.value
+    ? `/api/cases?type=${selectedType.value}`
+    : '/api/cases'
+  const res = await axios.get(url)
+  if (res.data.success) {
+    cases.value = res.data.cases
   }
 }
+
+const showDetail = (c) => {
+  currentCase.value = c
+  detailVisible.value = true
+}
+
+const showAddDialog = () => {
+  isEdit.value = false
+  form.value = { id: null, title: '', type: '', content: '', tips: '' }
+  formVisible.value = true
+}
+
+const showEditDialog = (c) => {
+  isEdit.value = true
+  form.value = { id: c.id, title: c.title, type: c.type, content: c.content, tips: c.tips }
+  formVisible.value = true
+}
+
+const handleSubmit = async () => {
+  if (!form.value.title || !form.value.type || !form.value.content) {
+    ElMessage.warning('请填写完整信息')
+    return
+  }
+  submitting.value = true
+  try {
+    if (isEdit.value) {
+      await axios.put(`/api/cases/${form.value.id}`, form.value)
+      ElMessage.success('更新成功')
+    } else {
+      await axios.post('/api/cases', form.value)
+      ElMessage.success('添加成功')
+    }
+    formVisible.value = false
+    loadCases()
+  } catch (e) {
+    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleDelete = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该案例吗？删除后将同时从向量库中移除。', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await axios.delete(`/api/cases/${id}`)
+    ElMessage.success('删除成功')
+    loadCases()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('删除失败')
+  }
+}
+
+onMounted(() => {
+  loadCases()
+})
 </script>
 
 <style scoped>

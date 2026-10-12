@@ -1,6 +1,6 @@
 package com.afs.module.chat.service;
 
-import com.afs.module.rag.RagService;
+import com.afs.module.rag.service.RagService;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;
 import com.afs.module.chat.mapper.ChatMessageMapper;
