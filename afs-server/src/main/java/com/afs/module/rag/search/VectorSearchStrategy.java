@@ -1,11 +1,10 @@
-package com.afs.module.rag.strategy;
+package com.afs.module.rag.search;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,6 +31,13 @@ public class VectorSearchStrategy implements SearchStrategy {
 
     @Override
     public List<Document> search(String query, Map<String, Object> filters, int topK) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("检索查询不能为空");
+        }
+        if (topK <= 0) {
+            throw new IllegalArgumentException("topK 必须大于 0");
+        }
+        RagSearchFilters.validate(filters);
         log.debug("使用纯向量检索策略，查询词: {}, topK: {}", query, topK);
         
         SearchRequest.Builder builder = SearchRequest.builder()
@@ -39,11 +45,9 @@ public class VectorSearchStrategy implements SearchStrategy {
                 .topK(topK)
                 .similarityThreshold(0.5);
 
-        // 如果有过滤条件，构建过滤表达式
-        if (filters != null && !filters.isEmpty()) {
-            FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
-            var filter = filterBuilder.eq(filters.keySet().iterator().next(), 
-                    filters.values().iterator().next().toString()).build();
+        // 所有有效条件以 AND 组合；案例类型同时限定来源类型与案例分类。
+        var filter = RagSearchFilters.buildVectorExpression(filters);
+        if (filter != null) {
             builder.filterExpression(filter);
         }
 

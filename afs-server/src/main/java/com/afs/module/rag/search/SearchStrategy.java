@@ -1,4 +1,4 @@
-package com.afs.module.rag.strategy;
+package com.afs.module.rag.search;
 
 import org.springframework.ai.document.Document;
 

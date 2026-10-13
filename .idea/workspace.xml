@@ -8,30 +8,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="结构重构">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/common/Result.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/common/Result.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/controller/KnowledgeController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/controller/ScamCaseController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/controller/ScamCaseController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/controller/StatsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/stats/controller/StatsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/cases.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/cases.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/chat.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/chat.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/config.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/feedback.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/feedback.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/knowledge.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/knowledge.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/search.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/search.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/stats.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/stats.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/api/user.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/user.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/utils/request.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/utils/request.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/HybridSearchService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/QueryExpander.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/base/ReRankService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/service/RagService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/HybridSearchStrategy.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategyFactory.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/VectorSearchStrategy.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/service/ScamCaseService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/scamcase/service/ScamCaseService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -123,6 +114,11 @@
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;postgresql&quot;
+    ]
   }
 }</component>
   <component name="RunManager">
@@ -177,7 +173,9 @@
       <workItem from="1791420787220" duration="1997000" />
       <workItem from="1791701630525" duration="1148000" />
       <workItem from="1791715379516" duration="3169000" />
-      <workItem from="1791794420214" duration="11873000" />
+      <workItem from="1791794420214" duration="31861000" />
+      <workItem from="1791871363041" duration="14248000" />
+      <workItem from="1791907206213" duration="1707000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -275,7 +273,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791809116774</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="结构重构">
+      <option name="closed" value="true" />
+      <created>1791811203352</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1791811203352</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -296,27 +302,13 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>339</line>
+          <line>360</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>383</line>
+          <line>398</line>
           <option name="timeStamp" value="9" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/knowledge/service/KnowledgeService.java</url>
-          <line>74</line>
-          <option name="timeStamp" value="10" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-method">
-          <url>file://$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/strategy/SearchStrategy.java</url>
-          <line>27</line>
-          <properties class="com.afs.module.rag.strategy.SearchStrategy" method="search">
-            <option name="EMULATED" value="true" />
-            <option name="WATCH_EXIT" value="false" />
-          </properties>
-          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

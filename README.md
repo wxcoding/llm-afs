@@ -17,8 +17,8 @@
 | **知识审核** | 新增/编辑知识需审核，保证质量 | 审核工作流 |
 | **文档解析** | 支持 PDF/Word/Markdown 多格式 | Apache POI + PDFBox |
 | **向量检索** | 语义相似度匹配 | pgVector HNSW 索引 |
-| **混合检索** | BM25 + 向量融合 | PostgreSQL 全文检索 + RRF |
-| **查询改写** | 同义词扩展，口语化转换 | QueryExpander |
+| **混合检索** | 全文检索 + 向量融合 | PostgreSQL GIN/pgvector + RRF |
+| **查询改写** | 同义词扩展，口语化转换 | DictionaryQueryExpander |
 | **ReRank 重排序** | 交叉编码器精细化排序 | Jina/Cohere Rerank API |
 | **数据统计** | 实时数据看板 | 聚合查询 |
 | **系统监控** | 健康检查、指标监控 | Spring Actuator |
@@ -93,7 +93,7 @@
                     │  ┌────────────┴────────────────┐    │
                     │  │  Service Layer              │    │
                     │  │  (ChatService,              │    │
-                    │  │   RagService,               │    │
+                    │  │   RagSearchService,           │    │
                     │  │   KnowledgeService...)      │    │
                     │  └────────────┬────────────────┘    │
                     │               │                     │
@@ -288,13 +288,13 @@ vectorStore.delete(filter);
 - 跨向量库兼容
 - 代码更简洁规范
 
-### 3. 查询改写与扩展（QueryExpander）
+### 3. 查询改写与扩展（DictionaryQueryExpander）
 
 解决用户用词与文档用词不一致的问题：
 
 ```java
 @Autowired
-private QueryExpander queryExpander;
+private DictionaryQueryExpander queryExpander;
 
 // 用户问："被骗了钱怎么办"
 List<String> expandedQueries = queryExpander.expand("被骗了钱怎么办");
@@ -312,25 +312,34 @@ List<String> expandedQueries = queryExpander.expand("被骗了钱怎么办");
 - 口语化转书面语：怎么办 → 如何处理、解决方案
 - 关键词扩展：钱 → 资金、款项、存款
 
-### 4. 混合检索 BM25 + 向量（HybridSearchService）
+### 4. 混合检索 PostgreSQL 全文检索 + 向量（PostgresHybridSearchService）
+
+RAG 代码按职责组织：`ingestion` 负责文档切分与索引维护；`search` 放检索入口、召回策略、策略解析器和 PostgreSQL 混合检索；`query` 放查询扩展；`rerank` 放候选重排；`context` 负责检索结果的上下文格式化。主要入口分别是 `RagIngestionService`（入库）和 `RagSearchService`（检索）。
 
 结合关键词检索和向量检索的优势：
 
+文档切分后的每个 chunk 使用稳定 ID 同步写入 pgvector 和 `rag_chunk` 检索表，保证两路召回的 ID 与检索粒度一致。关键词侧将原文和元数据用相同规则分词后写入 `search_text`，由 PostgreSQL `simple` 配置生成 `tsvector`，并用 GIN 索引执行全文检索、以 `ts_rank_cd` 排序；中文使用重叠二元词切分，英文/数字按词切分。向量与全文召回分别取 Top-K，RRF 融合后按 chunk ID 批量加载文本和元数据。该关键词排序是 PostgreSQL 全文检索，不是 BM25。
+
+混合检索通过 `spring.ai.vectorstore.hybrid-search.enabled` 配置；应用启动时会重建知识与案例的向量及全文检索索引。中文使用应用侧分词，因此写入与查询共享 `FullTextTokenizer` 规则。向量策略和混合策略共用元数据过滤白名单，多条件以 AND 组合；案例类型过滤同时限定案例来源和分类。查询扩展结果合并为单一关键词召回通道，同一 chunk 只按最佳名次贡献一次 RRF 分数，并由 `max-expansion-queries` 限制扩展查询数。
+
 ```java
 @Autowired
-private HybridSearchService hybridSearchService;
+private PostgresHybridSearchService hybridSearchService;
 
 // 混合检索
-List<Document> results = hybridSearchService.search("如何防范网络诈骗", null);
+List<Document> results = hybridSearchService.search("如何防范网络诈骗", null, 5);
 ```
 
 **检索策略**：
 
 ```
-用户查询 → 查询改写 → BM25 检索 ─┬─→ RRF 融合 → ReRank → 最终结果
-                                 │
-                    向量检索 ─────┘
+用户查询 → 向量 Top 20 ────────────┐
+          全文检索 Top 20 ─────────┴→ RRF 候选 Top 20
+                                         ├─ ReRank 开启：重排后取 Top 5
+                                         └─ ReRank 关闭：按请求直接取 Top K
 ```
+
+召回候选数与最终上下文数量分开配置。启用 ReRank 时，召回数量为 `max(request topK, candidate-top-k)`，重排结果最多取 `min(request topK, top-n)`；关闭 ReRank 时，检索服务直接按调用方请求的 `topK` 返回，因此不会把整个候选池都传给大模型。
 
 **RRF (Reciprocal Rank Fusion) 算法**：
 
@@ -340,21 +349,21 @@ List<Document> results = hybridSearchService.search("如何防范网络诈骗", 
  * score(d) = Σ 1/(k + rank_i(d))
  * 
  * 例如：
- * - 文档 A 在 BM25 中排名第 1，向量检索中排名第 3
+ * - 文档 A 在全文检索中排名第 1，向量检索中排名第 3
  * - RRF 分数 = 1/(60+1) + 1/(60+3) = 0.0164 + 0.0159 = 0.0323
  */
 ```
 
-### 5. ReRank 重排序（ReRankService）
+### 5. ReRank 重排序（RerankService）
 
 对初步检索结果进行精细化排序：
 
 ```java
 @Autowired
-private ReRankService reRankService;
+private RerankService rerankService;
 
 // ReRank 重排序
-List<Document> reranked = reRankService.rerank(query, candidates);
+List<Document> reranked = rerankService.rerank(query, candidates);
 ```
 
 **支持的 Provider**：
@@ -374,17 +383,21 @@ spring:
       hybrid-search:
         enabled: false          # 是否启用混合检索
         query-expansion: true  # 是否启用查询扩展
+        max-expansion-queries: 5 # 单次检索最多执行的关键词扩展查询数
+        max-expansion-queries: 5 # 单次检索最多执行的关键词扩展查询数
         vector-top-k: 20       # 向量检索返回数量
-        bm25-top-k: 20         # BM25 检索返回数量
-        final-top-k: 5         # 最终返回数量
+        keyword-top-k: 20      # 全文检索返回数量
     # ReRank 配置
     rerank:
       enabled: false           # 是否启用 ReRank
       provider: jina           # Provider: jina / cohere / mock
-      top-n: 3                # ReRank 返回的 Top N
+      candidate-top-k: 20      # 启用 ReRank 时的最小召回候选数
+      top-n: 5                 # ReRank 后返回的 Top N
       jina:
         api-key: ${JINA_API_KEY:}
 ```
+
+ReRank provider 仅接受显式配置的 `jina`、`cohere` 或 `mock`。真实 provider 缺少 API Key、响应结构无效或调用失败时，服务会记录降级并保留原始召回顺序；不会静默改用 mock。
 
 ---
 

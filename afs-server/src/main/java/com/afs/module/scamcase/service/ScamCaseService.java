@@ -1,6 +1,6 @@
 package com.afs.module.scamcase.service;
 
-import com.afs.module.rag.service.RagService;
+import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -21,7 +21,7 @@ public class ScamCaseService {
 
     private final ScamCaseMapper scamCaseMapper;
 
-    private final RagService ragService;
+    private final RagIngestionService ragIngestionService;
 
     public List<ScamCase> getAllCases() {
         return scamCaseMapper.selectList(new QueryWrapper<ScamCase>().orderByDesc("create_time"));
@@ -42,7 +42,7 @@ public class ScamCaseService {
         scamCaseMapper.insert(scamCase);
         
         if (scamCase.getContent() != null && !scamCase.getContent().isEmpty()) {
-            ragService.addScamCaseDocument(
+            ragIngestionService.addScamCaseDocument(
                     scamCase.getId(),
                     scamCase.getTitle(),
                     scamCase.getType(),
@@ -66,10 +66,10 @@ public class ScamCaseService {
         
         scamCaseMapper.updateById(existing);
 
-        ragService.deleteScamCaseDocument(id);
+        ragIngestionService.deleteScamCaseDocument(id);
         
         if (existing.getContent() != null && !existing.getContent().isEmpty()) {
-            ragService.addScamCaseDocument(
+            ragIngestionService.addScamCaseDocument(
                     existing.getId(),
                     existing.getTitle(),
                     existing.getType(),
@@ -81,7 +81,7 @@ public class ScamCaseService {
     }
 
     public void deleteCase(Long id) {
-        ragService.deleteScamCaseDocument(id);
+        ragIngestionService.deleteScamCaseDocument(id);
         scamCaseMapper.deleteById(id);
     }
 
@@ -147,14 +147,11 @@ public class ScamCaseService {
 
     public void syncAllToVectorStore() {
         List<ScamCase> allCases = scamCaseMapper.selectList(new QueryWrapper<>());
-        
+        ragIngestionService.clearScamCaseIndex();
+
         for (ScamCase c : allCases) {
             if (c.getContent() != null && !c.getContent().isEmpty()) {
-                try {
-                    ragService.deleteScamCaseDocument(c.getId());
-                } catch (Exception ignored) {
-                }
-                ragService.addScamCaseDocument(
+                ragIngestionService.addScamCaseDocument(
                         c.getId(),
                         c.getTitle(),
                         c.getType(),

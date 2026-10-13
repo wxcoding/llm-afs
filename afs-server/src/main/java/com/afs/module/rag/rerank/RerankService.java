@@ -1,9 +1,10 @@
-package com.afs.module.rag.base;
+package com.afs.module.rag.rerank;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * 使用交叉编码器对候选文档进行精细化打分，提升检索准确率
  * 
  * 解决的问题：
- * 1. 向量检索和 BM25 检索的初步结果可能不够精确
+ * 1. 向量检索和全文关键词检索的初步结果可能不够精确
  * 2. 需要更精细的 query-document 相关性评估
  * 
  * 实现原理：
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class ReRankService {
+public class RerankService {
 
     /**
      * 是否启用 ReRank
@@ -107,19 +108,23 @@ public class ReRankService {
         if (candidates == null || candidates.isEmpty()) {
             return Collections.emptyList();
         }
+        if (rerankTopN <= 0) {
+            throw new IllegalArgumentException("ReRank top-n 必须大于 0");
+        }
 
         try {
-            switch (rerankProvider.toLowerCase()) {
+            switch (rerankProvider.toLowerCase(Locale.ROOT)) {
                 case "jina":
                     return rerankWithJina(query, candidates);
                 case "cohere":
                     return rerankWithCohere(query, candidates);
                 case "mock":
-                default:
                     return rerankWithMock(query, candidates);
+                default:
+                    throw new IllegalArgumentException("不支持的 ReRank provider: " + rerankProvider);
             }
         } catch (Exception e) {
-            log.error("ReRank 调用失败: {}, 降级为原始结果", e.getMessage());
+            log.warn("ReRank 调用失败，保留原始召回顺序。provider: {}", rerankProvider, e);
             return candidates;
         }
     }
@@ -148,8 +153,10 @@ public class ReRankService {
      */
     private List<Document> rerankWithJina(String query, List<Document> candidates) {
         if (jinaApiKey == null || jinaApiKey.isEmpty()) {
-            log.warn("Jina API Key 未配置，使用 Mock ReRank");
-            return rerankWithMock(query, candidates);
+            throw new IllegalStateException("Jina API Key 未配置");
+        }
+        if (restTemplate == null) {
+            throw new IllegalStateException("ReRank HTTP 客户端未配置");
         }
 
         // 准备请求
@@ -160,7 +167,7 @@ public class ReRankService {
                 .map(doc -> (Object) doc.getText())
                 .collect(Collectors.toList());
         requestBody.put("documents", documentList);
-        requestBody.put("top_n", rerankTopN);
+        requestBody.put("top_n", Math.min(rerankTopN, candidates.size()));
 
         // 设置请求头
         HttpHeaders headers = new HttpHeaders();
@@ -170,24 +177,14 @@ public class ReRankService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         // 发送请求
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 jinaEndpoint,
                 HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<>() { }
         );
 
-        // 解析响应
-        List<Document> rerankedDocs = new ArrayList<>();
-        if (response.getBody() != null && response.getBody().containsKey("results")) {
-            List<Map<String, Object>> results = (List<Map<String, Object>>) response.getBody().get("results");
-            
-            for (Map<String, Object> result : results) {
-                int index = ((Number) result.get("index")).intValue();
-                rerankedDocs.add(candidates.get(index));
-            }
-        }
-
+        List<Document> rerankedDocs = parseResults(response.getBody(), candidates);
         log.info("Jina ReRank 完成 - 输入: {}, 输出: {}", candidates.size(), rerankedDocs.size());
         return rerankedDocs;
     }
@@ -199,8 +196,10 @@ public class ReRankService {
      */
     private List<Document> rerankWithCohere(String query, List<Document> candidates) {
         if (cohereApiKey == null || cohereApiKey.isEmpty()) {
-            log.warn("Cohere API Key 未配置，使用 Mock ReRank");
-            return rerankWithMock(query, candidates);
+            throw new IllegalStateException("Cohere API Key 未配置");
+        }
+        if (restTemplate == null) {
+            throw new IllegalStateException("ReRank HTTP 客户端未配置");
         }
 
         // 准备请求
@@ -211,7 +210,7 @@ public class ReRankService {
                 .map(doc -> (Object) doc.getText())
                 .collect(Collectors.toList());
         requestBody.put("documents", documentList);
-        requestBody.put("top_n", rerankTopN);
+        requestBody.put("top_n", Math.min(rerankTopN, candidates.size()));
         requestBody.put("return_documents", false);
 
         // 设置请求头
@@ -222,26 +221,42 @@ public class ReRankService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         // 发送请求
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 cohereEndpoint,
                 HttpMethod.POST,
                 request,
-                Map.class
+                new ParameterizedTypeReference<>() { }
         );
 
-        // 解析响应
-        List<Document> rerankedDocs = new ArrayList<>();
-        if (response.getBody() != null && response.getBody().containsKey("results")) {
-            List<Map<String, Object>> results = (List<Map<String, Object>>) response.getBody().get("results");
-            
-            for (Map<String, Object> result : results) {
-                int index = ((Number) result.get("index")).intValue();
-                rerankedDocs.add(candidates.get(index));
-            }
-        }
-
+        List<Document> rerankedDocs = parseResults(response.getBody(), candidates);
         log.info("Cohere ReRank 完成 - 输入: {}, 输出: {}", candidates.size(), rerankedDocs.size());
         return rerankedDocs;
+    }
+
+    private List<Document> parseResults(Map<String, Object> responseBody, List<Document> candidates) {
+        if (responseBody == null || !(responseBody.get("results") instanceof List<?> results)) {
+            throw new IllegalStateException("ReRank 响应缺少 results 列表");
+        }
+
+        List<Document> reranked = new ArrayList<>();
+        Set<Integer> seenIndexes = new HashSet<>();
+        for (Object item : results) {
+            if (!(item instanceof Map<?, ?> result) || !(result.get("index") instanceof Number indexValue)) {
+                throw new IllegalStateException("ReRank 响应包含无效的结果项");
+            }
+            int index = indexValue.intValue();
+            if (index < 0 || index >= candidates.size() || !seenIndexes.add(index)) {
+                throw new IllegalStateException("ReRank 响应包含越界或重复的候选索引");
+            }
+            reranked.add(candidates.get(index));
+            if (reranked.size() == rerankTopN) {
+                break;
+            }
+        }
+        if (reranked.isEmpty()) {
+            throw new IllegalStateException("ReRank 响应没有有效候选结果");
+        }
+        return reranked;
     }
 
     /**

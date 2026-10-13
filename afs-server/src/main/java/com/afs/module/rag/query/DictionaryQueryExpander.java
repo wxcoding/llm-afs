@@ -1,4 +1,4 @@
-package com.afs.module.rag.base;
+package com.afs.module.rag.query;
 
 import org.springframework.stereotype.Component;
 
@@ -18,7 +18,7 @@ import java.util.*;
  * 
  */
 @Component
-public class QueryExpander {
+public class DictionaryQueryExpander {
 
     /**
      * 反诈领域同义词词典

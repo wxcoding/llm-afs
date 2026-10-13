@@ -13,7 +13,8 @@ import com.afs.module.knowledge.mapper.KnowledgeTagMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagRelationMapper;
 import com.afs.module.knowledge.mapper.KnowledgeVersionMapper;
 import com.afs.module.knowledge.vo.BatchUploadResultVO;
-import com.afs.module.rag.service.RagService;
+import com.afs.module.rag.ingestion.RagIngestionService;
+import com.afs.module.rag.search.RagSearchService;
 import com.afs.util.DocumentParser;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -49,7 +50,9 @@ public class KnowledgeService {
 
     private final KnowledgeAuditMapper auditMapper;
 
-    private final RagService ragService;
+    private final RagIngestionService ragIngestionService;
+
+    private final RagSearchService ragSearchService;
 
     public List<Knowledge> getAllKnowledge() {
         return knowledgeMapper.selectList(new QueryWrapper<Knowledge>().orderByDesc("create_time"));
@@ -81,7 +84,7 @@ public class KnowledgeService {
         
         // 如果内容不为空且状态为 ACTIVE，同步到向量库
         if (KnowledgeStatus.ACTIVE.getCode().equals(knowledge.getStatus()) && knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
-            ragService.addKnowledgeDocument(
+            ragIngestionService.addKnowledgeDocument(
                     knowledge.getId(),
                     knowledge.getTitle(),
                     knowledge.getCategory(),
@@ -113,10 +116,11 @@ public class KnowledgeService {
         knowledgeMapper.updateById(existing);
 
         // 删除旧的向量文档，重新添加
-        ragService.deleteKnowledgeDocument(id);
+        ragIngestionService.deleteKnowledgeDocument(id);
         
-        if (existing.getContent() != null && !existing.getContent().isEmpty()) {
-            ragService.addKnowledgeDocument(
+        if (KnowledgeStatus.ACTIVE.getCode().equals(existing.getStatus())
+                && existing.getContent() != null && !existing.getContent().isEmpty()) {
+            ragIngestionService.addKnowledgeDocument(
                     existing.getId(),
                     existing.getTitle(),
                     existing.getCategory(),
@@ -133,7 +137,7 @@ public class KnowledgeService {
      */
     public void deleteKnowledge(Long id) {
         // 先从向量库删除，再从数据库删除
-        ragService.deleteKnowledgeDocument(id);
+        ragIngestionService.deleteKnowledgeDocument(id);
         knowledgeMapper.deleteById(id);
     }
 
@@ -150,7 +154,7 @@ public class KnowledgeService {
     }
 
     public List<Map<String, Object>> semanticSearch(String query, int topK) {
-        return ragService.searchWithMetadata(query, topK);
+        return ragSearchService.searchWithMetadata(query, topK);
     }
 
     public void initDefaultKnowledge() {
@@ -325,11 +329,12 @@ public class KnowledgeService {
     public void syncAllToVectorStore() {
         List<Knowledge> allKnowledge = knowledgeMapper.selectList(new QueryWrapper<>());
 
-        ragService.clearKnowledgeVector();
+        ragIngestionService.clearKnowledgeIndex();
 
         for (Knowledge k : allKnowledge) {
-            if (k.getContent() != null && !k.getContent().isEmpty()) {
-                ragService.addKnowledgeDocument(k.getId(), k.getTitle(), k.getCategory(), k.getContent());
+            if (KnowledgeStatus.ACTIVE.getCode().equals(k.getStatus())
+                    && k.getContent() != null && !k.getContent().isEmpty()) {
+                ragIngestionService.addKnowledgeDocument(k.getId(), k.getTitle(), k.getCategory(), k.getContent());
             }
         }
     }
@@ -569,6 +574,12 @@ public class KnowledgeService {
             knowledge.setTitle(version.getTitle());
             knowledge.setContent(version.getContent());
             knowledgeMapper.updateById(knowledge);
+            if (KnowledgeStatus.ACTIVE.getCode().equals(knowledge.getStatus())) {
+                syncToVectorStore(knowledge.getId(), knowledge.getTitle(),
+                        knowledge.getCategory(), knowledge.getContent());
+            } else {
+                ragIngestionService.deleteKnowledgeDocument(knowledge.getId());
+            }
         }
         return version;
     }
@@ -598,6 +609,7 @@ public class KnowledgeService {
             if (knowledge != null) {
                 knowledge.setStatus(KnowledgeStatus.PENDING_REVIEW.getCode());
                 knowledgeMapper.updateById(knowledge);
+                ragIngestionService.deleteKnowledgeDocument(knowledgeId);
             }
         } else {
             // 新增知识，直接创建待审核状态的记录
@@ -724,6 +736,7 @@ public class KnowledgeService {
                 if (knowledge != null) {
                     knowledge.setStatus(KnowledgeStatus.REJECTED.getCode());
                     knowledgeMapper.updateById(knowledge);
+                    ragIngestionService.deleteKnowledgeDocument(knowledge.getId());
                 }
             }
         }
@@ -744,11 +757,11 @@ public class KnowledgeService {
     private void syncToVectorStore(Long knowledgeId, String title, String category, String content) {
         try {
             // 先删除旧的向量记录
-            ragService.deleteKnowledgeDocument(knowledgeId);
+            ragIngestionService.deleteKnowledgeDocument(knowledgeId);
 
             // 添加新的向量记录（内容不为空时）
             if (content != null && !content.isEmpty()) {
-                ragService.addKnowledgeDocument(knowledgeId, title, category, content);
+                ragIngestionService.addKnowledgeDocument(knowledgeId, title, category, content);
             }
         } catch (Exception e) {
             // 向量同步失败仅记录日志，不影响主流程

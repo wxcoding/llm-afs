@@ -57,6 +57,7 @@ yarn-error.log
 # Database
 *.sql
 !src/main/resources/db/migration/*.sql
+!afs-server/src/main/resources/db/migration/*.sql
 
 # Flyway
 flyway_schema_history

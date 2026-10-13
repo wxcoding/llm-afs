@@ -1,6 +1,7 @@
 package com.afs.module.chat.service;
 
-import com.afs.module.rag.service.RagService;
+import com.afs.module.rag.context.RagContextBuilder;
+import com.afs.module.rag.search.RagSearchService;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;
 import com.afs.module.chat.mapper.ChatMessageMapper;
@@ -37,7 +38,9 @@ public class ChatService {
 
     private final ChatClient chatClient;
 
-    private final RagService ragService;
+    private final RagSearchService ragSearchService;
+
+    private final RagContextBuilder ragContextBuilder;
 
     /**
      * 发送消息并通过 SSE 流式返回 AI 响应
@@ -77,10 +80,10 @@ public class ChatService {
         List<Map<String, Object>> sources = new ArrayList<>();
         try {
             // 先获取带元数据的结果
-            sources = ragService.searchWithMetadata(content, 5);
+            sources = ragSearchService.searchWithMetadata(content, 5);
             // 再从结果构建上下文（避免二次搜索）
             if (!sources.isEmpty()) {
-                context = buildContextFromSources(sources);
+                context = ragContextBuilder.buildContext(sources);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -209,32 +212,6 @@ public class ChatService {
             }
         }
         return messages;
-    }
-
-    /**
-     * 从搜索结果构建上下文文本（避免重复搜索）
-     * 
-     * @param sources 带元数据的搜索结果
-     * @return 格式化的上下文文本
-     */
-    private String buildContextFromSources(List<Map<String, Object>> sources) {
-        StringBuilder context = new StringBuilder();
-        for (int i = 0; i < sources.size(); i++) {
-            Map<String, Object> source = sources.get(i);
-            String content = (String) source.get("content");
-            String title = (String) source.getOrDefault("title", "");
-            String sourceType = (String) source.getOrDefault("source", "未知来源");
-            
-            if (i > 0) {
-                context.append("\n\n");
-            }
-            context.append("【").append(sourceType);
-            if (!title.isEmpty()) {
-                context.append(" - ").append(title);
-            }
-            context.append("】\n").append(content);
-        }
-        return context.toString();
     }
 
     private String getMockResponse(String lastUserMsg) {
