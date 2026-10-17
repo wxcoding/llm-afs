@@ -47,10 +47,28 @@ public class RerankService {
     private boolean rerankEnabled;
 
     /**
-     * ReRank API 类型: jina / cohere / mock
+     * ReRank API 类型: dashscope / jina / cohere / mock
      */
     @Value("${spring.ai.rerank.provider:jina}")
     private String rerankProvider;
+
+    /**
+     * DashScope ReRank API Endpoint（北京地域）
+     */
+    @Value("${spring.ai.rerank.dashscope.endpoint:https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}")
+    private String dashScopeEndpoint;
+
+    /**
+     * DashScope API Key（与 chat/embedding 共用百炼 Key）
+     */
+    @Value("${spring.ai.rerank.dashscope.api-key:}")
+    private String dashScopeApiKey;
+
+    /**
+     * DashScope ReRank 模型名
+     */
+    @Value("${spring.ai.rerank.dashscope.model:qwen3.7-text-rerank}")
+    private String dashScopeModel;
 
     /**
      * Jina Rerank API Endpoint
@@ -114,6 +132,8 @@ public class RerankService {
 
         try {
             switch (rerankProvider.toLowerCase(Locale.ROOT)) {
+                case "dashscope":
+                    return rerankWithDashScope(query, candidates);
                 case "jina":
                     return rerankWithJina(query, candidates);
                 case "cohere":
@@ -127,6 +147,71 @@ public class RerankService {
             log.warn("ReRank 调用失败，保留原始召回顺序。provider: {}", rerankProvider, e);
             return candidates;
         }
+    }
+
+    /**
+     * 使用阿里云百炼 DashScope ReRank API 进行重排序
+     *
+     * API 文档: https://help.aliyun.com/zh/model-studio/text-rerank-api
+     *
+     * 请求格式:
+     * {
+     *   "model": "qwen3.7-text-rerank",
+     *   "input": { "query": "用户查询", "documents": ["文档1", "..."] },
+     *   "parameters": { "top_n": 5 }
+     * }
+     *
+     * 响应格式:
+     * {
+     *   "output": { "results": [ {"index": 0, "relevance_score": 0.93}, ... ] },
+     *   "usage": { "total_tokens": 79 }
+     * }
+     */
+    private List<Document> rerankWithDashScope(String query, List<Document> candidates) {
+        if (dashScopeApiKey == null || dashScopeApiKey.isEmpty()) {
+            throw new IllegalStateException("DashScope ReRank API Key 未配置");
+        }
+        if (restTemplate == null) {
+            throw new IllegalStateException("ReRank HTTP 客户端未配置");
+        }
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("query", query);
+        input.put("documents", candidates.stream()
+                .map(Document::getText)
+                .collect(Collectors.toList()));
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("top_n", Math.min(rerankTopN, candidates.size()));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", dashScopeModel);
+        requestBody.put("input", input);
+        requestBody.put("parameters", parameters);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(dashScopeApiKey);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                dashScopeEndpoint,
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<>() { }
+        );
+
+        Map<String, Object> body = response.getBody();
+        if (body == null || !(body.get("output") instanceof Map)) {
+            throw new IllegalStateException("DashScope ReRank 响应缺少 output 对象");
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> output = (Map<String, Object>) body.get("output");
+        List<Document> rerankedDocs = parseResults(output, candidates);
+        log.info("DashScope ReRank 完成 - 模型: {}, 输入: {}, 输出: {}",
+                dashScopeModel, candidates.size(), rerankedDocs.size());
+        return rerankedDocs;
     }
 
     /**
@@ -365,7 +450,12 @@ public class RerankService {
         info.append(String.format("Provider: %s\n", rerankProvider));
         info.append(String.format("TopN: %d\n", rerankTopN));
         
-        if ("jina".equalsIgnoreCase(rerankProvider)) {
+        if ("dashscope".equalsIgnoreCase(rerankProvider)) {
+            info.append(String.format("DashScope Endpoint: %s\n", dashScopeEndpoint));
+            info.append(String.format("DashScope Model: %s\n", dashScopeModel));
+            info.append(String.format("DashScope API Key: %s\n",
+                    dashScopeApiKey != null && !dashScopeApiKey.isEmpty() ? "已配置" : "未配置"));
+        } else if ("jina".equalsIgnoreCase(rerankProvider)) {
             info.append(String.format("Jina Endpoint: %s\n", jinaEndpoint));
             info.append(String.format("Jina API Key: %s\n", 
                     jinaApiKey != null && !jinaApiKey.isEmpty() ? "已配置" : "未配置"));

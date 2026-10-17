@@ -7,27 +7,30 @@ import com.afs.module.chat.entity.ChatSession;
 import com.afs.module.chat.mapper.ChatMessageMapper;
 import com.afs.module.chat.mapper.ChatSessionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
-import java.io.PrintWriter;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 聊天服务类
- * 
+ *
  * 负责处理对话管理、消息发送、历史记录查询等核心业务逻辑，
  * 集成RAG技术实现基于知识库的智能问答
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class ChatService {
@@ -42,28 +45,34 @@ public class ChatService {
 
     private final RagContextBuilder ragContextBuilder;
 
+    private final ObjectMapper objectMapper;
+
     /**
      * 发送消息并通过 SSE 流式返回 AI 响应
-     * 
-     * @param userId 用户ID
+     *
+     * <p>返回 Flux 交给 Spring 异步写出，全程不占用 Servlet 请求线程；
+     * 同步准备逻辑（会话、入库、RAG 检索）调度到 boundedElastic 线程池执行。</p>
+     *
+     * @param userId    用户ID
      * @param sessionId 会话ID（新建会话时为null）
-     * @param content 用户输入内容
-     * @param writer SSE响应输出流
-     * @throws Exception 处理过程中的异常
+     * @param content   用户输入内容
+     * @return SSE 事件流
      */
-    public void sendMessageStream(Long userId, Long sessionId, String content, PrintWriter writer) throws Exception {
+    public Flux<ServerSentEvent<String>> sendMessageStream(Long userId, Long sessionId, String content) {
+        return Flux.defer(() -> prepareAndChat(userId, sessionId, content))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Flux<ServerSentEvent<String>> prepareAndChat(Long userId, Long sessionId, String content) {
         // 创建或获取会话
-        ChatSession session;
         if (sessionId == null) {
             // 新建会话，自动生成标题（截取前20个字符）
-            session = new ChatSession();
+            ChatSession session = new ChatSession();
             session.setUserId(userId);
             session.setTitle(content.length() > 20 ? content.substring(0, 20) + "..." : content);
             session.setCreateTime(LocalDateTime.now());
             sessionMapper.insert(session);
             sessionId = session.getId();
-        } else {
-            session = sessionMapper.selectById(sessionId);
         }
 
         // 保存用户消息到数据库
@@ -75,59 +84,39 @@ public class ChatService {
         messageMapper.insert(userMsg);
 
         // 通过RAG服务构建上下文，从知识库检索相关内容（带降级机制）
-        // 优化：只搜索一次，避免重复调用向量数据库
         String context = "";
         List<Map<String, Object>> sources = new ArrayList<>();
         try {
-            // 先获取带元数据的结果
             sources = ragSearchService.searchWithMetadata(content, 5);
-            // 再从结果构建上下文（避免二次搜索）
             if (!sources.isEmpty()) {
                 context = ragContextBuilder.buildContext(sources);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("[警告] RAG 检索失败，已降级为纯 AI 对话模式");
+            log.warn("RAG 检索失败，已降级为纯 AI 对话模式", e);
         }
 
-        // 发送会话ID信息
-        Map<String, Object> sessionInfo = new HashMap<>();
-        sessionInfo.put("sessionId", sessionId);
-        writer.write("data: " + new ObjectMapper().writeValueAsString(sessionInfo) + "\n\n");
-        writer.flush();
-
-        // 如果有检索到的来源，发送来源信息
+        // 头部事件：会话ID、来源信息
+        List<ServerSentEvent<String>> head = new ArrayList<>();
+        head.add(sse(toJson(Map.of("sessionId", sessionId))));
         if (!sources.isEmpty()) {
-            Map<String, Object> sourcesData = new HashMap<>();
-            sourcesData.put("sources", sources);
-            writer.write("data: " + new ObjectMapper().writeValueAsString(sourcesData) + "\n\n");
-            writer.flush();
+            head.add(sse(toJson(Map.of("sources", sources))));
         }
 
-        // 调用AI流式响应
-        String aiResponse = callAIStreamWithRag(sessionId, content, context, writer);
-
-        // 保存AI回复消息到数据库
-        ChatMessage assistantMsg = new ChatMessage();
-        assistantMsg.setSessionId(sessionId);
-        assistantMsg.setRole("assistant");
-        assistantMsg.setContent(aiResponse);
-        assistantMsg.setSources(sources.isEmpty() ? null : new ObjectMapper().writeValueAsString(sources));
-        assistantMsg.setCreateTime(LocalDateTime.now());
-        messageMapper.insert(assistantMsg);
+        return Flux.concat(Flux.fromIterable(head),
+                callAIStreamWithRag(sessionId, content, context, sources));
     }
 
     /**
      * 调用AI并使用RAG增强进行流式响应
-     * 
-     * @param sessionId 会话ID
+     *
+     * @param sessionId   会话ID
      * @param userContent 用户输入内容
-     * @param context RAG检索到的上下文内容
-     * @param writer SSE输出流
-     * @return AI完整响应内容
-     * @throws Exception 处理过程中的异常
+     * @param context     RAG检索到的上下文内容
+     * @param sources     检索来源（用于随回复一起入库）
+     * @return AI 内容增量事件流
      */
-    private String callAIStreamWithRag(Long sessionId, String userContent, String context, PrintWriter writer) throws Exception {
+    private Flux<ServerSentEvent<String>> callAIStreamWithRag(Long sessionId, String userContent,
+                                                              String context, List<Map<String, Object>> sources) {
         try {
             // 构建对话历史消息列表
             List<Message> messages = buildMessages(sessionId);
@@ -147,59 +136,101 @@ public class ChatService {
                 augmentedUserContent = userContent;
             }
 
-            // 调用AI客户端获取响应
             ChatClient.ChatClientRequestSpec request = chatClient.prompt()
                     .messages(messages)
                     .user(augmentedUserContent);
 
-            String fullResponse = request.call().content();
-
-            // 将响应切分成小块进行流式输出（每块50字符）
             StringBuilder responseBuilder = new StringBuilder();
-            int chunkSize = 50;
-
-            for (int i = 0; i < fullResponse.length(); i += chunkSize) {
-                int end = Math.min(i + chunkSize, fullResponse.length());
-                String chunk = fullResponse.substring(i, end);
-                responseBuilder.append(chunk);
-
-                // 发送SSE事件
-                Map<String, Object> data = new HashMap<>();
-                data.put("content", chunk);
-                writer.write("data: " + new ObjectMapper().writeValueAsString(data) + "\n\n");
-                writer.flush();
-                
-                // 注意：移除了 Thread.sleep(100)，避免阻塞线程降低并发能力
-                // 如果需要模拟打字效果，建议前端实现
-            }
-
-            return responseBuilder.toString();
+            return request.stream().chatResponse()
+                    // 超时兜底：首token及相邻增量间隔超过120秒判定为模型挂起
+                    .timeout(Duration.ofSeconds(120))
+                    // Reactor 的 map 不允许返回 null，无效块用空串占位交由 filter 过滤
+                    .map(chatResponse -> (chatResponse != null && chatResponse.getResult() != null
+                            && chatResponse.getResult().getOutput() != null)
+                            ? chatResponse.getResult().getOutput().getText()
+                            : "")
+                    .filter(chunk -> !chunk.isEmpty())
+                    .doOnNext(responseBuilder::append)
+                    .map(chunk -> sse(toJson(Map.of("content", chunk))))
+                    // 兜底：流结束但未产出任何有效内容（如思考型模型仅输出 reasoning_content、响应为空），
+                    // 此时不会触发 onErrorResume，需在此降级，避免前端空白
+                    .switchIfEmpty(Flux.defer(() -> {
+                        log.warn("AI 流结束但未收到有效内容，返回降级响应");
+                        String fallback = "抱歉，本次未能获取到有效回复，请稍后重试。";
+                        saveAssistantMessage(sessionId, fallback, null);
+                        return mockStream(fallback);
+                    }))
+                    .doOnComplete(() -> saveAssistantMessage(sessionId, responseBuilder.toString(), sources))
+                    .onErrorResume(e -> {
+                        log.error("AI 调用失败，返回降级响应", e);
+                        String mockResponse = getMockResponse(userContent);
+                        saveAssistantMessage(sessionId, mockResponse, null);
+                        return mockStream(mockResponse);
+                    });
         } catch (Exception e) {
-            // AI调用失败时返回模拟响应
+            // 构建请求阶段失败同样降级
+            log.error("AI 请求构建失败，返回降级响应", e);
             String mockResponse = getMockResponse(userContent);
-            Map<String, Object> data = new HashMap<>();
-            data.put("content", mockResponse);
-            writer.write("data: " + new ObjectMapper().writeValueAsString(data) + "\n\n");
-            writer.flush();
-            return mockResponse;
+            saveAssistantMessage(sessionId, mockResponse, null);
+            return mockStream(mockResponse);
+        }
+    }
+
+    /**
+     * 降级文案也按小块流式发出：与正常回复一致的 SSE 分块，
+     * 避免单条超长 JSON 事件被网络分片截断导致前端解析失败。
+     */
+    private Flux<ServerSentEvent<String>> mockStream(String mockText) {
+        List<ServerSentEvent<String>> events = new ArrayList<>();
+        for (int i = 0; i < mockText.length(); i += 50) {
+            int end = Math.min(i + 50, mockText.length());
+            events.add(sse(toJson(Map.of("content", mockText.substring(i, end)))));
+        }
+        return Flux.fromIterable(events);
+    }
+
+    private void saveAssistantMessage(Long sessionId, String content, List<Map<String, Object>> sources) {
+        if (content == null || content.isEmpty()) {
+            return;
+        }
+        ChatMessage assistantMsg = new ChatMessage();
+        assistantMsg.setSessionId(sessionId);
+        assistantMsg.setRole("assistant");
+        assistantMsg.setContent(content);
+        assistantMsg.setSources(sources == null || sources.isEmpty() ? null : toJson(sources));
+        assistantMsg.setCreateTime(LocalDateTime.now());
+        messageMapper.insert(assistantMsg);
+    }
+
+    private ServerSentEvent<String> sse(String payload) {
+        return ServerSentEvent.builder(payload).build();
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("JSON 序列化失败", e);
         }
     }
 
     /**
      * 根据会话ID构建消息历史列表
-     * 
+     *
      * @param sessionId 会话ID
      * @return 消息列表（UserMessage和AssistantMessage交替）
      */
     private List<Message> buildMessages(Long sessionId) {
         List<Message> messages = new ArrayList<>();
 
-        // 查询会话的消息历史，按创建时间排序
+        // 只取最近10条历史，避免长会话导致 prompt 膨胀、首 token 变慢
         List<ChatMessage> history = messageMapper.selectList(
                 new QueryWrapper<ChatMessage>()
                         .eq("session_id", sessionId)
-                        .orderByAsc("create_time")
+                        .orderByDesc("create_time")
+                        .last("LIMIT 10")
         );
+        Collections.reverse(history);
 
         // 将数据库消息转换为AI消息格式
         for (ChatMessage msg : history) {

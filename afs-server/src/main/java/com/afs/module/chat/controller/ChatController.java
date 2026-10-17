@@ -8,10 +8,11 @@ import com.afs.module.chat.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -26,13 +27,9 @@ public class ChatController {
 
     @Operation(summary = "发送消息并获取流式响应", description = "通过 SSE (Server-Sent Events) 技术实时推送 AI 回复内容")
     @PostMapping(value = "/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public void send(@RequestBody SendMessageDTO request, HttpServletResponse response) throws Exception {
-        // 设置 SSE 响应头
-        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
-        response.setCharacterEncoding("UTF-8");
-
-        // 调用 Service 进行流式响应
-        chatService.sendMessageStream(request.getUserId(), request.getSessionId(), request.getContent(), response.getWriter());
+    public Flux<ServerSentEvent<String>> send(@RequestBody SendMessageDTO request) {
+        // 返回 Flux 交给 Spring 异步写出，不占用 Servlet 请求线程
+        return chatService.sendMessageStream(request.getUserId(), request.getSessionId(), request.getContent());
     }
 
     @Operation(summary = "获取用户的所有会话列表")

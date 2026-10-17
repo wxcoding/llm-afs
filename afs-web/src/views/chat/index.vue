@@ -166,42 +166,52 @@ const sendMessage = async (content) => {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let sessionIdReceived = null
+    let buffer = ''
+
+    const handleLine = (line) => {
+      // 兼容 "data: {...}"（手写）与 "data:{...}"（Spring SSE 输出，无空格）两种格式
+      if (!line.startsWith('data:')) return
+      const data = line.substring(5).trimStart()
+      if (data === '[DONE]') return
+      try {
+        const json = JSON.parse(data)
+        if (json.sessionId) {
+          sessionIdReceived = json.sessionId
+        }
+        if (json.sources) {
+          messages.value[assistantIndex].sources = json.sources
+        }
+        if (json.content) {
+          messages.value[assistantIndex].content += json.content
+          const container = messagesContainer.value
+          if (container) {
+            const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20
+            if (isAtBottom) {
+              scrollToBottom()
+            }
+          }
+        }
+      } catch (e) {
+        console.error('解析流式数据失败:', e)
+      }
+    }
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
 
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      // 最后一段可能被网络分片截断，留到下一个分片拼接
+      buffer = lines.pop()
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.substring(6)
-          if (data === '[DONE]') break
-
-          try {
-            const json = JSON.parse(data)
-            if (json.sessionId) {
-              sessionIdReceived = json.sessionId
-            }
-            if (json.sources) {
-              messages.value[assistantIndex].sources = json.sources
-            }
-            if (json.content) {
-              messages.value[assistantIndex].content += json.content
-              const container = messagesContainer.value
-              if (container) {
-                const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20
-                if (isAtBottom) {
-                  scrollToBottom()
-                }
-              }
-            }
-          } catch (e) {
-            console.error('解析流式数据失败:', e)
-          }
-        }
+        handleLine(line)
       }
+    }
+
+    if (buffer) {
+      handleLine(buffer)
     }
 
     if (sessionIdReceived) {

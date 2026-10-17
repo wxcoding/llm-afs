@@ -46,8 +46,9 @@ public class RagSearchService {
             if (rerankEnabled) {
                 results = rerankService.rerank(query, results).stream().limit(topK).toList();
             }
+            String strategyDesc = rerankEnabled ? strategy.getName() + "+rerank" : strategy.getName();
             log.info("RAG 检索完成，结果数: {}, 策略: {}, 耗时: {}ms",
-                    results.size(), strategy.getName(), System.currentTimeMillis() - startTime);
+                    results.size(), strategyDesc, System.currentTimeMillis() - startTime);
             return results;
         } catch (Exception e) {
             log.error("RAG 检索失败，topK: {}, 策略: {}", topK, strategy.getName(), e);

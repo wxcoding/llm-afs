@@ -31,18 +31,18 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       chat:
         options:
-          model: ${AI_DASHSCOPE_MODEL:qwen-turbo}
+          model: ${AI_DASHSCOPE_MODEL:qwen3.8-max-0902}
           temperature: 0.7
           max-tokens: 2000
       embedding:
         options:
-          model: text-embedding-v3
+          model: qwen3.7-text-embedding-flash
       # 重试配置
       retry:
         max-attempts: 3              # 最多重试3次
         backoff:
-          initial-interval: 2000     # 初始等待2秒
-          multiplier: 2              # 指数退避：2s → 4s → 8s
+          initial-interval: 5000     # 初始等待5秒（避开限流恢复窗口）
+          multiplier: 2              # 指数退避：5s → 10s → 20s
           max-interval: 30000        # 最大等待30秒
       # HTTP客户端超时配置
       client:
@@ -67,10 +67,14 @@ spring:
         # 召回候选数由调用方决定：未启用重排时使用请求 topK，启用重排时使用 rerank.candidate-top-k
     # ReRank 重排序配置
     rerank:
-      enabled: false  # 是否启用 ReRank
-      provider: jina  # Provider: jina / cohere / mock
+      enabled: true  # 是否启用 ReRank
+      provider: dashscope  # Provider: dashscope / jina / cohere / mock
       candidate-top-k: 20  # 启用重排时的最小召回候选数
       top-n: 5  # 重排后最终保留数量
+      dashscope:
+        endpoint: https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
+        api-key: ${AI_DASHSCOPE_API_KEY:}
+        model: qwen3.7-text-rerank
       jina:
         endpoint: https://api.jina.ai/v1/rerank
         api-key: ${JINA_API_KEY:}
