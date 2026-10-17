@@ -28,7 +28,9 @@ services:
       - afs-network
 
   afs-server:
-    image: ${REGISTRY}/${IMAGE_NAME_SERVER}:${IMAGE_TAG:-latest}
+    build:
+      context: ./afs-server
+    image: ${REGISTRY:-local}/${IMAGE_NAME_SERVER:-afs-server}:${IMAGE_TAG:-latest}
     container_name: afs-server
     restart: always
     depends_on:
@@ -62,7 +64,9 @@ services:
       - afs-network
 
   afs-web:
-    image: ${REGISTRY}/${IMAGE_NAME_WEB}:${IMAGE_TAG:-latest}
+    build:
+      context: ./afs-web
+    image: ${REGISTRY:-local}/${IMAGE_NAME_WEB:-afs-web}:${IMAGE_TAG:-latest}
     container_name: afs-web
     restart: always
     depends_on:
@@ -73,7 +77,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     healthcheck:
-      test: ["CMD-SHELL", "nginx -t && curl -f http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import axios from 'axios'
+import request from '@/utils/request'
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -167,9 +167,9 @@ const itemForm = ref({
 
 const loadDictTypes = async () => {
   try {
-    const res = await axios.get('/api/sys/dict/types')
-    if (res.data.success) {
-      dictTypes.value = res.data.data
+    const res = await request.get('/sys/dict/types')
+    if (res.success) {
+      dictTypes.value = res.data
       if (dictTypes.value.length > 0 && !currentType.value) {
         currentType.value = dictTypes.value[0]
         loadDictItems()
@@ -185,9 +185,9 @@ const loadDictItems = async () => {
   if (!currentType.value) return
   itemLoading.value = true
   try {
-    const res = await axios.get(`/api/sys/dict/${currentType.value.dictCode}`)
-    if (res.data.success) {
-      dictItems.value = res.data.data
+    const res = await request.get(`/sys/dict/${currentType.value.dictCode}`)
+    if (res.success) {
+      dictItems.value = res.data
     }
   } catch (error) {
     console.error(error)
@@ -235,7 +235,7 @@ const handleDeleteItem = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await axios.delete(`/api/sys/dict/item/${row.id}`)
+    await request.delete(`/sys/dict/item/${row.id}`)
     ElMessage.success('删除成功')
     loadDictItems()
   } catch (error) {
@@ -254,9 +254,9 @@ const handleSaveType = async () => {
   saving.value = true
   try {
     if (isEditType.value) {
-      await axios.put(`/api/sys/dict/type/${typeForm.value.id}`, typeForm.value)
+      await request.put(`/sys/dict/type/${typeForm.value.id}`, typeForm.value)
     } else {
-      await axios.post('/api/sys/dict/type', typeForm.value)
+      await request.post('/sys/dict/type', typeForm.value)
     }
     ElMessage.success('保存成功')
     typeDialogVisible.value = false
@@ -281,9 +281,9 @@ const handleSaveItem = async () => {
       dictCode: currentType.value.dictCode
     }
     if (isEditItem.value) {
-      await axios.put(`/api/sys/dict/item/${itemForm.value.id}`, data)
+      await request.put(`/sys/dict/item/${itemForm.value.id}`, data)
     } else {
-      await axios.post('/api/sys/dict/item', data)
+      await request.post('/sys/dict/item', data)
     }
     ElMessage.success('保存成功')
     itemDialogVisible.value = false

@@ -8,8 +8,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：千问rerank精排模型测试">
-      <change beforePath="$PROJECT_DIR$/afs-web/src/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/nginx.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/config/env.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/config/index.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/utils/dict.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/utils/dict.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -163,7 +170,7 @@
       <workItem from="1791794420214" duration="31861000" />
       <workItem from="1791871363041" duration="14248000" />
       <workItem from="1791907206213" duration="3684000" />
-      <workItem from="1792258599275" duration="19529000" />
+      <workItem from="1792258599275" duration="22124000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -333,7 +340,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792277974911</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792279546047</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1792279546047</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

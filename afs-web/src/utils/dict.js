@@ -2,7 +2,7 @@
  * 字典工具
  * 配合后端字典系统使用
  */
-import axios from 'axios';
+import request from '@/utils/request';
 
 // 字典缓存
 const dictCache = {};
@@ -20,18 +20,18 @@ export async function getDict(dictCode) {
     }
     
     try {
-        const response = await axios.get(`/api/sys/dict/${dictCode}`);
-        if (response.data.success) {
-            dictCache[dictCode] = response.data.data;
-            
+        const res = await request.get(`/sys/dict/${dictCode}`);
+        if (res.success) {
+            dictCache[dictCode] = res.data;
+
             // 更新名称映射缓存
             const nameMap = {};
-            response.data.data.forEach(item => {
+            res.data.forEach(item => {
                 nameMap[item.itemCode] = item.itemName;
             });
             dictNameCache[dictCode] = nameMap;
-            
-            return response.data.data;
+
+            return res.data;
         }
     } catch (error) {
         console.error(`获取字典失败: ${dictCode}`, error);
@@ -47,20 +47,20 @@ export async function getDict(dictCode) {
  */
 export async function getBatchDict(dictCodes) {
     try {
-        const response = await axios.post('/api/sys/dict/batch', dictCodes);
-        if (response.data.success) {
+        const res = await request.post('/sys/dict/batch', dictCodes);
+        if (res.success) {
             // 更新缓存
-            Object.keys(response.data.data).forEach(dictCode => {
-                dictCache[dictCode] = response.data.data[dictCode];
-                
+            Object.keys(res.data).forEach(dictCode => {
+                dictCache[dictCode] = res.data[dictCode];
+
                 const nameMap = {};
-                response.data.data[dictCode].forEach(item => {
+                res.data[dictCode].forEach(item => {
                     nameMap[item.itemCode] = item.itemName;
                 });
                 dictNameCache[dictCode] = nameMap;
             });
-            
-            return response.data.data;
+
+            return res.data;
         }
     } catch (error) {
         console.error('批量获取字典失败', error);
