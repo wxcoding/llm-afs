@@ -39,7 +39,13 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
-      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen-turbo}
+      AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen3.8-max-0902}
+      JWT_SECRET: ${JWT_SECRET:-afs-jwt-secret-please-change-in-production-0123456789}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # 生产环境默认关闭 API 文档
+      SPRINGDOC_API_DOCS_ENABLED: ${SPRINGDOC_API_DOCS_ENABLED:-false}
+      SPRINGDOC_SWAGGER_UI_ENABLED: ${SPRINGDOC_SWAGGER_UI_ENABLED:-false}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
     ports:
       - "${SERVER_PORT:-8080}:8080"
@@ -47,7 +53,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
 #      - /etc/timezone:/etc/timezone:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/stats || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

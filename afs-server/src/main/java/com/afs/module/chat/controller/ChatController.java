@@ -45,15 +45,19 @@ public class ChatController {
     @Operation(summary = "获取会话的聊天历史记录")
     @GetMapping("/history/{sessionId}")
     public Result<List<ChatMessage>> getHistory(
-            @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId) {
-        return Result.success(chatService.getSessionMessages(sessionId));
+            @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
+        return Result.success(chatService.getSessionMessages(sessionId, userId));
     }
 
     @Operation(summary = "删除会话")
     @DeleteMapping("/session/{sessionId}")
     public Result<Void> deleteSession(
-            @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId) {
-        chatService.deleteSession(sessionId);
+            @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
+        chatService.deleteSession(sessionId, userId);
         return Result.success("删除成功");
     }
 }

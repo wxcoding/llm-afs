@@ -13,6 +13,7 @@ import com.afs.module.user.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,14 +31,14 @@ public class UserController {
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
-    public Result<UserVO> register(@RequestBody RegisterDTO request) {
+    public Result<UserVO> register(@Valid @RequestBody RegisterDTO request) {
         User user = userService.register(request.getUsername(), request.getPassword());
         return Result.success("注册成功", UserVO.from(user));
     }
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody LoginDTO request) {
+    public Result<LoginVO> login(@Valid @RequestBody LoginDTO request) {
         User user = userService.login(request.getUsername(), request.getPassword());
         return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId()), user));
     }

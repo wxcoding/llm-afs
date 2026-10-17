@@ -1,5 +1,6 @@
 package com.afs.module.chat.service;
 
+import com.afs.exception.BusinessException;
 import com.afs.module.rag.context.RagContextBuilder;
 import com.afs.module.rag.search.RagSearchService;
 import com.afs.module.chat.entity.ChatMessage;
@@ -293,7 +294,8 @@ public class ChatService {
         );
     }
 
-    public List<ChatMessage> getSessionMessages(Long sessionId) {
+    public List<ChatMessage> getSessionMessages(Long sessionId, Long userId) {
+        requireOwnedSession(sessionId, userId);
         return messageMapper.selectList(
                 new QueryWrapper<ChatMessage>()
                         .eq("session_id", sessionId)
@@ -301,8 +303,22 @@ public class ChatService {
         );
     }
 
-    public void deleteSession(Long sessionId) {
+    public void deleteSession(Long sessionId, Long userId) {
+        requireOwnedSession(sessionId, userId);
         messageMapper.delete(new QueryWrapper<ChatMessage>().eq("session_id", sessionId));
         sessionMapper.deleteById(sessionId);
+    }
+
+    /**
+     * 校验会话存在且属于当前用户，防止水平越权访问他人会话
+     */
+    private void requireOwnedSession(Long sessionId, Long userId) {
+        ChatSession session = sessionMapper.selectById(sessionId);
+        if (session == null) {
+            throw BusinessException.notFound("会话不存在");
+        }
+        if (!session.getUserId().equals(userId)) {
+            throw BusinessException.forbidden("无权访问该会话");
+        }
     }
 }

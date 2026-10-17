@@ -7,15 +7,15 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="结构重构">
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：千问rerank精排模型测试">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/WebConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/config/WebConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/rerank/RerankService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/rerank/RerankService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/search/RagSearchService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/rag/search/RagSearchService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/controller/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/dto/LoginDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/dto/LoginDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/dto/RegisterDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/user/dto/RegisterDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/router/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +95,7 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "Spring Boot.AfsApplication.executor": "Debug",
+    "Spring Boot.AfsApplication.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "copilot.chat.legacySessionMetadata.migrated": "true",
     "git-widget-placeholder": "master",
@@ -169,7 +169,7 @@
       <workItem from="1791794420214" duration="31861000" />
       <workItem from="1791871363041" duration="14248000" />
       <workItem from="1791907206213" duration="3684000" />
-      <workItem from="1792258599275" duration="15660000" />
+      <workItem from="1792258599275" duration="18766000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -307,7 +307,31 @@
       <option name="project" value="LOCAL" />
       <updated>1792261223720</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792275051448</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1792275051448</updated>
+    </task>
+    <task id="LOCAL-00019" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792275631229</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1792275631229</updated>
+    </task>
+    <task id="LOCAL-00020" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792277529017</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1792277529017</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -321,7 +345,8 @@
     <MESSAGE value="feat：全局异常处理" />
     <MESSAGE value="测试大模型API调用" />
     <MESSAGE value="结构重构" />
-    <option name="LAST_COMMIT_MESSAGE" value="结构重构" />
+    <MESSAGE value="feat：千问rerank精排模型测试" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat：千问rerank精排模型测试" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

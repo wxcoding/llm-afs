@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const routes = [
   { path: '/', component: () => import('@/views/home/index.vue') },
@@ -19,6 +20,15 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 登录守卫：未登录访问业务页面时重定向到登录页
+const PUBLIC_PATHS = new Set(['/', '/login'])
+router.beforeEach((to) => {
+  const userStore = useUserStore()
+  if (!PUBLIC_PATHS.has(to.path) && !userStore.isLoggedIn) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
 })
 
 export default router
