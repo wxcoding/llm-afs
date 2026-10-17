@@ -1,6 +1,6 @@
 <template>
   <div class="knowledge-page">
-    <PageHeader title="📖 防诈骗知识库" subtitle="全面了解各类诈骗手法和防范技巧" />
+    <PageHeader badge="📚 知识资产" title="防诈骗知识库" subtitle="全面了解各类诈骗手法和防范技巧" />
 
     <FilterBar>
       <template #left>

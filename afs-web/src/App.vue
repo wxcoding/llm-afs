@@ -144,7 +144,7 @@ const logout = () => {
 <style>
 #app {
   min-height: 100vh;
-  background: #f0f2f5;
+  background: var(--brand-bg-page, #f5f6fa);
 }
 
 .app-container {
@@ -180,7 +180,7 @@ const logout = () => {
 }
 
 .logo:hover {
-  background: #f0f7ff;
+  background: var(--el-color-primary-light-9);
 }
 
 .logo-icon {
@@ -306,16 +306,16 @@ const logout = () => {
 /* 激活状态 */
 .side-menu .el-menu-item.is-active {
   color: #fff;
-  background: #1890ff;
-  font-weight: 400;
-  border-right: 3px solid #1890ff;
+  background: var(--brand-primary) !important;
+  font-weight: 500;
+  border-right: 3px solid rgba(255, 255, 255, 0.75);
 }
 
 .side-menu .el-sub-menu .el-menu-item.is-active {
   color: #fff;
-  background: #1890ff !important;
-  font-weight: 400;
-  border-right: 3px solid #1890ff;
+  background: var(--brand-primary) !important;
+  font-weight: 500;
+  border-right: 3px solid rgba(255, 255, 255, 0.75);
 }
 
 /* 图标样式 */
@@ -354,7 +354,7 @@ const logout = () => {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background: #f0f2f5;
+  background: var(--brand-bg-page, #f5f6fa);
 }
 
 .user-popover-simple {

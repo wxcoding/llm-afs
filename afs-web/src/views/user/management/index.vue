@@ -2,14 +2,20 @@
   <div class="user-management">
     <template v-if="user">
       <el-config-provider :locale="zhCn">
-        <div class="page-header">
-          <div class="header-content">
-            <h2 class="page-title">用户管理</h2>
+        <div class="brand-hero compact">
+          <div class="hero-deco deco-1"></div>
+          <div class="hero-deco deco-2"></div>
+          <div class="hero-content">
+            <span class="hero-badge">👥 账号治理</span>
+            <h2>用户管理</h2>
+            <p>管理平台注册用户、角色与账号状态</p>
           </div>
-          <el-button type="primary" class="add-user-btn" @click="showCreateDialog">
-            <el-icon><Plus /></el-icon>
-            添加用户
-          </el-button>
+          <div class="hero-actions">
+            <el-button type="primary" round @click="showCreateDialog">
+              <el-icon><Plus /></el-icon>
+              添加用户
+            </el-button>
+          </div>
         </div>
 
       <div class="search-bar">

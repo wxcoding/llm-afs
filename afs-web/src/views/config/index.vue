@@ -1,7 +1,13 @@
 <template>
   <div class="config-page">
-    <div class="page-header">
-      <h2>系统配置</h2>
+    <div class="brand-hero compact">
+      <div class="hero-deco deco-1"></div>
+      <div class="hero-deco deco-2"></div>
+      <div class="hero-content">
+        <span class="hero-badge">⚙️ 平台设置</span>
+        <h2>系统配置</h2>
+        <p>管理模型参数、提示词与平台运行配置</p>
+      </div>
     </div>
 
     <el-tabs v-model="activeTab">

@@ -1,9 +1,18 @@
 <template>
   <div class="dict-container">
+    <div class="brand-hero compact">
+      <div class="hero-deco deco-1"></div>
+      <div class="hero-deco deco-2"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🗂️ 平台设置</span>
+        <h2>数据字典</h2>
+        <p>维护平台通用枚举与字典项</p>
+      </div>
+    </div>
     <el-card class="dict-card">
       <template #header>
         <div class="card-header">
-          <span class="title">数据字典</span>
+          <span class="title">字典项列表</span>
           <div class="header-actions">
             <el-button type="primary" @click="handleAddType">新增字典类型</el-button>
             <el-button @click="handleRefresh">刷新</el-button>

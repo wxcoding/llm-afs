@@ -1,0 +1,192 @@
+/* ============================================
+   品牌设计规范（全站统一）
+   主色：紫蓝渐变 #667eea → #764ba2
+   ============================================ */
+:root {
+  --brand-primary: #667eea;
+  --brand-primary-dark: #5a6fd6;
+  --brand-secondary: #764ba2;
+  --brand-pink: #f472b6;
+  --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --brand-gradient-wide: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --brand-radius-lg: 20px;
+  --brand-radius: 16px;
+  --brand-radius-sm: 10px;
+  --brand-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --brand-shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.13);
+  --brand-shadow-glow: 0 4px 12px rgba(102, 126, 234, 0.35);
+  --brand-text-main: #1f2430;
+  --brand-text-sub: #6b7280;
+  --brand-bg-page: #f5f6fa;
+}
+
+/* ---- Element Plus 主色对齐品牌紫 ---- */
+:root {
+  --el-color-primary: #667eea;
+  --el-color-primary-light-3: #8595ef;
+  --el-color-primary-light-5: #a3aff3;
+  --el-color-primary-light-7: #c1c9f7;
+  --el-color-primary-light-8: #d0d6f9;
+  --el-color-primary-light-9: #eef0fd;
+  --el-color-primary-dark-2: #5a6fd6;
+}
+
+/* ---- 页面统一 Hero 头部 ---- */
+.brand-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--brand-radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 22px;
+  background: var(--brand-gradient-wide);
+  color: #fff;
+}
+
+.brand-hero.compact {
+  padding: 22px 28px;
+}
+
+.brand-hero .hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-hero .hero-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 3px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.brand-hero h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.brand-hero.compact h2 {
+  font-size: 22px;
+  margin-bottom: 0;
+}
+
+.brand-hero p {
+  margin: 0;
+  opacity: 0.88;
+  font-size: 14px;
+}
+
+.brand-hero .hero-deco {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.brand-hero .deco-1 {
+  width: 200px;
+  height: 200px;
+  right: -60px;
+  top: -80px;
+}
+
+.brand-hero .deco-2 {
+  width: 120px;
+  height: 120px;
+  right: 140px;
+  bottom: -60px;
+}
+
+/* hero 右侧操作区（新增按钮等） */
+.brand-hero .hero-actions {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.brand-hero .hero-actions .el-button--primary {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.brand-hero .hero-actions .el-button--primary:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* ---- 统一卡片 ---- */
+.brand-card {
+  background: #fff;
+  border-radius: var(--brand-radius);
+  padding: 20px;
+  box-shadow: var(--brand-shadow);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.brand-card.hoverable {
+  cursor: pointer;
+}
+
+.brand-card.hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--brand-shadow-hover);
+}
+
+/* ---- 类型/状态彩色徽章 ---- */
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--chip-color, var(--brand-primary));
+  color: #fff;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---- 胶囊筛选组 ---- */
+.brand-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.brand-pills .pill {
+  border: 1.5px solid #e4e7ed;
+  background: #fff;
+  color: #606266;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.brand-pills .pill:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+.brand-pills .pill.active {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #fff;
+  box-shadow: var(--brand-shadow-glow);
+}
+
+@media (max-width: 768px) {
+  .brand-hero {
+    padding: 22px 20px;
+  }
+
+  .brand-hero h2 {
+    font-size: 22px;
+  }
+}

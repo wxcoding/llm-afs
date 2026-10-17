@@ -1,5 +1,14 @@
 <template>
   <div class="profile-page">
+    <div class="brand-hero compact">
+      <div class="hero-deco deco-1"></div>
+      <div class="hero-deco deco-2"></div>
+      <div class="hero-content">
+        <span class="hero-badge">👤 账号中心</span>
+        <h2>个人中心</h2>
+        <p>管理你的账号信息与安全设置</p>
+      </div>
+    </div>
     <el-card class="profile-card">
       <template #header>
         <div class="card-header">

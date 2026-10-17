@@ -206,7 +206,7 @@ const handleSubmit = async () => {
 .blob-1 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   top: -150px;
   left: -100px;
 }
@@ -361,7 +361,7 @@ const handleSubmit = async () => {
 .feature-icon-box {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -449,7 +449,7 @@ const handleSubmit = async () => {
 .badge-dot {
   width: 8px;
   height: 8px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 50%;
   animation: badgePulse 2s ease-in-out infinite;
 }
@@ -537,7 +537,7 @@ const handleSubmit = async () => {
   font-size: 16px;
   font-weight: 600;
   border-radius: 14px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   transition: all 0.35s ease;
   display: flex;

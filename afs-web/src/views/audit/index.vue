@@ -1,7 +1,13 @@
 <template>
   <div class="audit-page">
-    <div class="page-header">
-      <h2>知识审核</h2>
+    <div class="brand-hero compact">
+      <div class="hero-deco deco-1"></div>
+      <div class="hero-deco deco-2"></div>
+      <div class="hero-content">
+        <span class="hero-badge">✅ 内容治理</span>
+        <h2>知识审核</h2>
+        <p>审核用户提交的知识条目，保障问答内容质量</p>
+      </div>
     </div>
 
     <el-empty v-if="pendingAudits.length === 0" description="暂无待审核内容" />
