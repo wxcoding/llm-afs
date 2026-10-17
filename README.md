@@ -67,10 +67,20 @@ llm-afs/
 │   └── src/main/java/com/afs/
 │       ├── common/            # 统一响应、异常处理
 │       ├── config/            # 全局配置（AI、Web 等）
-│       └── module/            # 业务模块（chat/knowledge/scamcase/
-│                              #   user/stats/feedback/sysconfig/system/
-│                              #   rag 等，各含 controller/service/
-│                              #   mapper/entity/dto/vo 分层）
+│       └── module/            # 业务模块，统一按 controller/service/
+│           │                  #   mapper/entity/dto/vo 分层
+│           ├── chat/          # AI 问答：会话、消息、SSE 流式对话
+│           ├── knowledge/     # 知识库：文档上传解析、审核流程
+│           ├── scamcase/      # 诈骗案例库
+│           ├── user/          # 用户：注册登录
+│           ├── stats/         # 数据统计看板
+│           ├── feedback/      # 用户反馈
+│           ├── sysconfig/     # 系统参数配置
+│           ├── system/        # 系统管理
+│           └── rag/           # RAG 核心，按职责分包：
+│                              #   ingestion 入库 / search 检索 /
+│                              #   query 查询扩展 / rerank 重排 /
+│                              #   context 上下文组装
 ├── afs-web/                   # 前端 Vue 3
 │   └── src/
 │       ├── views/             # 页面
