@@ -6,6 +6,7 @@ import com.afs.module.system.mapper.SysDictItemMapper;
 import com.afs.module.system.mapper.SysDictTypeMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 /**
  * 字典服务（含内存缓存）
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysDictService {
@@ -42,7 +44,7 @@ public class SysDictService {
     @PostConstruct
     public void initCache() {
         refreshAllCache();
-        System.out.println("[字典系统] 缓存初始化完成");
+        log.info("[字典系统] 缓存初始化完成");
     }
     
     /**
