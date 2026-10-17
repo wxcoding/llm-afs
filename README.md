@@ -1,507 +1,133 @@
-# 智安反诈平台
+# 智安反诈平台（llm-afs）
 
-基于 **Spring Boot 3.4 + Vue 3 + RAG** 构建的智能防诈骗问答平台，集成通义千问大语言模型与向量检索技术，为用户提供专业的智能防诈骗咨询服务。
+基于 **Spring Boot 3.4 + Spring AI + Vue 3** 的智能防诈骗问答平台，结合 RAG 检索增强与通义千问大模型，提供流式多轮对话咨询与知识库管理。
 
-> 🔗 **项目地址**: [https://github.com/wxcoding/llm-afs](https://github.com/wxcoding/llm-afs)
+## 功能特性
 
----
+- **AI 问答**：RAG 检索增强生成，SSE 流式输出，支持多轮对话
+- **混合检索**：PostgreSQL 全文检索 + pgVector 向量检索，RRF 融合排序，可选 ReRank 重排
+- **查询扩展**：同义词扩展与口语化改写，提升召回率
+- **知识库管理**：支持 PDF / Word / Markdown 文档上传解析，新增/编辑需审核
+- **数据统计**：问答量、知识量等实时看板
 
-## ✨ 功能亮点
+## 技术栈
 
-| 功能模块 | 核心能力 | 技术实现 |
-|---------|---------|---------|
-| **AI 智能问答** | RAG 检索增强生成，精准回答 | Spring AI + pgVector |
-| **流式输出** | SSE 实时推送，逐字显示 | Server-Sent Events |
-| **多轮对话** | 上下文记忆，连续追问 | Session 管理 |
-| **智能文档切分** | Token 级切分，保持语义完整 | TokenTextSplitter |
-| **知识审核** | 新增/编辑知识需审核，保证质量 | 审核工作流 |
-| **文档解析** | 支持 PDF/Word/Markdown 多格式 | Apache POI + PDFBox |
-| **向量检索** | 语义相似度匹配 | pgVector HNSW 索引 |
-| **混合检索** | 全文检索 + 向量融合 | PostgreSQL GIN/pgvector + RRF |
-| **查询改写** | 同义词扩展，口语化转换 | DictionaryQueryExpander |
-| **ReRank 重排序** | 交叉编码器精细化排序 | Jina/Cohere Rerank API |
-| **数据统计** | 实时数据看板 | 聚合查询 |
-| **系统监控** | 健康检查、指标监控 | Spring Actuator |
+| 层 | 技术 |
+|----|------|
+| 后端 | Spring Boot 3.4、Spring AI 1.1、MyBatis Plus、Flyway、SpringDoc |
+| 前端 | Vue 3、Element Plus、Vite、Pinia |
+| 数据 | PostgreSQL 17 + pgvector |
+| 部署 | Docker Compose、Nginx、GitHub Actions |
 
----
+## 快速开始
 
-## 🛠 技术栈
+前置条件：JDK 17+、Node.js 18+、PostgreSQL 15+（含 pgvector 扩展）
 
-### 后端技术
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Spring Boot | 3.4.4 | 后端框架 |
-| Spring AI | 1.1.7 | AI 大模型集成 |
-| MyBatis Plus | 3.5.5 | ORM 框架 |
-| PostgreSQL | 17 + pgvector | 向量数据库 |
-| Flyway | 9.22.3 | 数据库版本管理 |
-| Swagger/OpenAPI | 3.x | API 文档 |
-| Spring Actuator | 3.2.x | 系统监控 |
-
-### 前端技术
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Vue | 3.4.x | 前端框架 |
-| Element Plus | 2.5.x | UI 组件库 |
-| Vue Router | 4.2.x | 路由管理 |
-| Vite | 5.0.x | 构建工具 |
-| Axios | 1.6.x | HTTP 客户端 |
-
-### 部署技术
-
-| 技术 | 用途 |
-|------|------|
-| Docker + Docker Compose | 容器化部署 |
-| Nginx | 反向代理、静态资源托管 |
-| GitHub Actions | CI/CD 自动化 |
-
----
-
-## 🏗️ 架构设计
-
-### 系统架构
-
-```
-                              ┌─────────────────┐
-                              │   User Browser   │
-                              └────────┬────────┘
-                                       │ HTTP/HTTPS
-                                       ▼
-                              ┌──────────────────────────┐
-                              │    Nginx (:3000)         │
-                              │  ┌──────────────────┐    │
-                              │  │  Vue SPA         │    │
-                              │  │  (静态资源)       │    │
-                              │  └──────────────────┘    │
-                              │  ┌──────────────────┐    │
-                              │  │  API Proxy        │    │
-                              │  │  /api/* → :8080   │    │
-                              │  └──────────────────┘    │
-                              └────────────┬─────────────┘
-                                           │
-                                           ▼
-                    ┌─────────────────────────────────────┐
-                    │       Spring Boot Backend (:8080)    │
-                    │  ┌─────────────────────────────┐    │
-                    │  │  Controller Layer           │    │
-                    │  │  (ChatController,           │    │
-                    │  │   KnowledgeController...)   │    │
-                    │  └────────────┬────────────────┘    │
-                    │               │                     │
-                    │  ┌────────────┴────────────────┐    │
-                    │  │  Service Layer              │    │
-                    │  │  (ChatService,              │    │
-                    │  │   RagSearchService,           │    │
-                    │  │   KnowledgeService...)      │    │
-                    │  └────────────┬────────────────┘    │
-                    │               │                     │
-                    │     ┌─────────┴─────────┐          │
-                    │     │                   │          │
-                    │     ▼                   ▼          │
-                    │  ┌──────────┐    ┌──────────────┐  │
-                    │  │ Spring AI│    │ MyBatis Plus │  │
-                    │  │  ChatModel│    │     ORM      │  │
-                    │  └─────┬────┘    └───────┬──────┘  │
-                    │        │                 │          │
-                    │        ▼                 ▼          │
-                    │  ┌──────────────┐  ┌───────────┐   │
-                    │  │  通义千问    │  │ PostgreSQL│   │
-                    │  │  qwen-turbo │  │  +pgVector│   │
-                    │  │  embedding  │  │           │   │
-                    │  └──────────────┘  └───────────┘   │
-                    └─────────────────────────────────────┘
-```
-
-### RAG 工作流程
-
-```
-┌──────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
-│  用户    │───▶│  Embedding │───▶│  pgVector  │───▶│  拼接上下文 │───▶│ LLM 生成   │───▶│ SSE 流式   │
-│  提问    │    │   编码      │    │  相似度检索 │    │            │    │   回答     │    │   输出     │
-└──────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
-```
-
----
-
-## 🚀 快速开始
-
-### 前置条件
-
-- JDK 17+
-- PostgreSQL 15+（需安装 pgvector 扩展）
-- Node.js 18+
-- Maven 3.9+
-
-### 方式一：Docker Compose 一键启动（推荐）
+### Docker Compose（推荐）
 
 ```bash
-# 克隆项目
 git clone https://github.com/wxcoding/llm-afs.git
 cd llm-afs
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env，填写 API Key 和数据库密码
-
-# 启动所有服务
+cp .env.example .env   # 填写 DashScope API Key 与数据库密码
 docker compose up -d --build
 ```
 
-**访问地址**:
-- 前端: http://localhost:3000
-- 后端 API: http://localhost:8080
-- Swagger 文档: http://localhost:8080/swagger-ui.html
+- 前端：http://localhost:3000
+- 后端：http://localhost:8080
+- Swagger：http://localhost:8080/swagger-ui.html
 
-### 方式二：手动启动
-
-#### 1. 创建数据库
+### 手动启动
 
 ```sql
+-- PostgreSQL：建库并启用 pgvector
 CREATE DATABASE afs;
 \c afs
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-#### 2. 配置后端
-
-编辑 `afs-server/src/main/resources/application.yml`：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/afs
-    username: postgres
-    password: your_password
-  ai:
-    openai:
-      api-key: your-dashscope-api-key
-      base-url: https://dashscope.aliyuncs.com/compatible-mode
-```
-
-#### 3. 启动后端
+修改 `afs-server/src/main/resources/application.yml` 中的数据库连接与 DashScope API Key，然后：
 
 ```bash
+# 后端
 cd afs-server
 mvn clean package -DskipTests
 java -jar target/afs-server-1.0.0.jar
-```
 
-#### 4. 启动前端
-
-```bash
+# 前端
 cd afs-web
 npm install
 npm run dev
 ```
 
----
-
-## 📁 项目结构
+## 项目结构
 
 ```
 llm-afs/
-├── afs-server/                          # 后端 Spring Boot 项目
-│   ├── src/main/java/com/afs/
-│   │   ├── AfsApplication.java          # 启动类
-│   │   ├── config/                      # 配置类
-│   │   │   ├── AiConfig.java            # Spring AI 配置
-│   │   │   └── WebConfig.java           # Web 配置
-│   │   ├── common/                      # 公共模块
-│   │   │   ├── Result.java              # 统一响应
-│   │   │   └── GlobalExceptionHandler.java # 全局异常处理
-│   │   ├── aspect/                      # AOP 切面
-│   │   │   └── LogAspect.java           # 日志切面
-│   │   ├── module/                      # 业务模块
-│   │   │   ├── chat/                    # 聊天模块
-│   │   │   ├── knowledge/               # 知识库模块
-│   │   │   ├── scamcase/                # 诈骗案例模块
-│   │   │   ├── user/                    # 用户模块
-│   │   │   └── rag/                     # RAG 核心服务
-│   │   └── util/                        # 工具类
-│   │       └── DocumentParser.java      # 文档解析
-│   ├── src/main/resources/
-│   │   ├── application.yml              # 配置文件
-│   │   └── db/migration/                # Flyway 迁移脚本
-│   ├── Dockerfile
-│   └── pom.xml
-│
-├── afs-web/                             # 前端 Vue 项目
-│   ├── src/
-│   │   ├── views/                       # 页面组件
-│   │   ├── api/                         # API 封装
-│   │   ├── router/                      # 路由配置
-│   │   └── utils/                       # 工具函数
-│   ├── nginx.conf
-│   ├── Dockerfile
-│   └── package.json
-│
-├── .github/workflows/                   # GitHub Actions CI/CD
-├── docker-compose.yml                   # 开发环境配置
-├── docker-compose.prod.yml              # 生产环境配置
-├── .env.example                         # 环境变量模板
-└── README.md
+├── afs-server/                # 后端 Spring Boot
+│   └── src/main/java/com/afs/
+│       ├── common/            # 统一响应、异常处理
+│       ├── config/            # 全局配置（AI、Web 等）
+│       └── module/            # 业务模块（chat/knowledge/scamcase/
+│                              #   user/stats/feedback/sysconfig/system/
+│                              #   rag 等，各含 controller/service/
+│                              #   mapper/entity/dto/vo 分层）
+├── afs-web/                   # 前端 Vue 3
+│   └── src/
+│       ├── views/             # 页面
+│       ├── components/        # common 通用 + business 业务组件
+│       ├── api/               # 接口封装
+│       ├── stores/            # Pinia 状态管理
+│       └── router/            # 路由
+├── docker-compose.yml         # 开发环境编排
+├── docker-compose.prod.yml    # 生产环境编排
+└── .env.example               # 环境变量模板
 ```
 
----
-
-## 🧠 RAG 核心技术实现
-
-### 1. TokenTextSplitter 智能文档切分
-
-```java
-// 基于 Token 数量智能切分文档
-TokenTextSplitter splitter = new TokenTextSplitter(
-    800,    // maxTokens: 每段最大 Token 数
-    400,    // overlapTokens: 重叠 Token 数
-    5,      // minChunkSize: 最小句子长度
-    100,    // maxChunks: 最大段数
-    true    // keepSeparator: 保留分隔符
-);
-
-// 使用切分器处理文档
-List<Document> chunks = splitter.apply(List.of(doc));
-vectorStore.add(chunks);
-```
-
-**优势**：
-- 基于 Token 数量切分，适配 LLM 上下文窗口
-- 智能重叠保持语义完整
-- 提高检索精度和上下文利用效率
-
-### 2. Filter.Expression 元数据过滤
-
-```java
-// 使用 Filter.Expression 构建过滤条件
-Filter.Expression filter = Filter.and(
-    Filter.eq("dbId", id.toString()),
-    Filter.eq("type", "knowledge")
-);
-
-// 删除匹配的文档
-vectorStore.delete(filter);
-```
-
-**优势**：
-- 避免直接 SQL 操作，更安全
-- 跨向量库兼容
-- 代码更简洁规范
-
-### 3. 查询改写与扩展（DictionaryQueryExpander）
-
-解决用户用词与文档用词不一致的问题：
-
-```java
-@Autowired
-private DictionaryQueryExpander queryExpander;
-
-// 用户问："被骗了钱怎么办"
-List<String> expandedQueries = queryExpander.expand("被骗了钱怎么办");
-// 结果：
-// [
-//   "被骗了钱怎么办",
-//   "被骗了钱如何处理 解决方案 上当 被坑 被套路 遭遇诈骗 损失",
-//   "钱 资金 款项 金额 存款 财产 积蓄",
-//   "怎么办 如何处理 解决方案"
-// ]
-```
-
-**支持的转换**：
-- 同义词扩展：被骗 → 上当、被坑、遭遇诈骗
-- 口语化转书面语：怎么办 → 如何处理、解决方案
-- 关键词扩展：钱 → 资金、款项、存款
-
-### 4. 混合检索 PostgreSQL 全文检索 + 向量（PostgresHybridSearchService）
-
-RAG 代码按职责组织：`ingestion` 负责文档切分与索引维护；`search` 放检索入口、召回策略、策略解析器和 PostgreSQL 混合检索；`query` 放查询扩展；`rerank` 放候选重排；`context` 负责检索结果的上下文格式化。主要入口分别是 `RagIngestionService`（入库）和 `RagSearchService`（检索）。
-
-结合关键词检索和向量检索的优势：
-
-文档切分后的每个 chunk 使用稳定 ID 同步写入 pgvector 和 `rag_chunk` 检索表，保证两路召回的 ID 与检索粒度一致。关键词侧将原文和元数据用相同规则分词后写入 `search_text`，由 PostgreSQL `simple` 配置生成 `tsvector`，并用 GIN 索引执行全文检索、以 `ts_rank_cd` 排序；中文使用重叠二元词切分，英文/数字按词切分。向量与全文召回分别取 Top-K，RRF 融合后按 chunk ID 批量加载文本和元数据。该关键词排序是 PostgreSQL 全文检索，不是 BM25。
-
-混合检索通过 `spring.ai.vectorstore.hybrid-search.enabled` 配置；应用启动时会重建知识与案例的向量及全文检索索引。中文使用应用侧分词，因此写入与查询共享 `FullTextTokenizer` 规则。向量策略和混合策略共用元数据过滤白名单，多条件以 AND 组合；案例类型过滤同时限定案例来源和分类。查询扩展结果合并为单一关键词召回通道，同一 chunk 只按最佳名次贡献一次 RRF 分数，并由 `max-expansion-queries` 限制扩展查询数。
-
-```java
-@Autowired
-private PostgresHybridSearchService hybridSearchService;
-
-// 混合检索
-List<Document> results = hybridSearchService.search("如何防范网络诈骗", null, 5);
-```
-
-**检索策略**：
+## RAG 检索流程
 
 ```
-用户查询 → 向量 Top 20 ────────────┐
-          全文检索 Top 20 ─────────┴→ RRF 候选 Top 20
-                                         ├─ ReRank 开启：重排后取 Top 5
-                                         └─ ReRank 关闭：按请求直接取 Top K
+用户提问 → 查询扩展 → 向量 Top-K ┐
+                                 ├→ RRF 融合 → (可选 ReRank) → Top-N 上下文 → LLM 生成 → SSE 流式输出
+              全文检索 Top-K ┘
 ```
 
-召回候选数与最终上下文数量分开配置。启用 ReRank 时，召回数量为 `max(request topK, candidate-top-k)`，重排结果最多取 `min(request topK, top-n)`；关闭 ReRank 时，检索服务直接按调用方请求的 `topK` 返回，因此不会把整个候选池都传给大模型。
+- 文档切分采用 TokenTextSplitter，chunk 以稳定 ID 同步写入 pgvector 与 `rag_chunk` 全文检索表
+- 中文使用应用侧分词（重叠二元词），全文检索基于 PostgreSQL `tsvector` + GIN 索引
+- 混合检索与 ReRank 可通过 `spring.ai.vectorstore.hybrid-search.*`、`spring.ai.rerank.*` 配置开关
+- 入口服务：`RagIngestionService`（入库）、`RagSearchService`（检索）
 
-**RRF (Reciprocal Rank Fusion) 算法**：
-
-```java
-/**
- * RRF 分数计算公式
- * score(d) = Σ 1/(k + rank_i(d))
- * 
- * 例如：
- * - 文档 A 在全文检索中排名第 1，向量检索中排名第 3
- * - RRF 分数 = 1/(60+1) + 1/(60+3) = 0.0164 + 0.0159 = 0.0323
- */
-```
-
-### 5. ReRank 重排序（RerankService）
-
-对初步检索结果进行精细化排序：
-
-```java
-@Autowired
-private RerankService rerankService;
-
-// ReRank 重排序
-List<Document> reranked = rerankService.rerank(query, candidates);
-```
-
-**支持的 Provider**：
-- **Jina Rerank**（推荐）：https://jina.ai/reranker/
-- **Cohere Rerank**：https://cohere.com/rerank
-- **Mock Rerank**（测试用）：基于关键词匹配
-
-### 6. 检索策略配置
-
-通过配置文件灵活控制检索策略：
-
-```yaml
-spring:
-  ai:
-    # 混合检索配置
-    vectorstore:
-      hybrid-search:
-        enabled: false          # 是否启用混合检索
-        query-expansion: true  # 是否启用查询扩展
-        max-expansion-queries: 5 # 单次检索最多执行的关键词扩展查询数
-        max-expansion-queries: 5 # 单次检索最多执行的关键词扩展查询数
-        vector-top-k: 20       # 向量检索返回数量
-        keyword-top-k: 20      # 全文检索返回数量
-    # ReRank 配置
-    rerank:
-      enabled: false           # 是否启用 ReRank
-      provider: jina           # Provider: jina / cohere / mock
-      candidate-top-k: 20      # 启用 ReRank 时的最小召回候选数
-      top-n: 5                 # ReRank 后返回的 Top N
-      jina:
-        api-key: ${JINA_API_KEY:}
-```
-
-ReRank provider 仅接受显式配置的 `jina`、`cohere` 或 `mock`。真实 provider 缺少 API Key、响应结构无效或调用失败时，服务会记录降级并保留原始召回顺序；不会静默改用 mock。
-
----
-
-## 🔌 API 接口
-
-### 主要接口列表
-
-| 模块 | 方法 | 路径 | 说明 |
-|------|------|------|------|
-| 用户 | POST | `/api/user/login` | 用户登录 |
-| 用户 | POST | `/api/user/register` | 用户注册 |
-| 聊天 | POST | `/api/chat/send` | 发送消息（SSE） |
-| 聊天 | GET | `/api/chat/sessions/{userId}` | 获取会话列表 |
-| 知识库 | GET | `/api/knowledge` | 知识列表 |
-| 知识库 | POST | `/api/knowledge/upload` | 上传文档 |
-| 审核 | PUT | `/api/knowledge/audit/approve/{id}` | 审核通过 |
-| 统计 | GET | `/api/stats` | 系统统计 |
-
-### Swagger 文档
-
-启动后端后访问：http://localhost:8080/swagger-ui.html
-
----
-
-## 🔧 环境变量配置
+## 环境变量
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `POSTGRES_USER` | 数据库用户名 | postgres |
-| `POSTGRES_PASSWORD` | 数据库密码 | postgres |
-| `POSTGRES_DB` | 数据库名 | afs |
-| `AI_DASHSCOPE_API_KEY` | 阿里云 DashScope API Key | - |
-| `SERVER_PORT` | 后端端口 | 8080 |
-| `WEB_PORT` | 前端端口 | 3000 |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | 数据库配置 | postgres / - / afs |
+| `AI_DASHSCOPE_API_KEY` | 阿里云 DashScope API Key（必填） | - |
+| `AI_DASHSCOPE_MODEL` | 大模型 | qwen-turbo |
+| `SERVER_PORT` / `WEB_PORT` | 后端 / 前端端口 | 8080 / 3000 |
 
----
+数据库结构由 Flyway 自动迁移，脚本位于 `afs-server/src/main/resources/db/migration/`。
 
-## 📊 数据库设计
+## CI/CD 自动部署
 
-### 核心数据表
-
-| 表名 | 说明 | 关键字段 |
-|------|------|---------|
-| `user` | 用户表 | id, username, email, role |
-| `chat_session` | 对话会话表 | id, user_id, title, created_at |
-| `chat_message` | 聊天消息表 | id, session_id, content, role, sources |
-| `knowledge` | 防诈骗知识表 | id, title, content, status, audit_status |
-| `knowledge_audit` | 知识审核表 | id, knowledge_id, audit_status, comment |
-| `scam_case` | 诈骗案例表 | id, title, content, category |
-| `vector_store` | 向量存储表 | id, content, embedding, metadata |
-
-### Flyway 数据库迁移
-
-迁移脚本位于 `afs-server/src/main/resources/db/migration/`，支持自动版本升级。
-
----
-
-## 🛡️ CI/CD 自动部署
-
-### GitHub Actions 工作流
+工作流定义在 `.github/workflows/ci-cd.disabled.yml`，当前触发器已注释停用，启用时需恢复 `on:` 触发配置并去掉文件名中的 `.disabled`。
 
 ```
-代码推送 → 构建后端 → 构建前端 → 推送 Docker 镜像 → SSH 部署到服务器
+push main → 构建后端(Maven) + 前端(Vite)
+         → 构建 Docker 镜像并推送阿里云 ACR
+         → SSH 部署到服务器（docker compose pull && up -d）
 ```
 
-### 配置 GitHub Secrets
+需在仓库 Settings → Secrets 中配置：
 
 | Secret | 说明 |
 |--------|------|
-| `SERVER_HOST` | 服务器 IP |
-| `SERVER_USER` | SSH 用户名 |
-| `SERVER_SSH_KEY` | SSH 私钥 |
+| `ALIYUN_ACR_REGISTRY` / `ALIYUN_ACR_NAMESPACE` / `ALIYUN_ACR_USERNAME` / `ALIYUN_ACR_PASSWORD` | 阿里云容器镜像服务 |
+| `SERVER_HOST` / `SERVER_USER` / `SERVER_SSH_KEY` / `SERVER_PROJECT_PATH` | 部署服务器 SSH 信息 |
+| `POSTGRES_PASSWORD` | 数据库密码 |
 | `AI_DASHSCOPE_API_KEY` | 通义千问 API Key |
 
----
+## 开发规范
 
-## 📝 开发规范
-
-### 代码规范
-
-- Java 代码遵循 Spring 官方编码规范
-- Vue 代码遵循 Element Plus 代码风格
-- 使用 `@Slf4j` 进行日志记录
-- 异常处理使用全局异常处理器
-
-### 提交规范
-
-```
-feat: 添加新功能
-fix: 修复 bug
-docs: 更新文档
-style: 代码格式调整
-refactor: 代码重构
-test: 添加测试
-```
-
----
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/xxx`)
-3. 提交更改 (`git commit -m 'feat: xxx'`)
-4. 推送到分支 (`git push origin feature/xxx`)
-5. 创建 Pull Request
+- 后端：`@Slf4j` 日志、构造器注入、controller/service/mapper/entity/dto/vo 标准分层
+- 前端：`<script setup>` 组合式 API、Pinia 状态管理
+- 提交信息：`feat` / `fix` / `docs` / `refactor` / `test` 前缀
