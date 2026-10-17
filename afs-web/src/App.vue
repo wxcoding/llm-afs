@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo" @click="$router.push('/')">
             <span class="logo-icon">🛡️</span>
-            <span class="logo-text">智安反诈平台</span>
+            <span class="logo-text">智能反诈系统</span>
           </div>
           <div class="header-right">
             <template v-if="user">

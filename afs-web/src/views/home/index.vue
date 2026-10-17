@@ -15,7 +15,7 @@
             <span class="badge-text">智能防诈骗平台</span>
           </div>
           <h1 class="hero-title">智能防诈 · 安全守护</h1>
-          <p class="hero-description">基于先进大语言模型技术，构建全方位智能防诈骗体系。实时识别、精准预警、专业指导，为您的财产安全保驾护航。</p>
+          <p class="hero-description">基于先进大语言模型技术，构建全方位智能防诈骗体系。实时识别、专业指导，为您的财产安全保驾护航。</p>
         </div>
         <div class="hero-stats">
           <div class="stat-card">
@@ -202,7 +202,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(79, 70, 229, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(79, 70, 229, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;

@@ -13,8 +13,8 @@
             <div class="brand-icon-ring"></div>
             <div class="brand-icon">🛡️</div>
           </div>
-          <h1 class="brand-title">智安反诈平台</h1>
-          <p class="brand-desc">基于大模型AI技术，智能识别诈骗手段，全方位守护您的财产安全</p>
+          <h1 class="brand-title">智能反诈系统</h1>
+          <p class="brand-desc">基于大模型AI技术，智能识别诈骗手段，全方位守护您的安全</p>
           <div class="feature-list">
             <div class="feature-item">
               <div class="feature-icon-box">
@@ -60,8 +60,8 @@
             <div class="form-item-wrapper">
               <div class="input-wrapper">
                 <div class="input-prefix">👤</div>
-                <el-input 
-                  v-model="form.username" 
+                <el-input
+                  v-model="form.username"
                   :placeholder="isRegister ? '用户名（3-20位字母、数字、下划线）' : '请输入用户名'"
                   size="large"
                   class="custom-input"
@@ -71,9 +71,9 @@
             <div class="form-item-wrapper">
               <div class="input-wrapper">
                 <div class="input-prefix">🔐</div>
-                <el-input 
-                  v-model="form.password" 
-                  type="password" 
+                <el-input
+                  v-model="form.password"
+                  type="password"
                   :placeholder="isRegister ? '密码（6-20位）' : '请输入密码'"
                   show-password
                   size="large"
@@ -82,8 +82,8 @@
               </div>
             </div>
             <div class="form-item-wrapper">
-              <el-button 
-                type="primary" 
+              <el-button
+                type="primary"
                 class="login-btn"
                 :loading="loading"
                 size="large"
