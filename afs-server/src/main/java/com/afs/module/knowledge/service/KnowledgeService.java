@@ -105,7 +105,7 @@ public class KnowledgeService {
     public Knowledge updateKnowledge(Long id, Knowledge knowledge) {
         Knowledge existing = knowledgeMapper.selectById(id);
         if (existing == null) {
-            throw new RuntimeException("知识不存在");
+            throw BusinessException.notFound("知识不存在");
         }
         
         // 更新字段

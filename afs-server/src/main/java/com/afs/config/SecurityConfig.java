@@ -1,20 +1,20 @@
 package com.afs.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * 安全配置类
  *
- * 提供安全相关的常量和异常类定义。
+ * 提供密码加密器等安全相关组件。
  */
 @Configuration
 public class SecurityConfig {
 
-    public static final String SECRET_KEY = "afs-secret-key";
-
-    public static class RateLimitException extends RuntimeException {
-        public RateLimitException(String message) {
-            super(message);
-        }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

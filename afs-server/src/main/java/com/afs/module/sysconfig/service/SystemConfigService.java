@@ -4,7 +4,6 @@ import com.afs.module.sysconfig.entity.SystemConfig;
 import com.afs.module.sysconfig.mapper.SystemConfigMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,9 +19,6 @@ import java.util.Map;
 @Service
 public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemConfig> {
 
-    @Autowired(required = false)
-    private SystemConfigMapper configMapper;
-
     private static final Map<String, String> DEFAULT_CONFIGS = new HashMap<>();
     static {
         DEFAULT_CONFIGS.put("system_prompt", "你是一个专业的防诈骗助手，请帮助用户识别和防范各种诈骗手段。");
@@ -34,7 +30,7 @@ public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemC
 
     public void initDefaultConfigs() {
         for (Map.Entry<String, String> entry : DEFAULT_CONFIGS.entrySet()) {
-            SystemConfig existing = configMapper.selectOne(
+            SystemConfig existing = baseMapper.selectOne(
                     new QueryWrapper<SystemConfig>().eq("config_key", entry.getKey()));
             if (existing == null) {
                 SystemConfig config = new SystemConfig();
@@ -44,34 +40,34 @@ public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemC
                 config.setIsEditable(true);
                 config.setCreateTime(LocalDateTime.now());
                 config.setUpdateTime(LocalDateTime.now());
-                configMapper.insert(config);
+                baseMapper.insert(config);
             }
         }
     }
 
     public SystemConfig updateConfig(String configKey, String configValue) {
-        SystemConfig config = configMapper.selectOne(
+        SystemConfig config = baseMapper.selectOne(
                 new QueryWrapper<SystemConfig>().eq("config_key", configKey));
         if (config != null && config.getIsEditable()) {
             config.setConfigValue(configValue);
             config.setUpdateTime(LocalDateTime.now());
-            configMapper.updateById(config);
+            baseMapper.updateById(config);
         }
         return config;
     }
 
     public String getConfigValue(String configKey) {
-        SystemConfig config = configMapper.selectOne(
+        SystemConfig config = baseMapper.selectOne(
                 new QueryWrapper<SystemConfig>().eq("config_key", configKey));
         return config != null ? config.getConfigValue() : DEFAULT_CONFIGS.get(configKey);
     }
 
     public List<SystemConfig> getAllConfigs() {
-        return configMapper.selectList(new QueryWrapper<>());
+        return baseMapper.selectList(new QueryWrapper<>());
     }
 
     public Map<String, String> getConfigsByType(String configType) {
-        List<SystemConfig> configs = configMapper.selectList(
+        List<SystemConfig> configs = baseMapper.selectList(
                 new QueryWrapper<SystemConfig>().eq("config_type", configType));
         Map<String, String> result = new HashMap<>();
         for (SystemConfig config : configs) {

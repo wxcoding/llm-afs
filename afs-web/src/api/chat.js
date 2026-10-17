@@ -1,7 +1,7 @@
 import request from '@/utils/request'
 
-export const getChatSessions = (userId) => {
-  return request.get(`/chat/sessions/${userId}`)
+export const getChatSessions = () => {
+  return request.get('/chat/sessions')
 }
 
 export const getSessionMessages = (sessionId) => {

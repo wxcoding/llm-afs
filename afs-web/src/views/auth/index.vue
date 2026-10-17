@@ -166,7 +166,8 @@ const handleSubmit = async () => {
 
     if (res.success) {
       ElMessage.success(isRegister.value ? '注册成功' : '登录成功')
-      userStore.setUser(res.data)
+      userStore.setUser(res.data.user)
+      userStore.setToken(res.data.token)
       router.push('/chat')
     }
   } catch (e) {

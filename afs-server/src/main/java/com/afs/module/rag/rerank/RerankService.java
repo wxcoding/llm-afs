@@ -2,7 +2,6 @@ package com.afs.module.rag.rerank;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
@@ -103,10 +102,9 @@ public class RerankService {
     /**
      * RestTemplate 用于调用外部 API
      */
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
-    @Autowired(required = false)
-    public void setRestTemplate(RestTemplate restTemplate) {
+    public RerankService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 

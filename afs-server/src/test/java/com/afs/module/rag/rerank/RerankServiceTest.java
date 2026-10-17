@@ -3,6 +3,7 @@ package com.afs.module.rag.rerank;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ class RerankServiceTest {
 
     @Test
     void missingProviderCredentialsPreserveCandidatesWithoutMockReranking() {
-        RerankService service = new RerankService();
+        RerankService service = new RerankService(new RestTemplate());
         List<Document> candidates = List.of(
                 Document.builder().id("first").text("unrelated").build(),
                 Document.builder().id("second").text("query").build()
@@ -29,7 +30,7 @@ class RerankServiceTest {
 
     @Test
     void unknownProviderPreservesCandidatesInsteadOfFallingBackToMock() {
-        RerankService service = new RerankService();
+        RerankService service = new RerankService(new RestTemplate());
         List<Document> candidates = List.of(
                 Document.builder().id("first").text("unrelated").build(),
                 Document.builder().id("second").text("query").build()

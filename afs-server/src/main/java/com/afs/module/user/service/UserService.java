@@ -1,24 +1,31 @@
 package com.afs.module.user.service;
 
+import com.afs.exception.BusinessException;
 import com.afs.module.user.entity.User;
 import com.afs.module.user.mapper.UserMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 用户服务类
- * 
- * 负责用户注册、登录、个人信息管理、管理员用户管理等功能
+ *
+ * 负责用户注册、登录、个人信息管理、管理员用户管理等功能。
+ * 密码统一使用 BCrypt 加密存储；历史明文密码在登录成功时自动升级。
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class UserService {
 
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 用户注册
@@ -33,23 +40,25 @@ public class UserService {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("username", username);
         if (userMapper.selectOne(wrapper) != null) {
-            throw new RuntimeException("用户名已存在");
+            throw BusinessException.badRequest("用户名已存在");
         }
         
         // 创建新用户
         User user = new User();
         user.setUsername(username);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setNickname(username);
         user.setCreateTime(LocalDateTime.now());
-        
+
         userMapper.insert(user);
         return user;
     }
 
     /**
      * 用户登录
-     * 
+     *
+     * 历史明文密码登录成功后自动升级为 BCrypt 加密存储。
+     *
      * @param username 用户名
      * @param password 密码
      * @return 登录成功的用户对象
@@ -57,11 +66,28 @@ public class UserService {
      */
     public User login(String username, String password) {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.eq("username", username).eq("password", password);
-        
+        wrapper.eq("username", username);
+
         User user = userMapper.selectOne(wrapper);
         if (user == null) {
-            throw new RuntimeException("用户名或密码错误");
+            throw BusinessException.unauthorized("用户名或密码错误");
+        }
+
+        String stored = user.getPassword();
+        if (stored != null && stored.startsWith("$2")) {
+            // BCrypt 校验
+            if (!passwordEncoder.matches(password, stored)) {
+                throw BusinessException.unauthorized("用户名或密码错误");
+            }
+        } else {
+            // 兼容存量明文密码，校验通过后升级为 BCrypt
+            if (!password.equals(stored)) {
+                throw BusinessException.unauthorized("用户名或密码错误");
+            }
+            user.setPassword(passwordEncoder.encode(password));
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(user);
+            log.info("用户 {} 的明文密码已升级为 BCrypt 加密存储", username);
         }
         return user;
     }
@@ -86,7 +112,7 @@ public class UserService {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("username", user.getUsername());
         if (userMapper.selectOne(wrapper) != null) {
-            throw new RuntimeException("用户名已存在");
+            throw BusinessException.badRequest("用户名已存在");
         }
         
         if (user.getCreateTime() == null) {
@@ -95,7 +121,10 @@ public class UserService {
         if (user.getNickname() == null || user.getNickname().isBlank()) {
             user.setNickname(user.getUsername());
         }
-        
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
         userMapper.insert(user);
         return user;
     }
@@ -103,7 +132,7 @@ public class UserService {
     public User updateUserByAdmin(Long id, User req) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
-            throw new RuntimeException("用户不存在");
+            throw BusinessException.notFound("用户不存在");
         }
         
         if (req.getNickname() != null) {
@@ -119,7 +148,7 @@ public class UserService {
             existing.setAvatar(req.getAvatar());
         }
         if (req.getPassword() != null && !req.getPassword().isBlank()) {
-            existing.setPassword(req.getPassword());
+            existing.setPassword(passwordEncoder.encode(req.getPassword()));
         }
         
         existing.setUpdateTime(LocalDateTime.now());

@@ -1,5 +1,6 @@
 package com.afs.module.user.controller;
 
+import com.afs.common.JwtUtil;
 import com.afs.common.Result;
 import com.afs.module.user.dto.LoginDTO;
 import com.afs.module.user.dto.RegisterDTO;
@@ -7,6 +8,7 @@ import com.afs.module.user.dto.UserProfileUpdateDTO;
 import com.afs.module.user.dto.UserUpsertDTO;
 import com.afs.module.user.entity.User;
 import com.afs.module.user.service.UserService;
+import com.afs.module.user.vo.LoginVO;
 import com.afs.module.user.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,10 +23,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
@@ -35,9 +37,9 @@ public class UserController {
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public Result<UserVO> login(@RequestBody LoginDTO request) {
+    public Result<LoginVO> login(@RequestBody LoginDTO request) {
         User user = userService.login(request.getUsername(), request.getPassword());
-        return Result.success("登录成功", UserVO.from(user));
+        return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId()), user));
     }
 
     @Operation(summary = "获取用户详情")

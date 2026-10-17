@@ -3,15 +3,16 @@ import storage from '@/utils/storage'
 
 /**
  * 用户状态管理
- * 统一管理登录用户信息与 localStorage 持久化，禁止在组件中直接读写 localStorage
+ * 统一管理登录用户信息、访问令牌与 localStorage 持久化，禁止在组件中直接读写 localStorage
  */
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: storage.get('user', null)
+    user: storage.get('user', null),
+    token: storage.get('token', '')
   }),
 
   getters: {
-    isLoggedIn: (state) => !!state.user,
+    isLoggedIn: (state) => !!state.user && !!state.token,
     userId: (state) => state.user?.id ?? null,
     displayName: (state) => state.user?.nickname || state.user?.username || ''
   },
@@ -22,6 +23,11 @@ export const useUserStore = defineStore('user', {
       storage.set('user', userData)
     },
 
+    setToken(token) {
+      this.token = token
+      storage.set('token', token)
+    },
+
     updateUser(partial) {
       if (!this.user) return
       this.setUser({ ...this.user, ...partial })
@@ -29,7 +35,9 @@ export const useUserStore = defineStore('user', {
 
     clearUser() {
       this.user = null
+      this.token = ''
       storage.remove('user')
+      storage.remove('token')
     }
   }
 })

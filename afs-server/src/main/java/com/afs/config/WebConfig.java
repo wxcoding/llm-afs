@@ -1,11 +1,14 @@
 package com.afs.config;
 
+import com.afs.common.AuthInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -14,19 +17,45 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Web MVC 配置类
  *
- * 配置 CORS、异步任务线程池等。
+ * 配置 CORS、登录鉴权拦截器、异步任务线程池等。
  */
+@RequiredArgsConstructor
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    private final AuthInterceptor authInterceptor;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*")
+                .allowedOriginPatterns(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:3000",
+                        "http://127.0.0.1:5173"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    /**
+     * 登录鉴权：除注册/登录/文档/健康检查外全部需要 Bearer Token
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                        "/api/user/register",
+                        "/api/user/login",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/actuator/health",
+                        "/error"
+                );
     }
 
     @Override

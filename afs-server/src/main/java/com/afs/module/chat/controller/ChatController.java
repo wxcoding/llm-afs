@@ -1,5 +1,6 @@
 package com.afs.module.chat.controller;
 
+import com.afs.common.AuthInterceptor;
 import com.afs.common.Result;
 import com.afs.module.chat.dto.SendMessageDTO;
 import com.afs.module.chat.entity.ChatMessage;
@@ -8,6 +9,7 @@ import com.afs.module.chat.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -20,22 +22,23 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin
 public class ChatController {
 
     private final ChatService chatService;
 
     @Operation(summary = "发送消息并获取流式响应", description = "通过 SSE (Server-Sent Events) 技术实时推送 AI 回复内容")
     @PostMapping(value = "/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> send(@RequestBody SendMessageDTO request) {
+    public Flux<ServerSentEvent<String>> send(@RequestBody SendMessageDTO request, HttpServletRequest httpRequest) {
+        // 用户身份取自登录令牌，不信任前端传入
+        Long userId = (Long) httpRequest.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
         // 返回 Flux 交给 Spring 异步写出，不占用 Servlet 请求线程
-        return chatService.sendMessageStream(request.getUserId(), request.getSessionId(), request.getContent());
+        return chatService.sendMessageStream(userId, request.getSessionId(), request.getContent());
     }
 
-    @Operation(summary = "获取用户的所有会话列表")
-    @GetMapping("/sessions/{userId}")
-    public Result<List<ChatSession>> getSessions(
-            @Parameter(description = "用户 ID", required = true) @PathVariable Long userId) {
+    @Operation(summary = "获取当前用户的所有会话列表")
+    @GetMapping("/sessions")
+    public Result<List<ChatSession>> getSessions(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
         return Result.success(chatService.getUserSessions(userId));
     }
 

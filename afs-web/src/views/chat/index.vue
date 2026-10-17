@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getChatSessions, getSessionMessages, deleteSession as deleteSessionApi } from '@/api/chat'
 import SessionList from '@/components/business/SessionList.vue'
@@ -46,6 +46,7 @@ import QuickQuestions from '@/components/business/QuickQuestions.vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 const sessionId = ref(null)
@@ -66,7 +67,7 @@ const quickQuestions = [
 
 const loadSessions = async () => {
   if (!userStore.isLoggedIn) return
-  const res = await getChatSessions(userStore.userId)
+  const res = await getChatSessions()
   if (res.success) {
     sessions.value = res.data || []
   }
@@ -155,10 +156,19 @@ const sendMessage = async (content) => {
 
     const response = await fetch('/api/chat/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userStore.token}`
+      },
       body: JSON.stringify(params)
     })
 
+    if (response.status === 401) {
+      userStore.clearUser()
+      ElMessage.warning('登录已过期，请重新登录')
+      router.push('/login')
+      return
+    }
     if (!response.ok) {
       throw new Error('请求失败')
     }

@@ -7,8 +7,8 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
-    username: postgres
-    password: guanwx
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:guanwx}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -85,10 +85,17 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # SQL 日志统一走 slf4j，由 logback 按环境控制级别
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: auto
+
+# 登录鉴权配置
+jwt:
+  # 生产环境务必通过环境变量覆盖
+  secret: ${JWT_SECRET:afs-jwt-secret-please-change-in-production-0123456789}
+  expire-hours: 72
 
 springdoc:
   api-docs:

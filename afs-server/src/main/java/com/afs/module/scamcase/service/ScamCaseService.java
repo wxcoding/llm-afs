@@ -1,5 +1,6 @@
 package com.afs.module.scamcase.service;
 
+import com.afs.exception.BusinessException;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
@@ -56,7 +57,7 @@ public class ScamCaseService {
     public ScamCase updateCase(Long id, ScamCase scamCase) {
         ScamCase existing = scamCaseMapper.selectById(id);
         if (existing == null) {
-            throw new RuntimeException("案例不存在");
+            throw BusinessException.notFound("案例不存在");
         }
         
         existing.setTitle(scamCase.getTitle());
