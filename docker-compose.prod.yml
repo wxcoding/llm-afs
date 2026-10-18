@@ -49,6 +49,7 @@ services:
       SPRINGDOC_API_DOCS_ENABLED: ${SPRINGDOC_API_DOCS_ENABLED:-false}
       SPRINGDOC_SWAGGER_UI_ENABLED: ${SPRINGDOC_SWAGGER_UI_ENABLED:-false}
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://192.168.16.11:3000}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     volumes:

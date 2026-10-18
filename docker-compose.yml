@@ -51,6 +51,7 @@ services:
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}  # 通义千问 API Key
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen3.8-max-0902}  # AI 模型
       JAVA_OPTS: "-Xmx512m -Xms256m"  # JVM 内存配置
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://192.168.16.11:3000  # CORS 允许的来源
     ports:
       - "8080:8080"
     volumes:
