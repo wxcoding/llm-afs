@@ -126,7 +126,7 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('添加用户')
 const isEdit = ref(false)
 const formRef = ref(null)
-const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const defaultAvatar = '/avatars/default.jpg'
 
 const formData = reactive({
   id: null,

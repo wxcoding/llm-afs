@@ -13,7 +13,7 @@
         <div class="profile-header">
           <el-avatar
             :size="90"
-            :src="form.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+            :src="form.avatar || '/avatars/default.jpg'"
             class="profile-avatar"
           />
         </div>
@@ -37,7 +37,7 @@
             <div class="avatar-section">
               <el-avatar
                 :size="90"
-                :src="form.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                :src="form.avatar || '/avatars/default.jpg'"
                 class="preview-avatar"
               />
               <div class="avatar-actions">

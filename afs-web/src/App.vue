@@ -85,7 +85,7 @@
                 <div class="user-info">
                   <el-avatar
                     :size="32"
-                    :src="user.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
+                    :src="user.avatar || '/avatars/default.jpg'"
                     class="user-avatar"
                   />
                   <span class="username">{{ user.nickname || user.username }}</span>

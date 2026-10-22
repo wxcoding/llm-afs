@@ -24,6 +24,9 @@ import java.util.List;
 @Service
 public class UserService {
 
+    /** 默认头像路径（前端 public 目录下，浏览器可直接访问） */
+    private static final String DEFAULT_AVATAR = "/avatars/default.jpg";
+
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -48,6 +51,7 @@ public class UserService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
         user.setNickname(username);
+        user.setAvatar(DEFAULT_AVATAR);
         user.setCreateTime(LocalDateTime.now());
 
         userMapper.insert(user);
@@ -120,6 +124,9 @@ public class UserService {
         }
         if (user.getNickname() == null || user.getNickname().isBlank()) {
             user.setNickname(user.getUsername());
+        }
+        if (user.getAvatar() == null || user.getAvatar().isBlank()) {
+            user.setAvatar(DEFAULT_AVATAR);
         }
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
