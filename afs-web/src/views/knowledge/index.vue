@@ -1,7 +1,5 @@
 <template>
   <div class="knowledge-page">
-    <PageHeader badge="📚 知识资产" title="防诈骗知识库" subtitle="全面了解各类诈骗手法和防范技巧" />
-
     <FilterBar>
       <template #left>
         <el-select v-model="selectedCategory" placeholder="选择分类" style="width: 150px" @change="loadKnowledge">
@@ -98,7 +96,6 @@ import {
 } from '@/api/knowledge'
 import dict from '@/utils/dict'
 import { useUserStore } from '@/stores/user'
-import PageHeader from '@/components/common/PageHeader.vue'
 import FilterBar from '@/components/common/FilterBar.vue'
 import KnowledgeItem from '@/components/business/KnowledgeItem.vue'
 import KnowledgeFormDialog from '@/components/business/KnowledgeFormDialog.vue'
@@ -320,11 +317,15 @@ onMounted(() => {
 
 <style scoped>
 .knowledge-page {
-  padding: 20px 0;
+  padding: 0;
 }
 
 .search-tabs {
-  margin-bottom: 20px;
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  margin-bottom: 16px;
 }
 
 .knowledge-list {

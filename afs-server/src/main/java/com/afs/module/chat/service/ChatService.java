@@ -312,7 +312,7 @@ public class ChatService {
     /**
      * 校验会话存在且属于当前用户，防止水平越权访问他人会话
      */
-    private void requireOwnedSession(Long sessionId, Long userId) {
+    private ChatSession requireOwnedSession(Long sessionId, Long userId) {
         ChatSession session = sessionMapper.selectById(sessionId);
         if (session == null) {
             throw BusinessException.notFound("会话不存在");
@@ -320,5 +320,19 @@ public class ChatService {
         if (!session.getUserId().equals(userId)) {
             throw BusinessException.forbidden("无权访问该会话");
         }
+        return session;
+    }
+
+    public void renameSession(Long sessionId, Long userId, String title) {
+        ChatSession session = requireOwnedSession(sessionId, userId);
+        String trimmed = title == null ? "" : title.trim();
+        if (trimmed.isEmpty()) {
+            throw BusinessException.badRequest("会话标题不能为空");
+        }
+        if (trimmed.length() > 50) {
+            trimmed = trimmed.substring(0, 50);
+        }
+        session.setTitle(trimmed);
+        sessionMapper.updateById(session);
     }
 }

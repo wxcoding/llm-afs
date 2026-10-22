@@ -1,30 +1,19 @@
 <template>
   <div class="dict-container">
-    <div class="brand-hero compact">
-      <div class="hero-deco deco-1"></div>
-      <div class="hero-deco deco-2"></div>
-      <div class="hero-content">
-        <span class="hero-badge">🗂️ 平台设置</span>
-        <h2>数据字典</h2>
-        <p>维护平台通用枚举与字典项</p>
-      </div>
-    </div>
-    <el-card class="dict-card">
-      <template #header>
-        <div class="card-header">
-          <span class="title">字典项列表</span>
-          <div class="header-actions">
-            <el-button type="primary" @click="handleAddType">新增字典类型</el-button>
-            <el-button @click="handleRefresh">刷新</el-button>
-          </div>
-        </div>
-      </template>
-
+    <el-card class="dict-card" shadow="never">
       <el-row :gutter="20">
         <el-col :span="5">
           <div class="type-list">
             <div class="type-list-header">
               <span class="type-list-title">字典类型</span>
+              <div class="type-list-actions">
+                <el-button type="primary" size="small" text @click="handleAddType">
+                  <el-icon style="margin-right: 2px"><Plus /></el-icon>新增
+                </el-button>
+                <el-button size="small" text @click="handleRefresh">
+                  <el-icon><Refresh /></el-icon>
+                </el-button>
+              </div>
             </div>
             <div class="type-list-content">
               <div
@@ -138,6 +127,7 @@
 import request from '@/utils/request'
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 
 const dictTypes = ref([])
 const dictItems = ref([])
@@ -312,69 +302,62 @@ onMounted(() => {
 
 <style scoped>
 .dict-container {
-  padding: 20px;
-}
-
-.dict-card {
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header .title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
+  padding: 0;
 }
 
 .type-list {
-  border-right: 1px solid #e5e7eb;
-  height: calc(100vh - 200px);
+  border-right: 1px solid #ebeef5;
+  height: calc(100vh - 240px);
   display: flex;
   flex-direction: column;
 }
 
 .type-list-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f3f4f6;
-  background: #f9fafb;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fafafa;
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .type-list-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: #303133;
+}
+
+.type-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .type-list-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px;
 }
 
 .type-item {
-  padding: 10px 12px;
-  border-radius: 6px;
+  padding: 8px 10px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   border: 1px solid transparent;
 }
 
 .type-item:hover {
-  background: #f3f4f6;
+  background: #f5f7fa;
 }
 
 .type-item.active {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #ecf5ff;
+  border-color: #d9ecff;
+  color: #409eff;
 }
 
 .type-item.active .type-name {
@@ -382,23 +365,23 @@ onMounted(() => {
 }
 
 .type-item.active .type-code {
-  color: #60a5fa;
+  color: #79bbff;
 }
 
 .type-name {
-  font-size: 14px;
-  color: #374151;
+  font-size: 13px;
+  color: #303133;
   line-height: 1.5;
 }
 
 .type-code {
   font-size: 12px;
-  color: #9ca3af;
+  color: #909399;
   margin-top: 2px;
 }
 
 .item-list {
-  height: calc(100vh - 200px);
+  height: calc(100vh - 240px);
   display: flex;
   flex-direction: column;
 }
@@ -407,9 +390,9 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .item-list-title {
@@ -419,17 +402,17 @@ onMounted(() => {
 }
 
 .item-list-header .title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: #303133;
 }
 
 .item-list-header .code {
-  font-size: 13px;
-  color: #6b7280;
-  background: #f3f4f6;
+  font-size: 12px;
+  color: #909399;
+  background: #f4f4f5;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .item-list :deep(.el-table) {
@@ -437,7 +420,7 @@ onMounted(() => {
 }
 
 :deep(.el-table__body-wrapper) {
-  max-height: calc(100vh - 320px);
+  max-height: calc(100vh - 360px);
   overflow-y: auto;
 }
 </style>

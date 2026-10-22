@@ -15,3 +15,7 @@ export const sendMessage = (data) => {
 export const deleteSession = (sessionId) => {
   return request.delete(`/chat/session/${sessionId}`)
 }
+
+export const renameSession = (sessionId, title) => {
+  return request.put(`/chat/session/${sessionId}`, { title })
+}

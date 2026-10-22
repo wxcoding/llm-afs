@@ -11,7 +11,9 @@
         <div class="brand-content">
           <div class="brand-icon-wrapper">
             <div class="brand-icon-ring"></div>
-            <div class="brand-icon">🛡️</div>
+            <div class="brand-icon">
+              <ShieldIcon :size="88" />
+            </div>
           </div>
           <h1 class="brand-title">智能反诈系统</h1>
           <p class="brand-desc">基于大模型AI技术，智能识别诈骗手段，全方位守护您的安全</p>
@@ -115,6 +117,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login, register } from '@/api/user'
 import { useUserStore } from '@/stores/user'
+import ShieldIcon from '@/components/common/ShieldIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -180,7 +183,7 @@ const handleSubmit = async () => {
 
 <style scoped>
 .login-page {
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   overflow: hidden;
 }
@@ -254,7 +257,7 @@ const handleSubmit = async () => {
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .login-left {
@@ -262,8 +265,14 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: 40px;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.login-left::-webkit-scrollbar {
+  display: none;
 }
 
 .brand-content {
@@ -302,10 +311,13 @@ const handleSubmit = async () => {
 }
 
 .brand-icon {
-  font-size: 88px;
   position: relative;
   z-index: 1;
   animation: float 3.5s ease-in-out infinite;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes float {
@@ -420,9 +432,15 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: 40px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(32px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.login-right::-webkit-scrollbar {
+  display: none;
 }
 
 .login-box {

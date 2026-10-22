@@ -2,100 +2,75 @@
   <div class="user-management">
     <template v-if="user">
       <el-config-provider :locale="zhCn">
-        <div class="brand-hero compact">
-          <div class="hero-deco deco-1"></div>
-          <div class="hero-deco deco-2"></div>
-          <div class="hero-content">
-            <span class="hero-badge">👥 账号治理</span>
-            <h2>用户管理</h2>
-            <p>管理平台注册用户、角色与账号状态</p>
+        <div class="filter-card">
+          <el-input
+            v-model="searchText"
+            placeholder="搜索用户名、昵称、手机号或邮箱"
+            clearable
+            style="width: 350px"
+            @clear="loadUsers"
+            @keyup.enter="searchUsers"
+          >
+            <template #append>
+              <el-button @click="searchUsers">
+                <el-icon><Search /></el-icon>
+              </el-button>
+            </template>
+          </el-input>
+          <el-button type="primary" @click="showCreateDialog">
+            <el-icon style="margin-right: 4px"><Plus /></el-icon>添加用户
+          </el-button>
+        </div>
+
+        <el-card shadow="never" class="table-card">
+          <el-table v-loading="loading" :data="filteredUsers" style="width: 100%">
+            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column label="头像" width="80">
+              <template #default="{ row }">
+                <el-avatar :size="36" :src="row.avatar || defaultAvatar">
+                  {{ row.nickname ? row.nickname[0] : row.username[0] }}
+                </el-avatar>
+              </template>
+            </el-table-column>
+            <el-table-column prop="username" label="用户名" width="120" />
+            <el-table-column prop="nickname" label="昵称" width="120" />
+            <el-table-column prop="phone" label="手机号" width="130" />
+            <el-table-column prop="email" label="邮箱" width="200" />
+            <el-table-column prop="createTime" label="创建时间" width="170">
+              <template #default="{ row }">
+                {{ formatTime(row.createTime) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="updateTime" label="更新时间" width="170">
+              <template #default="{ row }">
+                {{ formatTime(row.updateTime) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" fixed="right" width="160">
+              <template #default="{ row }">
+                <el-button size="small" type="primary" link @click="showEditDialog(row)">编辑</el-button>
+                <el-button size="small" type="danger" link @click="handleDelete(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="pagination">
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :total="total"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :pager-count="5"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
           </div>
-          <div class="hero-actions">
-            <el-button type="primary" round @click="showCreateDialog">
-              <el-icon><Plus /></el-icon>
-              添加用户
-            </el-button>
-          </div>
-        </div>
-
-      <div class="search-bar">
-        <el-input
-          v-model="searchText"
-          placeholder="搜索用户名、昵称、手机号或邮箱"
-          clearable
-          style="width: 350px"
-          class="search-input"
-          @clear="loadUsers"
-          @keyup.enter="searchUsers"
-        >
-          <template #append>
-            <el-button class="search-btn" @click="searchUsers">
-              <el-icon><Search /></el-icon>
-              搜索
-            </el-button>
-          </template>
-        </el-input>
-      </div>
-
-      <div class="table-container">
-        <el-table v-loading="loading" :data="filteredUsers" style="width: 100%" class="user-table">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column label="头像" width="80">
-            <template #default="{ row }">
-              <el-avatar :size="40" :src="row.avatar || defaultAvatar" class="user-avatar">
-                {{ row.nickname ? row.nickname[0] : row.username[0] }}
-              </el-avatar>
-            </template>
-          </el-table-column>
-          <el-table-column prop="username" label="用户名" width="120" />
-          <el-table-column prop="nickname" label="昵称" width="120" />
-          <el-table-column prop="phone" label="手机号" width="130" />
-          <el-table-column prop="email" label="邮箱" width="200" />
-          <el-table-column prop="createTime" label="创建时间" width="180">
-            <template #default="{ row }">
-              {{ formatTime(row.createTime) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="updateTime" label="更新时间" width="180">
-            <template #default="{ row }">
-              {{ formatTime(row.updateTime) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" fixed="right" width="200">
-            <template #default="{ row }">
-              <el-button size="small" class="edit-btn" @click="showEditDialog(row)">编辑</el-button>
-              <el-button size="small" type="danger" class="delete-btn" @click="handleDelete(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="pagination">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :prev-text="'上一页'"
-            :next-text="'下一页'"
-            :total-text="'共 {total} 条'"
-            :page-size-text="'每页条数'"
-            :goto-text="'前往'"
-            :pager-count="5"
-            class="pagination-component"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
-        </div>
-
-        <div class="table-footer">
-          <span class="table-info">共 {{ total }} 条记录</span>
-        </div>
-      </div>
+        </el-card>
       </el-config-provider>
 
-      <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" class="user-dialog">
-        <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px" class="user-form">
+      <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
+        <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="formData.username" :disabled="isEdit" placeholder="请输入用户名" />
           </el-form-item>
@@ -123,16 +98,11 @@
     </template>
 
     <template v-else>
-      <div class="not-logged-in">
-        <div class="not-logged-in-card">
-          <div class="not-logged-in-icon">🔒</div>
-          <h3>需要登录</h3>
-          <p>请先登录后再访问用户管理页面</p>
-          <el-button type="primary" size="large" @click="$router.push('/login')">
-            立即登录
-          </el-button>
-        </div>
-      </div>
+      <el-card shadow="never" class="not-logged-in-card">
+        <el-empty description="请先登录后再访问用户管理页面">
+          <el-button type="primary" @click="$router.push('/login')">立即登录</el-button>
+        </el-empty>
+      </el-card>
     </template>
   </div>
 </template>
@@ -145,7 +115,6 @@ import { getAllUsers, createUser, updateUserByAdmin, deleteUser } from '@/api/us
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
-
 const { user } = storeToRefs(useUserStore())
 const loading = ref(false)
 const users = ref([])
@@ -326,184 +295,35 @@ onMounted(() => {
 
 <style scoped>
 .user-management {
-  padding: 24px;
-  background-color: #f5f7fa;
-  min-height: 100vh;
+  padding: 0;
 }
 
-.page-header {
+.filter-card {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e4e7ed;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.header-content {
-  flex: 1;
-}
-
-.page-title {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.page-description {
-  margin: 0;
-  font-size: 14px;
-  color: #606266;
-}
-
-.add-user-btn {
-  font-size: 14px;
-  padding: 10px 20px;
-}
-
-.search-bar {
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-}
-
-.search-input {
-  border-radius: 8px;
-  border: 1px solid #dcdfe6;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
-}
-
-.search-btn {
-  border-radius: 0 8px 8px 0;
-}
-
-.table-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.user-table {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.user-avatar {
-  transition: all 0.3s ease;
-}
-
-.user-avatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.edit-btn {
-  margin-right: 8px;
-  border-radius: 4px;
-}
-
-.delete-btn {
-  border-radius: 4px;
+.table-card {
+  margin-bottom: 16px;
 }
 
 .pagination {
-  margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.pagination-component {
-  font-size: 14px;
-}
-
-.table-footer {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  font-size: 14px;
-  color: #606266;
-}
-
-.user-dialog {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.user-form {
-  padding: 0 16px;
-}
-
-.not-logged-in {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 80vh;
 }
 
 .not-logged-in-card {
-  text-align: center;
-  padding: 60px 40px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  max-width: 400px;
-  transition: all 0.3s ease;
-}
-
-.not-logged-in-card:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.not-logged-in-icon {
-  font-size: 64px;
-  margin-bottom: 24px;
-}
-
-.not-logged-in-card h3 {
-  margin: 0 0 12px 0;
-  font-size: 24px;
-  color: #303133;
-}
-
-.not-logged-in-card p {
-  margin: 0 0 32px 0;
-  font-size: 16px;
-  color: #606266;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .user-management {
-    padding: 16px;
-  }
-  
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .search-input {
-    width: 100% !important;
-  }
-  
-  .table-container {
-    padding: 16px;
-  }
-  
-  .pagination {
-    justify-content: center;
-  }
+  max-width: 480px;
+  margin: 60px auto;
 }
 </style>

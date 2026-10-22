@@ -7,16 +7,29 @@
     <option name="selectedModelId" value="auto" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：千问rerank精排模型测试">
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+    <list default="true" id="c71a6964-bd5d-401f-a1d6-cf1925849d55" name="更改" comment="feat：页面优化">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/nginx.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/config/env.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/config/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/afs-web/src/utils/dict.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/utils/dict.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/controller/ChatController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/java/com/afs/module/chat/service/ChatService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/afs-server/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/App.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/api/chat.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/api/chat.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/QuickQuestions.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/QuickQuestions.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/business/SessionList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/business/SessionList.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/common/FilterBar.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/common/FilterBar.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/components/common/PageHeader.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/components/common/PageHeader.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/router/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/router/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/styles/brand.css" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/styles/brand.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/audit/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/audit/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/auth/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/cases/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/chat/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/config/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/config/index.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/dict/index.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.prod.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.prod.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/home/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/knowledge/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/management/index.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" beforeDir="false" afterPath="$PROJECT_DIR$/afs-web/src/views/user/profile/index.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,6 +115,10 @@
     "git-widget-placeholder": "master",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "E:/guanwx/Workspace/personal/llm-afs",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "project.structure.last.edited": "项目",
     "project.structure.proportion": "0.15",
@@ -126,6 +143,14 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.29188.72" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.29188.72" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="默认任务">
@@ -170,7 +195,13 @@
       <workItem from="1791794420214" duration="31861000" />
       <workItem from="1791871363041" duration="14248000" />
       <workItem from="1791907206213" duration="3684000" />
-      <workItem from="1792258599275" duration="22124000" />
+      <workItem from="1792258599275" duration="22736000" />
+      <workItem from="1792282122738" duration="5373000" />
+      <workItem from="1792396853133" duration="1620000" />
+      <workItem from="1792419663871" duration="71000" />
+      <workItem from="1792496245743" duration="2201000" />
+      <workItem from="1792567983062" duration="6688000" />
+      <workItem from="1792682169603" duration="8101000" />
     </task>
     <task id="LOCAL-00001" summary="feat:升级SpringAI1.1.7，调整RAG文档切分，添加embedding失败降级处理">
       <option name="closed" value="true" />
@@ -348,7 +379,23 @@
       <option name="project" value="LOCAL" />
       <updated>1792279546047</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792281308116</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1792281308116</updated>
+    </task>
+    <task id="LOCAL-00024" summary="feat：千问rerank精排模型测试">
+      <option name="closed" value="true" />
+      <created>1792285826529</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1792285826529</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

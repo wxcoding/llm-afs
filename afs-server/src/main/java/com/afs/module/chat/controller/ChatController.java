@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "智能对话", description = "聊天对话、会话管理、历史记录等接口，使用 SSE 实现流式响应")
 @RequiredArgsConstructor
@@ -59,5 +60,16 @@ public class ChatController {
         Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
         chatService.deleteSession(sessionId, userId);
         return Result.success("删除成功");
+    }
+
+    @Operation(summary = "重命名会话标题")
+    @PutMapping("/session/{sessionId}")
+    public Result<Void> renameSession(
+            @Parameter(description = "会话 ID", required = true) @PathVariable Long sessionId,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(AuthInterceptor.USER_ID_ATTRIBUTE);
+        chatService.renameSession(sessionId, userId, body.get("title"));
+        return Result.success("重命名成功");
     }
 }

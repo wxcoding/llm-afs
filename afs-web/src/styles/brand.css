@@ -1,131 +1,153 @@
 /* ============================================
-   品牌设计规范（全站统一）
-   主色：紫蓝渐变 #667eea → #764ba2
+   若依（RuoYi）风格全站设计规范
+   主色：Element 经典蓝 #409EFF
+   风格：简洁、平实、小圆角、无渐变
    ============================================ */
-:root {
-  --brand-primary: #667eea;
-  --brand-primary-dark: #5a6fd6;
-  --brand-secondary: #764ba2;
-  --brand-pink: #f472b6;
-  --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --brand-gradient-wide: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --brand-radius-lg: 20px;
-  --brand-radius: 16px;
-  --brand-radius-sm: 10px;
-  --brand-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  --brand-shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.13);
-  --brand-shadow-glow: 0 4px 12px rgba(102, 126, 234, 0.35);
-  --brand-text-main: #1f2430;
-  --brand-text-sub: #6b7280;
-  --brand-bg-page: #f5f6fa;
+
+/* ---- 基础 reset ---- */
+html, body {
+  margin: 0;
+  padding: 0;
 }
 
-/* ---- Element Plus 主色对齐品牌紫 ---- */
-:root {
-  --el-color-primary: #667eea;
-  --el-color-primary-light-3: #8595ef;
-  --el-color-primary-light-5: #a3aff3;
-  --el-color-primary-light-7: #c1c9f7;
-  --el-color-primary-light-8: #d0d6f9;
-  --el-color-primary-light-9: #eef0fd;
-  --el-color-primary-dark-2: #5a6fd6;
+#app {
+  min-height: 100vh;
 }
 
-/* ---- 页面统一 Hero 头部 ---- */
+:root {
+  /* 主色（Element Plus 经典蓝） */
+  --brand-primary: #409eff;
+  --brand-primary-dark: #337ecc;
+  --brand-primary-light: #79bbff;
+  --brand-success: #67c23a;
+  --brand-warning: #e6a23c;
+  --brand-danger: #f56c6c;
+  --brand-info: #909399;
+
+  /* 圆角（小圆角，若依风格） */
+  --brand-radius-lg: 6px;
+  --brand-radius: 4px;
+  --brand-radius-sm: 2px;
+
+  /* 阴影（平实） */
+  --brand-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  --brand-shadow-hover: 0 2px 12px rgba(0, 0, 0, 0.1);
+  --brand-shadow-glow: 0 2px 8px rgba(64, 158, 255, 0.25);
+
+  /* 文字 */
+  --brand-text-main: #303133;
+  --brand-text-regular: #606266;
+  --brand-text-sub: #909399;
+  --brand-text-placeholder: #c0c4cc;
+
+  /* 背景 */
+  --brand-bg-page: #f0f2f5;
+  --brand-bg-card: #ffffff;
+  --brand-bg-hover: #f5f7fa;
+
+  /* 边框 */
+  --brand-border-color: #dcdfe6;
+  --brand-border-color-light: #e4e7ed;
+  --brand-border-color-lighter: #ebeef5;
+}
+
+/* ---- Element Plus 主色对齐若依蓝 ---- */
+:root {
+  --el-color-primary: #409eff;
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: #ecf5ff;
+  --el-color-primary-dark-2: #337ecc;
+  --el-border-radius-base: 4px;
+  --el-border-radius-small: 2px;
+}
+
+/* ---- 页面统一头部（替代原渐变 Hero，若依简洁卡片式） ---- */
 .brand-hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--brand-radius-lg);
-  padding: 28px 32px;
-  margin-bottom: 22px;
-  background: var(--brand-gradient-wide);
-  color: #fff;
+  background: var(--brand-bg-card);
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  border-radius: var(--brand-radius);
+  box-shadow: var(--brand-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand-hero.compact {
-  padding: 22px 28px;
+  padding: 14px 20px;
 }
 
 .brand-hero .hero-content {
-  position: relative;
-  z-index: 1;
+  flex: 1;
+  min-width: 0;
 }
 
+/* 徽章：改为简洁的文字标签 */
 .brand-hero .hero-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 3px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  margin-bottom: 12px;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  border: 1px solid var(--el-color-primary-light-7);
+  padding: 2px 10px;
+  border-radius: var(--brand-radius-sm);
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .brand-hero h2 {
-  margin: 0 0 6px;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--brand-text-main);
+  letter-spacing: 0;
 }
 
 .brand-hero.compact h2 {
-  font-size: 22px;
-  margin-bottom: 0;
+  font-size: 16px;
+  margin-bottom: 2px;
 }
 
 .brand-hero p {
   margin: 0;
-  opacity: 0.88;
-  font-size: 14px;
+  color: var(--brand-text-sub);
+  font-size: 13px;
 }
 
+/* 装饰圆圈：若依风格移除 */
 .brand-hero .hero-deco {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  display: none;
 }
 
-.brand-hero .deco-1 {
-  width: 200px;
-  height: 200px;
-  right: -60px;
-  top: -80px;
-}
-
-.brand-hero .deco-2 {
-  width: 120px;
-  height: 120px;
-  right: 140px;
-  bottom: -60px;
-}
-
-/* hero 右侧操作区（新增按钮等） */
+/* 右侧操作区 */
 .brand-hero .hero-actions {
-  position: absolute;
-  right: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
+  position: static;
+  transform: none;
+  margin-left: 16px;
 }
 
 .brand-hero .hero-actions .el-button--primary {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(4px);
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  backdrop-filter: none;
 }
 
 .brand-hero .hero-actions .el-button--primary:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--el-color-primary-light-3);
+  border-color: var(--el-color-primary-light-3);
 }
 
-/* ---- 统一卡片 ---- */
+/* ---- 统一卡片（简洁白底小圆角） ---- */
 .brand-card {
-  background: #fff;
+  background: var(--brand-bg-card);
   border-radius: var(--brand-radius);
-  padding: 20px;
+  padding: 16px;
   box-shadow: var(--brand-shadow);
-  transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid var(--brand-border-color-lighter);
+  transition: box-shadow 0.2s;
 }
 
 .brand-card.hoverable {
@@ -133,25 +155,24 @@
 }
 
 .brand-card.hoverable:hover {
-  transform: translateY(-4px);
   box-shadow: var(--brand-shadow-hover);
 }
 
-/* ---- 类型/状态彩色徽章 ---- */
+/* ---- 类型/状态徽章（小方块） ---- */
 .brand-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   background: var(--chip-color, var(--brand-primary));
   color: #fff;
-  padding: 3px 12px;
-  border-radius: 999px;
+  padding: 2px 8px;
+  border-radius: var(--brand-radius-sm);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
 
-/* ---- 胶囊筛选组 ---- */
+/* ---- 胶囊筛选组（小圆角按钮式） ---- */
 .brand-pills {
   display: flex;
   flex-wrap: wrap;
@@ -159,14 +180,14 @@
 }
 
 .brand-pills .pill {
-  border: 1.5px solid #e4e7ed;
+  border: 1px solid var(--brand-border-color);
   background: #fff;
-  color: #606266;
-  padding: 6px 16px;
-  border-radius: 999px;
+  color: var(--brand-text-regular);
+  padding: 6px 14px;
+  border-radius: var(--brand-radius);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
 }
 
 .brand-pills .pill:hover {
@@ -178,15 +199,76 @@
   background: var(--brand-primary);
   border-color: var(--brand-primary);
   color: #fff;
-  box-shadow: var(--brand-shadow-glow);
+  box-shadow: none;
+}
+
+/* ---- 通用表格卡片 ---- */
+.table-card {
+  background: #fff;
+  border-radius: var(--brand-radius);
+  padding: 16px;
+  box-shadow: var(--brand-shadow);
+}
+
+/* ---- Element Plus 全局细节微调（若依风格） ---- */
+.el-button {
+  border-radius: var(--brand-radius-sm);
+  font-weight: 400;
+}
+
+.el-card {
+  border-radius: var(--brand-radius);
+  border: 1px solid var(--brand-border-color-lighter);
+  box-shadow: var(--brand-shadow) !important;
+}
+
+.el-card__header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--brand-border-color-lighter);
+  font-weight: 600;
+  color: var(--brand-text-main);
+}
+
+.el-table {
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  background: #fafafa;
+  color: var(--brand-text-main);
+  font-weight: 600;
+}
+
+.el-dialog {
+  border-radius: var(--brand-radius);
+}
+
+.el-form-item__label {
+  color: var(--brand-text-regular);
+  font-weight: 500;
+}
+
+.el-tabs__item {
+  font-weight: 500;
+}
+
+.el-pagination {
+  font-weight: 400;
 }
 
 @media (max-width: 768px) {
   .brand-hero {
-    padding: 22px 20px;
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .brand-hero .hero-actions {
+    margin-left: 0;
+    margin-top: 12px;
   }
 
   .brand-hero h2 {
-    font-size: 22px;
+    font-size: 16px;
   }
 }

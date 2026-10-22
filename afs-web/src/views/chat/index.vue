@@ -7,6 +7,7 @@
         @select="selectSession"
         @delete="deleteSession"
         @new-chat="newChat"
+        @rename="renameSessionHandler"
       />
 
       <div class="chat-main">
@@ -38,7 +39,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getChatSessions, getSessionMessages, deleteSession as deleteSessionApi } from '@/api/chat'
+import { getChatSessions, getSessionMessages, deleteSession as deleteSessionApi, renameSession as renameSessionApi } from '@/api/chat'
 import SessionList from '@/components/business/SessionList.vue'
 import MessageBubble from '@/components/business/MessageBubble.vue'
 import ChatInput from '@/components/business/ChatInput.vue'
@@ -111,6 +112,17 @@ const deleteSession = async (id) => {
     ElMessage.success('删除成功')
   } catch (e) {
     if (e !== 'cancel') ElMessage.error('删除失败')
+  }
+}
+
+const renameSessionHandler = async ({ id, title }) => {
+  try {
+    await renameSessionApi(id, title)
+    const session = sessions.value.find(s => s.id === id)
+    if (session) session.title = title
+    ElMessage.success('重命名成功')
+  } catch (e) {
+    ElMessage.error('重命名失败')
   }
 }
 
@@ -257,9 +269,9 @@ onMounted(() => {
   display: flex;
   height: 100%;
   background: white;
-  border-radius: 12px;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
 }
 
 .chat-main {
@@ -272,7 +284,7 @@ onMounted(() => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 16px;
   background-color: #fafafa;
 }
 
@@ -292,7 +304,7 @@ onMounted(() => {
 
 .message {
   display: flex;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   align-items: flex-start;
 }
 
@@ -312,8 +324,8 @@ onMounted(() => {
 .message-content {
   background: white;
   padding: 10px 14px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1px solid #ebeef5;
 }
 </style>

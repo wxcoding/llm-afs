@@ -1,51 +1,42 @@
 <template>
   <div class="profile-page">
-    <div class="brand-hero compact">
-      <div class="hero-deco deco-1"></div>
-      <div class="hero-deco deco-2"></div>
-      <div class="hero-content">
-        <span class="hero-badge">👤 账号中心</span>
-        <h2>个人中心</h2>
-        <p>管理你的账号信息与安全设置</p>
-      </div>
-    </div>
-    <el-card class="profile-card">
+    <el-card class="profile-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <el-button class="back-btn" circle @click="goBack">←</el-button>
-          <span>{{ editing ? '修改信息' : '个人中心' }}</span>
+          <el-button class="back-btn" circle size="small" @click="goBack">←</el-button>
+          <span>{{ editing ? '修改信息' : '个人信息' }}</span>
         </div>
       </template>
-      
+
       <!-- 查看模式 -->
       <div v-if="!editing" class="profile-view">
         <div class="profile-header">
-          <el-avatar 
-            :size="100" 
+          <el-avatar
+            :size="90"
             :src="form.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
             class="profile-avatar"
           />
         </div>
-        
+
         <el-descriptions :column="1" border class="profile-info">
           <el-descriptions-item label="用户名">{{ form.username }}</el-descriptions-item>
           <el-descriptions-item label="昵称">{{ form.nickname || '未设置' }}</el-descriptions-item>
           <el-descriptions-item label="手机号">{{ form.phone || '未设置' }}</el-descriptions-item>
           <el-descriptions-item label="邮箱">{{ form.email || '未设置' }}</el-descriptions-item>
         </el-descriptions>
-        
+
         <div class="profile-actions">
           <el-button type="primary" @click="editing = true">修改信息</el-button>
         </div>
       </div>
-      
+
       <!-- 编辑模式 -->
       <div v-else class="profile-edit">
         <el-form :model="form" label-width="80px" class="profile-form">
           <el-form-item label="头像">
             <div class="avatar-section">
-              <el-avatar 
-                :size="100" 
+              <el-avatar
+                :size="90"
                 :src="form.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
                 class="preview-avatar"
               />
@@ -58,8 +49,8 @@
                 >
                   <el-button type="primary" size="small">更换头像</el-button>
                 </el-upload>
-                <el-input 
-                  v-model="form.avatar" 
+                <el-input
+                  v-model="form.avatar"
                   placeholder="或输入头像URL"
                   size="small"
                   class="avatar-url-input"
@@ -67,23 +58,23 @@
               </div>
             </div>
           </el-form-item>
-          
+
           <el-form-item label="用户名">
             <el-input v-model="form.username" disabled />
           </el-form-item>
-          
+
           <el-form-item label="昵称">
             <el-input v-model="form.nickname" placeholder="请输入昵称" />
           </el-form-item>
-          
+
           <el-form-item label="手机号">
             <el-input v-model="form.phone" placeholder="请输入手机号" />
           </el-form-item>
-          
+
           <el-form-item label="邮箱">
             <el-input v-model="form.email" placeholder="请输入邮箱" />
           </el-form-item>
-          
+
           <el-form-item>
             <el-button type="primary" :loading="saving" @click="saveProfile">保存</el-button>
             <el-button @click="cancelEdit">取消</el-button>
@@ -211,43 +202,34 @@ onMounted(() => {
 
 <style scoped>
 .profile-page {
-  display: flex;
-  justify-content: center;
-  padding: 20px;
+  padding: 0;
 }
 
 .profile-card {
-  width: 600px;
+  max-width: 720px;
 }
 
 .card-header {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.back-btn {
-  margin-right: 8px;
+  gap: 10px;
 }
 
 .profile-view {
-  padding: 20px;
+  padding: 8px;
 }
 
 .profile-header {
   display: flex;
   justify-content: center;
-  margin-bottom: 30px;
-}
-
-.profile-avatar {
-  cursor: default;
+  margin-bottom: 20px;
 }
 
 .profile-info {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .profile-actions {
@@ -256,13 +238,13 @@ onMounted(() => {
 }
 
 .profile-form {
-  padding: 20px;
+  padding: 8px;
 }
 
 .avatar-section {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: 16px;
 }
 
 .preview-avatar {
@@ -272,10 +254,10 @@ onMounted(() => {
 .avatar-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .avatar-url-input {
-  width: 250px;
+  width: 240px;
 }
 </style>

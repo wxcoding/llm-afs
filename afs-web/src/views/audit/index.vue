@@ -1,19 +1,11 @@
 <template>
   <div class="audit-page">
-    <div class="brand-hero compact">
-      <div class="hero-deco deco-1"></div>
-      <div class="hero-deco deco-2"></div>
-      <div class="hero-content">
-        <span class="hero-badge">✅ 内容治理</span>
-        <h2>知识审核</h2>
-        <p>审核用户提交的知识条目，保障问答内容质量</p>
-      </div>
-    </div>
-
-    <el-empty v-if="pendingAudits.length === 0" description="暂无待审核内容" />
+    <el-card v-if="pendingAudits.length === 0" shadow="never">
+      <el-empty description="暂无待审核内容" />
+    </el-card>
 
     <div v-else class="audit-list">
-      <el-card v-for="item in pendingAudits" :key="item.id" class="audit-card">
+      <el-card v-for="item in pendingAudits" :key="item.id" shadow="never" class="audit-card">
         <template #header>
           <div class="audit-header">
             <span class="audit-title">{{ item.title }}</span>
@@ -88,21 +80,13 @@ onMounted(() => {
 
 <style scoped>
 .audit-page {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
+  padding: 0;
 }
 
 .audit-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.audit-card {
-  margin-bottom: 0;
+  gap: 12px;
 }
 
 .audit-header {
@@ -112,13 +96,15 @@ onMounted(() => {
 }
 
 .audit-title {
-  font-weight: bold;
+  font-weight: 600;
   color: #303133;
+  font-size: 14px;
 }
 
 .audit-content p {
-  margin: 8px 0;
+  margin: 6px 0;
   color: #606266;
+  font-size: 13px;
 }
 
 .content-text {
@@ -127,13 +113,13 @@ onMounted(() => {
 }
 
 .audit-actions {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .action-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 10px;
 }
 </style>

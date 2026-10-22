@@ -1,18 +1,7 @@
 <template>
   <div class="cases-page">
-    <!-- Hero 头部 -->
-    <div class="hero">
-      <div class="hero-deco deco-1"></div>
-      <div class="hero-deco deco-2"></div>
-      <div class="hero-content">
-        <span class="hero-badge">🛡️ 防骗案例库</span>
-        <h2>诈骗案例分析</h2>
-        <p>了解真实诈骗案例，识别话术套路，提高警惕</p>
-      </div>
-    </div>
-
-    <!-- 筛选栏：类型胶囊 + 新增 -->
-    <div class="toolbar">
+    <!-- 类型筛选 + 操作按钮 -->
+    <div class="filter-card">
       <div class="type-pills">
         <button
           class="pill"
@@ -24,77 +13,74 @@
           :key="type"
           class="pill"
           :class="{ active: selectedType === type }"
-          :style="selectedType === type ? { background: meta.color, borderColor: meta.color } : {}"
           @click="selectType(type)"
         >
           {{ meta.icon }} {{ type }}
         </button>
       </div>
-      <el-button type="primary" round class="add-btn" @click="showAddDialog">
+      <el-button type="primary" @click="showAddDialog">
         <el-icon style="margin-right: 4px"><Plus /></el-icon>新增案例
       </el-button>
     </div>
 
-    <!-- 案例卡片流 -->
+    <!-- 案例列表 -->
     <div v-if="cases.length" class="cases-grid">
-      <article
+      <el-card
         v-for="c in cases"
         :key="c.id"
+        shadow="hover"
         class="case-card"
-        :style="{ '--accent': typeMeta[c.type]?.color || '#f56c6c' }"
         @click="showDetail(c)"
       >
         <div class="card-top">
-          <span class="type-chip">
+          <el-tag
+            :color="typeMeta[c.type]?.color || '#f56c6c'"
+            effect="dark"
+            size="small"
+            class="type-tag"
+          >
             {{ typeMeta[c.type]?.icon }} {{ c.type }}
-          </span>
-          <span class="card-actions">
-            <el-tooltip content="编辑" placement="top">
-              <button class="icon-btn" @click.stop="showEditDialog(c)">✏️</button>
-            </el-tooltip>
-            <el-tooltip content="删除" placement="top">
-              <button class="icon-btn danger" @click.stop="handleDelete(c.id)">🗑️</button>
-            </el-tooltip>
+          </el-tag>
+          <span class="card-actions" @click.stop>
+            <el-button link type="primary" size="small" @click="showEditDialog(c)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(c.id)">删除</el-button>
           </span>
         </div>
         <h3 class="card-title">{{ c.title }}</h3>
         <p class="card-content">{{ c.content }}</p>
         <div v-if="c.tips" class="card-tip">
-          <span class="tip-label">💡 提示</span>
+          <span class="tip-label">💡 提示：</span>
           <span class="tip-text">{{ c.tips }}</span>
         </div>
-        <div class="card-more">查看详情 →</div>
-      </article>
+      </el-card>
     </div>
 
     <!-- 空状态 -->
-    <el-empty
-      v-else
-      description="暂无案例，点击右上角新增"
-      :image-size="120"
-      class="empty-box"
-    />
+    <el-card v-else shadow="never">
+      <el-empty description="暂无案例，点击右上角新增" :image-size="120" />
+    </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="detailVisible" width="620px" class="detail-dialog">
+    <el-dialog v-model="detailVisible" width="640px">
       <template #header>
         <div v-if="currentCase" class="detail-head">
-          <span
-            class="type-chip large"
-            :style="{ background: typeMeta[currentCase.type]?.color || '#f56c6c' }"
+          <el-tag
+            :color="typeMeta[currentCase.type]?.color || '#f56c6c'"
+            effect="dark"
+            size="small"
           >
             {{ typeMeta[currentCase.type]?.icon }} {{ currentCase.type }}
-          </span>
+          </el-tag>
           <h3>{{ currentCase.title }}</h3>
         </div>
       </template>
       <div v-if="currentCase" class="case-detail">
         <section class="detail-section">
-          <h4><span class="sec-icon">📖</span>案例经过</h4>
+          <h4>案例经过</h4>
           <p class="detail-text">{{ currentCase.content }}</p>
         </section>
         <section class="detail-section tips-box">
-          <h4><span class="sec-icon">💡</span>防范提示</h4>
+          <h4>防范提示</h4>
           <p class="detail-text">{{ currentCase.tips || '暂无防范提示' }}</p>
         </section>
       </div>
@@ -131,6 +117,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getAllCases, getCasesByType, addCase, updateCase, deleteCase } from '@/api/cases'
+
 
 // 类型元信息：统一驱动徽章配色与图标
 const typeMeta = {
@@ -233,77 +220,21 @@ onMounted(() => {
 
 <style scoped>
 .cases-page {
-  padding: 20px 0;
+  padding: 0;
 }
 
-/* ---------- Hero ---------- */
-.hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: 20px;
-  padding: 36px 40px;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-}
-
-.hero-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  margin-bottom: 14px;
-}
-
-.hero h2 {
-  margin: 0 0 8px;
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.hero p {
-  margin: 0;
-  opacity: 0.88;
-  font-size: 15px;
-}
-
-.hero-deco {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.deco-1 {
-  width: 220px;
-  height: 220px;
-  right: -60px;
-  top: -80px;
-}
-
-.deco-2 {
-  width: 140px;
-  height: 140px;
-  right: 140px;
-  bottom: -70px;
-}
-
-/* ---------- 工具栏 ---------- */
-.toolbar {
+/* 筛选卡片 */
+.filter-card {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .type-pills {
@@ -313,66 +244,38 @@ onMounted(() => {
 }
 
 .pill {
-  border: 1.5px solid #e4e7ed;
+  border: 1px solid #dcdfe6;
   background: #fff;
   color: #606266;
-  padding: 6px 16px;
-  border-radius: 999px;
+  padding: 5px 14px;
+  border-radius: 4px;
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
 }
 
 .pill:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #409eff;
+  color: #409eff;
 }
 
 .pill.active {
-  background: #667eea;
-  border-color: #667eea;
+  background: #409eff;
+  border-color: #409eff;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
 }
 
-.add-btn {
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-/* ---------- 卡片网格 ---------- */
+/* 卡片网格 */
 .cases-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-  min-height: 200px;
+  gap: 16px;
 }
 
 .case-card {
-  position: relative;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 20px 16px;
   cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.case-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--accent), transparent 130%);
-}
-
-.case-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.13);
 }
 
 .card-top {
@@ -382,67 +285,28 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-.type-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--accent, #f56c6c);
-  color: #fff;
-  padding: 3px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.type-chip.large {
-  font-size: 13px;
-  padding: 5px 16px;
+.type-tag {
+  border: none;
 }
 
 .card-actions {
   display: flex;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
-.case-card:hover .card-actions {
-  opacity: 1;
-}
-
-.icon-btn {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: #f4f6fa;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.icon-btn:hover {
-  background: #e8ecf5;
-  transform: scale(1.08);
-}
-
-.icon-btn.danger:hover {
-  background: #fde2e2;
+  gap: 4px;
 }
 
 .card-title {
-  margin: 0 0 10px;
-  font-size: 17px;
+  margin: 0 0 8px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1f2430;
+  color: #303133;
   line-height: 1.4;
 }
 
 .card-content {
-  margin: 0 0 14px;
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.65;
+  margin: 0 0 12px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -451,109 +315,66 @@ onMounted(() => {
 }
 
 .card-tip {
+  background: #f4f4f5;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #606266;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: #f7f8fc;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  gap: 4px;
 }
 
 .tip-label {
   flex-shrink: 0;
-  font-size: 12px;
-  color: #909399;
 }
 
 .tip-text {
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.card-more {
-  font-size: 13px;
-  color: #667eea;
-  font-weight: 500;
-  transition: letter-spacing 0.25s;
-}
-
-.case-card:hover .card-more {
-  letter-spacing: 1px;
-}
-
-.empty-box {
-  padding: 60px 0;
-}
-
-/* ---------- 详情弹窗 ---------- */
+/* 详情弹窗 */
 .detail-head h3 {
-  margin: 12px 0 0;
-  font-size: 20px;
-  color: #1f2430;
-}
-
-.case-detail {
-  padding: 4px;
+  margin: 8px 0 0;
+  font-size: 18px;
+  color: #303133;
 }
 
 .detail-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .detail-section h4 {
-  margin: 0 0 12px;
-  font-size: 15px;
-  color: #1f2430;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sec-icon {
-  font-size: 16px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #303133;
+  font-weight: 600;
 }
 
 .detail-text {
   margin: 0;
-  line-height: 1.85;
-  color: #4b5563;
-  font-size: 14px;
+  line-height: 1.7;
+  color: #606266;
+  font-size: 13px;
   white-space: pre-wrap;
 }
 
 .tips-box {
-  background: linear-gradient(135deg, #f0f5ff, #f5f0ff);
-  border-left: 4px solid #667eea;
-  padding: 16px 18px;
-  border-radius: 12px;
+  background: #ecf5ff;
+  border-left: 3px solid #409eff;
+  padding: 12px 14px;
+  border-radius: 4px;
 }
 
 .tips-box h4 {
-  color: #667eea;
+  color: #409eff;
 }
 
-/* ---------- 移动端适配 ---------- */
 @media (max-width: 768px) {
-  .hero {
-    padding: 28px 24px;
-  }
-
-  .hero h2 {
-    font-size: 24px;
-  }
-
   .cases-grid {
     grid-template-columns: 1fr;
-  }
-
-  .card-actions {
-    opacity: 1;
   }
 }
 </style>

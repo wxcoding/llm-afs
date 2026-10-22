@@ -1,6 +1,9 @@
 <template>
   <div class="welcome-tip">
-    <h2>🛡️ 欢迎使用防诈骗问答助手</h2>
+    <h2 class="welcome-title">
+      <ShieldIcon :size="24" class="title-icon" />
+      欢迎使用防诈骗问答助手
+    </h2>
     <p>我可以帮您解答关于各类诈骗手法的问题，请直接输入您的问题开始咨询。</p>
     <p class="rag-tip">💡 本助手已接入知识库，回答将基于专业防诈骗知识进行检索增强</p>
     <div class="quick-questions">
@@ -17,6 +20,8 @@
 </template>
 
 <script setup>
+import ShieldIcon from '@/components/common/ShieldIcon.vue'
+
 defineProps({
   questions: { type: Array, default: () => [] }
 })
@@ -34,6 +39,17 @@ defineEmits(['select'])
   font-size: 24px;
   margin-bottom: 16px;
   color: #303133;
+}
+
+.welcome-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.title-icon {
+  color: #409eff;
 }
 
 .welcome-tip p {

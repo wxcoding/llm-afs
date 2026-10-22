@@ -1,18 +1,8 @@
 <template>
   <div class="config-page">
-    <div class="brand-hero compact">
-      <div class="hero-deco deco-1"></div>
-      <div class="hero-deco deco-2"></div>
-      <div class="hero-content">
-        <span class="hero-badge">⚙️ 平台设置</span>
-        <h2>系统配置</h2>
-        <p>管理模型参数、提示词与平台运行配置</p>
-      </div>
-    </div>
-
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="提示词配置" name="prompt">
-        <el-card>
+    <el-card shadow="never">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="提示词配置" name="prompt">
           <el-form :model="promptConfig" label-width="120px">
             <el-form-item label="System Prompt">
               <el-input v-model="promptConfig.system_prompt" type="textarea" :rows="6" placeholder="设置AI助手的系统提示词" />
@@ -21,11 +11,9 @@
               <el-button type="primary" @click="handleSavePrompt">保存</el-button>
             </el-form-item>
           </el-form>
-        </el-card>
-      </el-tab-pane>
+        </el-tab-pane>
 
-      <el-tab-pane label="模型配置" name="model">
-        <el-card>
+        <el-tab-pane label="模型配置" name="model">
           <el-form :model="modelConfig" label-width="120px">
             <el-form-item label="模型名称">
               <el-select v-model="modelConfig.model_name" placeholder="选择模型">
@@ -44,11 +32,9 @@
               <el-button type="primary" @click="handleSaveModel">保存</el-button>
             </el-form-item>
           </el-form>
-        </el-card>
-      </el-tab-pane>
+        </el-tab-pane>
 
-      <el-tab-pane label="向量库配置" name="vector">
-        <el-card>
+        <el-tab-pane label="向量库配置" name="vector">
           <el-form :model="vectorConfig" label-width="120px">
             <el-form-item label="同步间隔(秒)">
               <el-input-number v-model="vectorConfig.vector_sync_interval" :min="300" :max="86400" />
@@ -73,9 +59,9 @@
               </el-col>
             </el-row>
           </div>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
   </div>
 </template>
 
@@ -83,7 +69,6 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getConfigsByType, updateConfig } from '@/api/config'
-
 const activeTab = ref('prompt')
 const promptConfig = ref({ system_prompt: '' })
 const modelConfig = ref({ model_name: 'gpt-3.5-turbo', max_tokens: 2000, temperature: 0.7 })
@@ -151,11 +136,7 @@ onMounted(() => {
 
 <style scoped>
 .config-page {
-  padding: 20px;
-}
-
-.page-header {
-  margin-bottom: 20px;
+  padding: 0;
 }
 
 .vector-stats {
@@ -165,5 +146,7 @@ onMounted(() => {
 .vector-stats h4 {
   margin-bottom: 16px;
   color: #303133;
+  font-weight: 600;
+  font-size: 14px;
 }
 </style>
