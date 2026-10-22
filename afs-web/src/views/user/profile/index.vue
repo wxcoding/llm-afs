@@ -35,27 +35,25 @@
         <el-form :model="form" label-width="80px" class="profile-form">
           <el-form-item label="头像">
             <div class="avatar-section">
-              <el-avatar
-                :size="90"
-                :src="form.avatar || '/avatars/default.jpg'"
-                class="preview-avatar"
-              />
-              <div class="avatar-actions">
-                <el-upload
-                  class="avatar-upload"
-                  :show-file-list="false"
-                  :before-upload="beforeAvatarUpload"
-                  :http-request="uploadAvatar"
-                >
-                  <el-button type="primary" size="small">更换头像</el-button>
-                </el-upload>
-                <el-input
-                  v-model="form.avatar"
-                  placeholder="或输入头像URL"
-                  size="small"
-                  class="avatar-url-input"
-                />
-              </div>
+              <el-upload
+                class="avatar-upload-wrapper"
+                :show-file-list="false"
+                :before-upload="beforeAvatarUpload"
+                :http-request="uploadAvatar"
+                accept="image/*"
+              >
+                <div class="avatar-hover-wrapper">
+                  <el-avatar
+                    :size="90"
+                    :src="form.avatar || '/avatars/default.jpg'"
+                    class="preview-avatar"
+                  />
+                  <div class="avatar-hover-mask">
+                    <el-icon><Camera /></el-icon>
+                    <span>更换头像</span>
+                  </div>
+                </div>
+              </el-upload>
             </div>
           </el-form-item>
 
@@ -90,6 +88,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
+import { Camera } from '@element-plus/icons-vue'
 import { getUserById, updateUser } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 
@@ -144,23 +143,44 @@ const loadUserInfo = async () => {
 
 const beforeAvatarUpload = (file) => {
   const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
+  const isLt500K = file.size / 1024 < 500
 
   if (!isImage) {
     ElMessage.error('只能上传图片文件!')
     return false
   }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB!')
+  if (!isLt500K) {
+    ElMessage.error('图片大小不能超过 500KB!')
     return false
   }
   return true
 }
 
+/** canvas 压缩为 200×200 的 base64 */
+const compressImage = (dataUrl, maxSize = 200) => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      canvas.width = maxSize
+      canvas.height = maxSize
+      // 居中裁剪为正方形
+      const size = Math.min(img.width, img.height)
+      const sx = (img.width - size) / 2
+      const sy = (img.height - size) / 2
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, maxSize, maxSize)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.src = dataUrl
+  })
+}
+
 const uploadAvatar = async ({ file }) => {
   const reader = new FileReader()
-  reader.onload = (e) => {
-    form.value.avatar = e.target.result
+  reader.onload = async (e) => {
+    const compressed = await compressImage(e.target.result)
+    form.value.avatar = compressed
   }
   reader.readAsDataURL(file)
 }
@@ -247,17 +267,43 @@ onMounted(() => {
   gap: 16px;
 }
 
+.avatar-upload-wrapper {
+  cursor: pointer;
+}
+
+.avatar-hover-wrapper {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
 .preview-avatar {
   flex-shrink: 0;
 }
 
-.avatar-actions {
+.avatar-hover-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.avatar-url-input {
-  width: 240px;
+.avatar-hover-mask .el-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.avatar-hover-wrapper:hover .avatar-hover-mask {
+  opacity: 1;
 }
 </style>

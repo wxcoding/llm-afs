@@ -86,9 +86,6 @@
           <el-form-item label="邮箱" prop="email">
             <el-input v-model="formData.email" placeholder="请输入邮箱" />
           </el-form-item>
-          <el-form-item label="头像" prop="avatar">
-            <el-input v-model="formData.avatar" placeholder="请输入头像URL" />
-          </el-form-item>
         </el-form>
         <template #footer>
           <el-button @click="dialogVisible = false">取消</el-button>
@@ -134,8 +131,7 @@ const formData = reactive({
   password: '',
   nickname: '',
   phone: '',
-  email: '',
-  avatar: ''
+  email: ''
 })
 
 const rules = {
@@ -203,8 +199,7 @@ const showCreateDialog = () => {
     password: '',
     nickname: '',
     phone: '',
-    email: '',
-    avatar: ''
+    email: ''
   })
   dialogVisible.value = true
 }
@@ -218,8 +213,7 @@ const showEditDialog = (user) => {
     password: '',
     nickname: user.nickname,
     phone: user.phone,
-    email: user.email,
-    avatar: user.avatar
+    email: user.email
   })
   dialogVisible.value = true
 }
