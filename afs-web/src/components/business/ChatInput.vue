@@ -1,44 +1,36 @@
 <template>
   <div class="chat-input">
-    <el-input
-      v-model="inputValue"
-      type="textarea"
-      :rows="3"
-      placeholder="请输入您的问题... (Ctrl+Enter 发送)"
-      :disabled="loading"
-      @keydown.enter.ctrl="handleSend"
-    />
-    <el-button
-      type="primary"
-      :loading="loading"
-      :disabled="!inputValue.trim()"
-      class="send-btn"
-      @click="handleSend"
-    >
-      发送
-    </el-button>
+    <div class="input-row">
+      <el-input
+        v-model="inputValue"
+        type="textarea"
+        :rows="3"
+        placeholder="请输入您的问题... (Ctrl+Enter 发送)"
+        :disabled="loading"
+        @keydown.enter.ctrl="handleSend"
+      />
+      <el-button
+        type="primary"
+        :loading="loading"
+        :disabled="!inputValue.trim()"
+        @click="handleSend"
+      >
+        发送
+      </el-button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps({
-  loading: { type: Boolean, default: false },
-  modelValue: { type: String, default: '' }
+  loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'send'])
+const emit = defineEmits(['send'])
 
-const inputValue = ref(props.modelValue)
-
-watch(() => props.modelValue, (val) => {
-  inputValue.value = val
-})
-
-watch(inputValue, (val) => {
-  emit('update:modelValue', val)
-})
+const inputValue = ref('')
 
 const handleSend = () => {
   if (!inputValue.value.trim() || props.loading) return
@@ -49,20 +41,18 @@ const handleSend = () => {
 
 <style scoped>
 .chat-input {
-  padding: 15px;
+  padding: 12px 16px;
   border-top: 1px solid #eee;
   background: white;
-  position: relative;
 }
 
-.chat-input .el-input {
-  margin-bottom: 10px;
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
-.send-btn {
-  position: absolute;
-  right: 25px;
-  bottom: 25px;
-  width: auto;
+.input-row .el-input {
+  flex: 1;
 }
 </style>

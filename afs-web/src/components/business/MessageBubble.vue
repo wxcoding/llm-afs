@@ -3,7 +3,7 @@
     <div class="message-avatar">{{ msg.role === 'user' ? '👤' : '🤖' }}</div>
     <div class="message-body">
       <div class="message-content">
-        <pre>{{ msg.content }}</pre>
+        <pre v-if="msg.content">{{ msg.content }}</pre>
       </div>
       <div v-if="msg.sources && msg.sources.length > 0" class="message-sources">
         <div class="sources-header" @click="$emit('toggle-sources')">

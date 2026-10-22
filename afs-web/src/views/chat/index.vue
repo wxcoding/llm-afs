@@ -154,7 +154,7 @@ const sendMessage = async (content) => {
       sessionId: sessionId.value
     }
 
-    messages.value.push({ role: 'user', content })
+    messages.value.push({ role: 'user', content: content })
     scrollToBottom()
 
     const assistantMessage = {

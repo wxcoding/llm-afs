@@ -117,7 +117,8 @@ public class ChatService {
      * @return AI 内容增量事件流
      */
     private Flux<ServerSentEvent<String>> callAIStreamWithRag(Long sessionId, String userContent,
-                                                              String context, List<Map<String, Object>> sources) {
+                                                              String context,
+                                                              List<Map<String, Object>> sources) {
         try {
             // 构建对话历史消息列表
             List<Message> messages = buildMessages(sessionId);
@@ -137,9 +138,10 @@ public class ChatService {
                 augmentedUserContent = userContent;
             }
 
+            messages.add(new UserMessage(augmentedUserContent));
+
             ChatClient.ChatClientRequestSpec request = chatClient.prompt()
-                    .messages(messages)
-                    .user(augmentedUserContent);
+                    .messages(messages);
 
             StringBuilder responseBuilder = new StringBuilder();
             return request.stream().chatResponse()
@@ -235,12 +237,13 @@ public class ChatService {
 
         // 将数据库消息转换为AI消息格式
         for (ChatMessage msg : history) {
-            if (msg.getContent() != null) {
-                if ("user".equals(msg.getRole())) {
-                    messages.add(new UserMessage(msg.getContent()));
-                } else if ("assistant".equals(msg.getRole())) {
-                    messages.add(new AssistantMessage(msg.getContent()));
-                }
+            if (msg.getContent() == null) {
+                continue;
+            }
+            if ("user".equals(msg.getRole())) {
+                messages.add(new UserMessage(msg.getContent()));
+            } else if ("assistant".equals(msg.getRole())) {
+                messages.add(new AssistantMessage(msg.getContent()));
             }
         }
         return messages;

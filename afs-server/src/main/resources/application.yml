@@ -31,7 +31,7 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       chat:
         options:
-          model: ${AI_DASHSCOPE_MODEL:qwen3.8-27b}
+          model: ${AI_DASHSCOPE_MODEL:qwen3.8-flash}
           temperature: 0.7
           max-tokens: 2000
       embedding:
