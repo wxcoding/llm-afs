@@ -106,7 +106,9 @@ public class DocumentParser {
      * @return 文档类型：pdf、word、markdown、excel、text、unknown
      */
     private static String detectDocumentType(String contentType, String fileName) {
-        if (contentType != null) contentType = contentType.toLowerCase();
+        // contentType 允许为 null（调用方未传 MIME 时），统一归一化为空串，
+        // 避免不可变 Set.contains(null) 抛出 NPE
+        if (contentType != null) contentType = contentType.toLowerCase(); else contentType = "";
         if (fileName == null) fileName = "";
 
         if (PDF_TYPES.contains(contentType) || fileName.endsWith(".pdf")) {
