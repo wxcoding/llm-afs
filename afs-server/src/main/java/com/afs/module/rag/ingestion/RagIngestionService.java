@@ -3,6 +3,7 @@ package com.afs.module.rag.ingestion;
 import com.afs.module.rag.search.FullTextTokenizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
@@ -29,8 +30,18 @@ public class RagIngestionService {
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
     private final FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
-    private final TokenTextSplitter splitter = new TokenTextSplitter();
+    // 中文句子级切分：按句读切分、贪心合并到 400 字、块间重叠 60 字，避免在句中硬切
+    private final TextSplitter splitter = new ChineseSentenceTextSplitter();
+//    private final TokenTextSplitter splitter = new TokenTextSplitter();
 
+    /**
+     * 将知识库条目写入向量索引与全文索引（已存在时先删后建，幂等重建）。
+     *
+     * @param id       知识库记录主键
+     * @param title    条目标题，同时参与全文检索词项构造
+     * @param category 条目分类，用于检索过滤
+     * @param content  条目正文，即实际被切分和向量化的内容
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void addKnowledgeDocument(Long id, String title, String category, String content) {
@@ -45,6 +56,15 @@ public class RagIngestionService {
         indexDocument(source, "knowledge", id, title, category);
     }
 
+    /**
+     * 将诈骗案例写入向量索引与全文索引（已存在时先删后建，幂等重建）。
+     *
+     * @param id      案例记录主键
+     * @param title   案例标题
+     * @param type    案例类型，同时作为检索分类（category）
+     * @param content 案例经过
+     * @param tips    防范提示，与案例经过拼接为同一篇文档后统一切分
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void addScamCaseDocument(Long id, String title, String type, String content, String tips) {
@@ -60,12 +80,17 @@ public class RagIngestionService {
         indexDocument(source, "scamcase", id, title, type);
     }
 
+    /**
+     * 单篇文档的索引主流程：先清除旧索引，再切分、向量化并双写 rag_chunk 全文表。
+     */
     private void indexDocument(Document source, String sourceType, Long sourceId, String title, String category) {
+        // 先删后建：同一文档重复入库时不会产生残留 chunk
         deleteDocumentIndex(sourceType, sourceId);
         List<Document> splitChunks = splitter.apply(List.of(source));
         List<Document> chunks = new ArrayList<>(splitChunks.size());
         for (int i = 0; i < splitChunks.size(); i++) {
             Document splitChunk = splitChunks.get(i);
+            // chunk_id 由 sourceType:sourceId:序号 确定性生成，重建索引时覆盖同一批 ID，天然幂等
             String chunkId = UUID.nameUUIDFromBytes(
                     (sourceType + ":" + sourceId + ":" + i).getBytes(StandardCharsets.UTF_8)).toString();
             chunks.add(Document.builder()
@@ -79,6 +104,7 @@ public class RagIngestionService {
             return;
         }
 
+        // 双写：vector_store 供向量召回，rag_chunk 供 PostgreSQL 全文召回，两路以 chunk_id 关联
         vectorStore.add(chunks);
         jdbcTemplate.batchUpdate(
                 "INSERT INTO rag_chunk "
@@ -88,6 +114,7 @@ public class RagIngestionService {
                     @Override
                     public void setValues(PreparedStatement ps, int index) throws SQLException {
                         Document chunk = chunks.get(index);
+                        // 标题与分类也参与分词，提升关键词通道对短正文的召回能力
                         List<String> terms = FullTextTokenizer.tokenize(
                                 title + " " + category + " " + chunk.getText());
                         ps.setString(1, chunk.getId());
@@ -106,6 +133,9 @@ public class RagIngestionService {
                 });
     }
 
+    /**
+     * 按来源删除某篇文档的全部索引（向量库按元数据过滤删除，全文表按主键删除）。
+     */
     private void deleteDocumentIndex(String sourceType, Long sourceId) {
         var filter = filterBuilder.and(
                 filterBuilder.eq("dbId", sourceId.toString()),
@@ -117,18 +147,27 @@ public class RagIngestionService {
                 sourceType, sourceId);
     }
 
+    /**
+     * 删除指定知识库条目的全部索引。
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void deleteKnowledgeDocument(Long id) {
         deleteDocumentIndex("knowledge", id);
     }
 
+    /**
+     * 删除指定诈骗案例的全部索引。
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void deleteScamCaseDocument(Long id) {
         deleteDocumentIndex("scamcase", id);
     }
 
+    /**
+     * 清空知识库来源的全部索引（保留案例索引）。
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void clearKnowledgeIndex() {
@@ -136,6 +175,9 @@ public class RagIngestionService {
         jdbcTemplate.update("DELETE FROM rag_chunk WHERE source_type = 'knowledge'");
     }
 
+    /**
+     * 清空诈骗案例来源的全部索引（保留知识库索引）。
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void clearScamCaseIndex() {
@@ -143,6 +185,9 @@ public class RagIngestionService {
         jdbcTemplate.update("DELETE FROM rag_chunk WHERE source_type = 'scamcase'");
     }
 
+    /**
+     * 清空全部索引（向量表与全文表都截断，用于整体重建）。
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void clearAllIndexes() {
@@ -150,6 +195,11 @@ public class RagIngestionService {
         jdbcTemplate.update("TRUNCATE rag_chunk");
     }
 
+    /**
+     * 按来源类型删除全部索引。
+     *
+     * @param type 来源类型（knowledge / scamcase）
+     */
     @Transactional
     @CacheEvict(value = "vectorSearch", allEntries = true)
     public void deleteByType(String type) {
