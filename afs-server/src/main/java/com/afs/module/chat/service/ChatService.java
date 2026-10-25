@@ -116,7 +116,8 @@ public class ChatService {
      * @param sources     检索来源（用于随回复一起入库）
      * @return AI 内容增量事件流
      */
-    private Flux<ServerSentEvent<String>> callAIStreamWithRag(Long sessionId, String userContent,
+    private Flux<ServerSentEvent<String>> callAIStreamWithRag(Long sessionId,
+                                                              String userContent,
                                                               String context,
                                                               List<Map<String, Object>> sources) {
         try {

@@ -33,11 +33,18 @@ service.interceptors.response.use(
     return res
   },
   error => {
-    // 登录过期/未登录：清除本地状态并跳转登录页
     if (error.response?.status === 401) {
+      const url = error.config?.url || ''
+      const serverMessage = error.response?.data?.message
+      // 登录/注册接口返回 401 属于凭证校验失败，提示后端返回的具体原因
+      if (url.includes('/user/login') || url.includes('/user/register')) {
+        ElMessage.error(serverMessage || '用户名或密码错误')
+        return Promise.reject(error)
+      }
+      // 其他接口 401：登录过期/未登录，清除本地状态并跳转登录页
       const userStore = useUserStore()
       userStore.clearUser()
-      ElMessage.warning('登录已过期，请重新登录')
+      ElMessage.warning(serverMessage || '登录已过期，请重新登录')
       router.push('/login')
       return Promise.reject(error)
     }
