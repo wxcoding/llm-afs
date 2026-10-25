@@ -20,6 +20,9 @@ public class SearchStrategyResolver {
     @Value("${spring.ai.vectorstore.hybrid-search.enabled:false}")
     private boolean hybridSearchEnabled;
 
+    /**
+     * 收集容器中所有检索策略，仅注册当前可用的；同名策略视为配置错误，直接启动失败。
+     */
     public SearchStrategyResolver(List<SearchStrategy> strategies) {
         Map<String, SearchStrategy> registered = new LinkedHashMap<>();
         for (SearchStrategy strategy : strategies) {

@@ -11,6 +11,9 @@ import java.util.Map;
 @Component
 public class RagContextBuilder {
 
+    /**
+     * 把检索来源列表拼接为提示词上下文，格式为「【来源 - 标题】\n正文」，条目间空行分隔。
+     */
     public String buildContext(List<Map<String, Object>> sources) {
         StringBuilder context = new StringBuilder();
         for (int i = 0; i < sources.size(); i++) {

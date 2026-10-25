@@ -39,7 +39,8 @@ public class VectorSearchStrategy implements SearchStrategy {
         }
         RagSearchFilters.validate(filters);
         log.debug("使用纯向量检索策略，查询词: {}, topK: {}", query, topK);
-        
+
+        // 相似度阈值 0.5：过滤掉明显不相关的结果，避免低质量上下文进入提示词
         SearchRequest.Builder builder = SearchRequest.builder()
                 .query(query)
                 .topK(topK)
@@ -59,6 +60,9 @@ public class VectorSearchStrategy implements SearchStrategy {
         return "vector";
     }
 
+    /**
+     * 向量库可用即支持该策略（兜底策略，始终应可用）。
+     */
     @Override
     public boolean isSupported() {
         return vectorStore != null;

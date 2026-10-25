@@ -37,15 +37,15 @@ public class HybridSearchStrategy implements SearchStrategy {
     @Override
     public List<Document> search(String query, Map<String, Object> filters, int topK) {
         log.debug("使用混合检索策略，查询词: {}, topK: {}", query, topK);
-        
+
         // topK 由上游决定：未重排时是最终返回数，启用重排时是扩大的候选池大小。
         List<Document> results = hybridSearchService.search(query, filters, topK);
-        
-        // 限制返回数量
+
+        // 防御性截断：融合结果理论上不超过 topK，此处兜底
         if (results.size() > topK) {
             return results.subList(0, topK);
         }
-        
+
         return results;
     }
 
@@ -54,6 +54,9 @@ public class HybridSearchStrategy implements SearchStrategy {
         return "hybrid";
     }
 
+    /**
+     * 仅当配置启用混合检索且服务可用时才支持该策略。
+     */
     @Override
     public boolean isSupported() {
         return hybridSearchEnabled && hybridSearchService != null;

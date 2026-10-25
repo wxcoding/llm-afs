@@ -316,6 +316,9 @@ public class RerankService {
         return rerankedDocs;
     }
 
+    /**
+     * 解析 ReRank 响应的 results 列表：按 index 映射回候选文档，校验索引越界与重复，截断到 topN。
+     */
     private List<Document> parseResults(Map<String, Object> responseBody, List<Document> candidates) {
         if (responseBody == null || !(responseBody.get("results") instanceof List<?> results)) {
             throw new IllegalStateException("ReRank 响应缺少 results 列表");

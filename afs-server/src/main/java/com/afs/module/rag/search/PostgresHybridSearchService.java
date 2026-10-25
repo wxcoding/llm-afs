@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 @Service
 public class PostgresHybridSearchService {
 
+    /** RRF 融合常数：数值越大，排名靠后的结果分数衰减越平缓 */
     private static final int RRF_K = 60;
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
@@ -87,6 +88,9 @@ public class PostgresHybridSearchService {
         return fusedResults;
     }
 
+    /**
+     * 混合检索关闭时的直连通道：仅做纯向量相似度检索。
+     */
     private List<Document> pureVectorSearch(String query, Map<String, Object> filters, int topK) {
         SearchRequest.Builder builder = SearchRequest.builder()
                 .query(query)
@@ -98,6 +102,9 @@ public class PostgresHybridSearchService {
         return vectorStore.similaritySearch(builder.build());
     }
 
+    /**
+     * 向量通道召回：把名次转换为 RRF 分数（1 / (K + rank)）；失败时返回空分数表并标记 failed，由调用方决定兜底。
+     */
     private RecallResult vectorSearch(String query, Map<String, Object> filters, int topK) {
         Map<String, Double> scores = new LinkedHashMap<>();
         try {
@@ -118,6 +125,9 @@ public class PostgresHybridSearchService {
         }
     }
 
+    /**
+     * 关键词通道召回：对每个（含扩展）查询做全文检索，同一 chunk 取最佳名次后转换为 RRF 分数。
+     */
     private RecallResult fullTextSearch(List<String> queries, Map<String, Object> filters, int topK) {
         Map<String, Integer> bestRanks = new HashMap<>();
         boolean failed = false;
@@ -147,6 +157,9 @@ public class PostgresHybridSearchService {
         return new RecallResult(scores, failed);
     }
 
+    /**
+     * 执行一次 PostgreSQL 全文查询：词项以 OR 组合成 tsquery，按 ts_rank_cd 相关性排序取 topK。
+     */
     private List<Map<String, Object>> runFullTextQuery(List<String> terms,
                                                        Map<String, Object> filters, int topK) {
         // 词项经转义后作为参数绑定；字段和值过滤也都使用参数，避免拼接用户输入。
@@ -168,6 +181,9 @@ public class PostgresHybridSearchService {
         return jdbcTemplate.queryForList(sql.toString(), parameters.toArray());
     }
 
+    /**
+     * 向全文 SQL 追加过滤条件；caseType 是复合条件（来源类型 + 案例分类），其余字段走白名单映射。
+     */
     private void appendFilterConditions(StringBuilder sql, List<Object> parameters,
                                         Map<String, Object> filters, String alias, String firstPrefix) {
         if (filters == null || filters.isEmpty()) {
@@ -207,6 +223,9 @@ public class PostgresHybridSearchService {
         }
     }
 
+    /**
+     * RRF 融合两路召回：按 chunk_id 累加两路的倒数排名分数，排序后取 topK 并回填文档内容。
+     */
     private List<Document> rrfFusion(Map<String, Double> vectorScores,
                                      Map<String, Double> keywordScores,
                                      int topK) {
@@ -231,6 +250,9 @@ public class PostgresHybridSearchService {
                 .toList();
     }
 
+    /**
+     * 按 chunk_id 批量回查 rag_chunk，重建带元数据的 Document（distance 字段写入融合分数）。
+     */
     private List<Document> getDocumentsByIds(List<String> chunkIds, Map<String, Double> scores) {
         if (chunkIds.isEmpty()) {
             return Collections.emptyList();
@@ -272,6 +294,9 @@ public class PostgresHybridSearchService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 输出混合检索配置与查询扩展明细的调试文本。
+     */
     public String getSearchStats(String query) {
         StringBuilder stats = new StringBuilder();
         stats.append("=== 混合检索配置 ===\n");
@@ -288,6 +313,7 @@ public class PostgresHybridSearchService {
         return stats.toString();
     }
 
+    /** 单路召回结果：chunk_id → RRF 分数，以及该路是否发生过错误 */
     private record RecallResult(Map<String, Double> scores, boolean failed) {
     }
 }

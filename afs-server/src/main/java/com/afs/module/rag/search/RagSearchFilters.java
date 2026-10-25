@@ -12,11 +12,15 @@ import java.util.Set;
  */
 public final class RagSearchFilters {
 
+    /** 支持的过滤字段白名单；caseType 是复合条件，会展开为 type=scamcase + category=值 */
     private static final Set<String> SUPPORTED_FILTERS = Set.of("type", "dbId", "category", "caseType");
 
     private RagSearchFilters() {
     }
 
+    /**
+     * 校验过滤字段是否在白名单内、dbId 值是否为整数；非法字段直接抛异常，防止注入向量过滤表达式。
+     */
     public static void validate(Map<String, Object> filters) {
         if (filters == null) {
             return;
@@ -35,6 +39,9 @@ public final class RagSearchFilters {
         }
     }
 
+    /**
+     * 把过滤条件构造为向量库的 Filter.Expression（多个条件 AND 组合）；无有效条件时返回 null。
+     */
     public static Filter.Expression buildVectorExpression(Map<String, Object> filters) {
         validate(filters);
         if (filters == null || filters.isEmpty()) {

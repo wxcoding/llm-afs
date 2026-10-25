@@ -39,11 +39,17 @@ public final class FullTextTokenizer {
         return terms;
     }
 
+    /**
+     * 判断一个词项是否完全由汉字组成。
+     */
     private static boolean isHanRun(String token) {
         return token.codePoints().allMatch(
                 codePoint -> Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HAN);
     }
 
+    /**
+     * 将连续汉字串切为重叠二元词；单字直接保留原样。
+     */
     private static void addHanBigrams(String token, List<String> terms) {
         int[] codePoints = token.codePoints().toArray();
         if (codePoints.length == 1) {

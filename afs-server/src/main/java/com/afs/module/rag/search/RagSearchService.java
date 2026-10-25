@@ -35,12 +35,23 @@ public class RagSearchService {
     @Value("${spring.ai.rerank.candidate-top-k:20}")
     private int rerankCandidateTopK;
 
+    /**
+     * 检索与查询最相关的文档。
+     *
+     * 结果按 query+topK 缓存；启用重排时会先扩大候选池，再由 ReRank 截断到 topK。
+     * 混合检索失败时降级为纯向量检索，保证检索链路可用。
+     *
+     * @param query 用户查询词，不能为空
+     * @param topK  最终返回的文档数量，必须大于 0
+     * @return 相关文档列表
+     */
     @Cacheable(value = "vectorSearch", key = "#query + '_' + #topK", unless = "#result == null || #result.isEmpty()")
     public List<Document> searchRelevant(String query, int topK) {
         validateRequest(query, topK);
         long startTime = System.currentTimeMillis();
         SearchStrategy strategy = strategyResolver.getStrategy();
         try {
+            // 启用重排时扩大召回量，给交叉编码器留出筛选空间
             int retrievalTopK = rerankEnabled ? Math.max(topK, rerankCandidateTopK) : topK;
             List<Document> results = strategy.search(query, null, retrievalTopK);
             if (rerankEnabled) {
@@ -70,6 +81,9 @@ public class RagSearchService {
         }
     }
 
+    /**
+     * 检索并压平为面向前端/提示词的 Map 结构（content、source、title、id、type、score）。
+     */
     public List<Map<String, Object>> searchWithMetadata(String query, int topK) {
         return searchRelevant(query, topK).stream()
                 .map(document -> {
@@ -85,6 +99,9 @@ public class RagSearchService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 在指定分类下做纯向量检索（仅知识库来源）。
+     */
     public List<Document> searchByCategory(String query, String category, int topK) {
         validateRequest(query, topK);
         var filter = filterBuilder.and(
@@ -98,6 +115,9 @@ public class RagSearchService {
                 .build());
     }
 
+    /**
+     * 返回当前检索策略信息（是否启用重排、可用策略、当前策略），用于调试接口。
+     */
     public Map<String, Object> getSearchStrategyInfo() {
         Map<String, Object> info = new HashMap<>();
         info.put("reRankEnabled", rerankEnabled);
@@ -106,6 +126,9 @@ public class RagSearchService {
         return info;
     }
 
+    /**
+     * 校验检索入参：查询非空、topK 为正数。
+     */
     private void validateRequest(String query, int topK) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("检索查询不能为空");
