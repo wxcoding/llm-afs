@@ -104,11 +104,14 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Flyway 数据库迁移 (支持 PostgreSQL 17) -->
+        <!-- Flyway 数据库迁移（版本由 Spring Boot 父 pom 管理；Flyway 10+ 需独立的数据库支持模块） -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>9.22.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
         <!-- Apache PDFBox 用于解析 PDF 文档 -->
