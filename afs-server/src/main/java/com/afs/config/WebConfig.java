@@ -1,6 +1,7 @@
 package com.afs.config;
 
-import com.afs.common.AuthInterceptor;
+import com.afs.security.AuthInterceptor;
+import com.afs.security.RoleInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
+    private final RoleInterceptor roleInterceptor;
 
     /**
      * CORS 允许的来源列表，逗号分隔；默认仅允许本地开发地址，
@@ -44,21 +46,26 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * 登录鉴权：除注册/登录/文档/健康检查外全部需要 Bearer Token
+     * 登录鉴权：除注册/登录/文档/健康检查外全部需要 Bearer Token；
+     * 角色校验在登录鉴权之后执行，按 @RequireRole 注解拦截管理员接口
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        String[] publicPaths = {
+                "/api/user/register",
+                "/api/user/login",
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/actuator/health",
+                "/error"
+        };
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/api/user/register",
-                        "/api/user/login",
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/actuator/health",
-                        "/error"
-                );
+                .excludePathPatterns(publicPaths);
+        registry.addInterceptor(roleInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(publicPaths);
     }
 
     @Override

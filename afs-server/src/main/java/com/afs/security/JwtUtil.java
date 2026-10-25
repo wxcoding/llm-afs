@@ -1,4 +1,4 @@
-package com.afs.common;
+package com.afs.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -29,15 +29,17 @@ public class JwtUtil {
     }
 
     /**
-     * 为指定用户签发令牌
+     * 为指定用户签发令牌，角色随令牌下发以支持 RBAC 校验
      *
      * @param userId 用户 ID
+     * @param role   用户角色（见 {@link Roles}）
      * @return 签名的 JWT 字符串
      */
-    public String generateToken(Long userId) {
+    public String generateToken(Long userId, String role) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expireHours * 3600_000L))
                 .signWith(secretKey)
@@ -52,14 +54,32 @@ public class JwtUtil {
      */
     public Long parseUserId(String token) {
         try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+            Claims claims = parseClaims(token);
             return Long.valueOf(claims.getSubject());
         } catch (JwtException | IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * 解析令牌中的角色 claim
+     *
+     * @param token JWT 字符串
+     * @return 角色字符串；令牌无效、已过期或无角色 claim 时返回 null
+     */
+    public String parseRole(String token) {
+        try {
+            return parseClaims(token).get("role", String.class);
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

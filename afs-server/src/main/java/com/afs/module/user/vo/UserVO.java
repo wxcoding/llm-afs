@@ -23,6 +23,9 @@ public class UserVO {
 
     private String email;
 
+    /** 用户角色：user / admin */
+    private String role;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
@@ -38,6 +41,7 @@ public class UserVO {
         vo.setAvatar(user.getAvatar() != null ? user.getAvatar() : "");
         vo.setPhone(user.getPhone() != null ? user.getPhone() : "");
         vo.setEmail(user.getEmail() != null ? user.getEmail() : "");
+        vo.setRole(user.getRole() != null ? user.getRole() : "user");
         vo.setCreateTime(user.getCreateTime());
         vo.setUpdateTime(user.getUpdateTime());
         return vo;

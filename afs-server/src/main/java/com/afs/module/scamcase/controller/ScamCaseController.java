@@ -1,5 +1,6 @@
 package com.afs.module.scamcase.controller;
 
+import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.service.ScamCaseService;
@@ -41,12 +42,14 @@ public class ScamCaseController {
     }
 
     @Operation(summary = "添加诈骗案例")
+    @RequireRole
     @PostMapping
     public Result<ScamCase> addCase(@RequestBody ScamCase scamCase) {
         return Result.success("添加成功", scamCaseService.addCase(scamCase));
     }
 
     @Operation(summary = "更新诈骗案例")
+    @RequireRole
     @PutMapping("/{id}")
     public Result<ScamCase> updateCase(
             @Parameter(description = "案例 ID", required = true) @PathVariable Long id,
@@ -55,6 +58,7 @@ public class ScamCaseController {
     }
 
     @Operation(summary = "删除诈骗案例")
+    @RequireRole
     @DeleteMapping("/{id}")
     public Result<Void> deleteCase(
             @Parameter(description = "案例 ID", required = true) @PathVariable Long id) {

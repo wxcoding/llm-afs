@@ -34,7 +34,7 @@
               <el-icon><Collection /></el-icon>
               <span>知识库</span>
             </el-menu-item>
-            <el-menu-item v-if="user" index="/audit">
+            <el-menu-item v-if="isAdmin" index="/audit">
               <el-icon><DocumentChecked /></el-icon>
               <span>知识审核</span>
             </el-menu-item>
@@ -43,7 +43,7 @@
             <el-icon><FolderOpened /></el-icon>
             <span>案例分析</span>
           </el-menu-item>
-          <el-sub-menu index="config">
+          <el-sub-menu v-if="isAdmin" index="config">
             <template #title>
               <el-icon><Setting /></el-icon>
               <span>系统配置</span>
@@ -57,7 +57,7 @@
               <span>数据字典</span>
             </el-menu-item>
           </el-sub-menu>
-          <el-menu-item v-if="user" index="/users">
+          <el-menu-item v-if="isAdmin" index="/users">
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
@@ -138,7 +138,7 @@ import ShieldIcon from '@/components/common/ShieldIcon.vue'
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-const { user } = storeToRefs(userStore)
+const { user, isAdmin } = storeToRefs(userStore)
 
 const isCollapse = ref(false)
 const toggleCollapse = () => {

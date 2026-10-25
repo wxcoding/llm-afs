@@ -1,5 +1,6 @@
 package com.afs.module.knowledge.controller;
 
+import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.knowledge.dto.AuditSubmitDTO;
 import com.afs.module.knowledge.dto.CreateTagDTO;
@@ -57,6 +58,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "添加知识库")
+    @RequireRole
     @PostMapping
     public Result<Knowledge> addKnowledge(@RequestBody KnowledgeUpsertDTO request) {
         Knowledge knowledge = new Knowledge();
@@ -67,6 +69,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "更新知识库")
+    @RequireRole
     @PutMapping("/{id}")
     public Result<Knowledge> updateKnowledge(
             @Parameter(description = "知识库 ID", required = true) @PathVariable Long id,
@@ -79,6 +82,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "删除知识库")
+    @RequireRole
     @DeleteMapping("/{id}")
     public Result<Void> deleteKnowledge(
             @Parameter(description = "知识库 ID", required = true) @PathVariable Long id) {
@@ -97,6 +101,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "同步向量库", description = "将所有知识库和诈骗案例同步到向量库")
+    @RequireRole
     @PostMapping("/sync-vector")
     public Result<Void> syncVectorStore() {
         knowledgeService.syncAllToVectorStore();
@@ -106,6 +111,7 @@ public class KnowledgeController {
     // ==================== 文档上传 ====================
 
     @Operation(summary = "上传文档", description = "支持 PDF、Word、Markdown、Excel、TXT 等格式")
+    @RequireRole
     @PostMapping("/upload")
     public Result<Knowledge> uploadDocument(
             @Parameter(description = "上传的文件", required = true) @RequestParam("file") MultipartFile file,
@@ -115,6 +121,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "批量上传文档")
+    @RequireRole
     @PostMapping("/upload/batch")
     public Result<BatchUploadResultVO> uploadDocumentsBatch(
             @Parameter(description = "上传的文件列表", required = true) @RequestParam("files") MultipartFile[] files,
@@ -154,6 +161,7 @@ public class KnowledgeController {
     // ==================== 标签管理 ====================
 
     @Operation(summary = "创建标签", description = "创建知识库分类标签")
+    @RequireRole
     @PostMapping("/tags")
     public Result<KnowledgeTag> createTag(@RequestBody CreateTagDTO request) {
         return Result.success(knowledgeService.createTag(
@@ -167,6 +175,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "删除标签", description = "删除指定标签，同时解除与知识库的关联")
+    @RequireRole
     @DeleteMapping("/tags/{tagId}")
     public Result<Void> deleteTag(
             @Parameter(description = "标签 ID", required = true) @PathVariable Long tagId) {
@@ -175,6 +184,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "为知识库添加标签", description = "建立知识库与标签的关联关系")
+    @RequireRole
     @PostMapping("/tags/knowledge/{knowledgeId}")
     public Result<Void> addTagToKnowledge(
             @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId,
@@ -184,6 +194,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "移除知识库标签", description = "解除知识库与标签的关联关系")
+    @RequireRole
     @DeleteMapping("/tags/knowledge/{knowledgeId}")
     public Result<Void> removeTagFromKnowledge(
             @Parameter(description = "知识库 ID", required = true) @PathVariable Long knowledgeId,
@@ -209,6 +220,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "回滚到指定版本", description = "将知识库文档恢复到指定版本")
+    @RequireRole
     @PostMapping("/versions/{versionId}/rollback")
     public Result<KnowledgeVersion> rollbackToVersion(
             @Parameter(description = "版本 ID", required = true) @PathVariable Long versionId) {
@@ -229,12 +241,14 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "获取待审核列表", description = "获取所有待审核的知识库变更申请")
+    @RequireRole
     @GetMapping("/audit/pending")
     public Result<List<KnowledgeAudit>> getPendingAudits() {
         return Result.success(knowledgeService.getPendingAudits());
     }
 
     @Operation(summary = "审核通过", description = "批准知识库变更申请")
+    @RequireRole
     @PostMapping("/audit/{auditId}/approve")
     public Result<KnowledgeAudit> approveAudit(
             @Parameter(description = "审核 ID", required = true) @PathVariable Long auditId,
@@ -244,6 +258,7 @@ public class KnowledgeController {
     }
 
     @Operation(summary = "审核拒绝", description = "拒绝知识库变更申请")
+    @RequireRole
     @PostMapping("/audit/{auditId}/reject")
     public Result<KnowledgeAudit> rejectAudit(
             @Parameter(description = "审核 ID", required = true) @PathVariable Long auditId,

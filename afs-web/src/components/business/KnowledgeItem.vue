@@ -10,8 +10,10 @@
         <el-tag :type="statusTagType" size="small">{{ displayStatus }}</el-tag>
       </div>
       <div class="knowledge-item-right">
-        <el-button type="primary" size="small" @click.stop="$emit('edit', item)">编辑</el-button>
-        <el-button type="danger" size="small" @click.stop="$emit('delete', item.id)">删除</el-button>
+        <template v-if="isAdmin">
+          <el-button type="primary" size="small" @click.stop="$emit('edit', item)">编辑</el-button>
+          <el-button type="danger" size="small" @click.stop="$emit('delete', item.id)">删除</el-button>
+        </template>
         <i :class="expanded ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="expand-icon"></i>
       </div>
     </div>
@@ -26,6 +28,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -34,6 +37,8 @@ const props = defineProps({
 })
 
 defineEmits(['toggle', 'edit', 'delete'])
+
+const isAdmin = computed(() => useUserStore().isAdmin)
 
 const summary = computed(() => {
   if (!props.item.content) return ''

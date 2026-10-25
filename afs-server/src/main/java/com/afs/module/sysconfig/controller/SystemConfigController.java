@@ -1,5 +1,6 @@
 package com.afs.module.sysconfig.controller;
 
+import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.sysconfig.entity.SystemConfig;
 import com.afs.module.sysconfig.service.SystemConfigService;
@@ -12,7 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "系统配置", description = "系统参数配置管理接口")
+@Tag(name = "系统配置", description = "系统参数配置管理接口（仅管理员）")
+@RequireRole
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/config")

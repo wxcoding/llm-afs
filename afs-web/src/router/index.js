@@ -8,11 +8,11 @@ const routes = [
   { path: '/chat/:sessionId', component: () => import('@/views/chat/index.vue'), meta: { title: '智能问答' } },
   { path: '/cases', component: () => import('@/views/cases/index.vue'), meta: { title: '案例分析' } },
   { path: '/knowledge', component: () => import('@/views/knowledge/index.vue'), meta: { title: '知识库' } },
-  { path: '/audit', component: () => import('@/views/audit/index.vue'), meta: { title: '知识审核' } },
+  { path: '/audit', component: () => import('@/views/audit/index.vue'), meta: { title: '知识审核', admin: true } },
   { path: '/profile', component: () => import('@/views/user/profile/index.vue'), meta: { title: '个人中心' } },
-  { path: '/users', component: () => import('@/views/user/management/index.vue'), meta: { title: '用户管理' } },
-  { path: '/config', component: () => import('@/views/config/index.vue'), meta: { title: '模型配置' } },
-  { path: '/config/dict', component: () => import('@/views/dict/index.vue'), meta: { title: '数据字典' } },
+  { path: '/users', component: () => import('@/views/user/management/index.vue'), meta: { title: '用户管理', admin: true } },
+  { path: '/config', component: () => import('@/views/config/index.vue'), meta: { title: '模型配置', admin: true } },
+  { path: '/config/dict', component: () => import('@/views/dict/index.vue'), meta: { title: '数据字典', admin: true } },
   // 兼容旧路径
   { path: '/knowledge/audit', redirect: '/audit' }
 ]
@@ -22,12 +22,15 @@ const router = createRouter({
   routes
 })
 
-// 登录守卫：未登录访问业务页面时重定向到登录页
+// 登录守卫：未登录访问业务页面时重定向到登录页；管理员页面对非管理员重定向到首页
 const PUBLIC_PATHS = new Set(['/', '/login'])
 router.beforeEach((to) => {
   const userStore = useUserStore()
   if (!PUBLIC_PATHS.has(to.path) && !userStore.isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.admin && !userStore.isAdmin) {
+    return { path: '/' }
   }
 })
 

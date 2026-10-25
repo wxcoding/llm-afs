@@ -54,6 +54,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: 运行后端单元测试
+        working-directory: ./afs-server
+        run: mvn -B test
+
       - name: 构建 Spring Boot 后端
         working-directory: ./afs-server
         run: mvn -B -DskipTests clean package

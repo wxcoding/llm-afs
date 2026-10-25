@@ -1,5 +1,6 @@
 package com.afs.module.system.controller;
 
+import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.system.entity.SysDictItem;
 import com.afs.module.system.entity.SysDictType;
@@ -69,6 +70,7 @@ public class SysDictController {
      * POST /api/sys/dict/type
      */
     @PostMapping("/type")
+    @RequireRole
     public Result<SysDictType> createDictType(@RequestBody SysDictType dictType) {
         return Result.success(dictService.createDictType(dictType));
     }
@@ -78,6 +80,7 @@ public class SysDictController {
      * PUT /api/sys/dict/type/{id}
      */
     @PutMapping("/type/{id}")
+    @RequireRole
     public Result<SysDictType> updateDictType(@PathVariable Long id, @RequestBody SysDictType dictType) {
         dictType.setId(id);
         return Result.success(dictService.updateDictType(dictType));
@@ -88,6 +91,7 @@ public class SysDictController {
      * DELETE /api/sys/dict/type/{id}
      */
     @DeleteMapping("/type/{id}")
+    @RequireRole
     public Result<Void> deleteDictType(@PathVariable Long id) {
         dictService.deleteDictType(id);
         return Result.success();
@@ -98,6 +102,7 @@ public class SysDictController {
      * POST /api/sys/dict/item
      */
     @PostMapping("/item")
+    @RequireRole
     public Result<SysDictItem> createDictItem(@RequestBody SysDictItem dictItem) {
         return Result.success(dictService.createDictItem(dictItem));
     }
@@ -107,6 +112,7 @@ public class SysDictController {
      * PUT /api/sys/dict/item/{id}
      */
     @PutMapping("/item/{id}")
+    @RequireRole
     public Result<SysDictItem> updateDictItem(@PathVariable Long id, @RequestBody SysDictItem dictItem) {
         dictItem.setId(id);
         return Result.success(dictService.updateDictItem(dictItem));
@@ -117,6 +123,7 @@ public class SysDictController {
      * DELETE /api/sys/dict/item/{id}
      */
     @DeleteMapping("/item/{id}")
+    @RequireRole
     public Result<Void> deleteDictItem(@PathVariable Long id) {
         dictService.deleteDictItem(id);
         return Result.success();
@@ -127,6 +134,7 @@ public class SysDictController {
      * POST /api/sys/dict/refresh
      */
     @PostMapping("/refresh")
+    @RequireRole
     public Result<Void> refreshCache() {
         dictService.refreshAllCache();
         return Result.success();
@@ -137,6 +145,7 @@ public class SysDictController {
      * POST /api/sys/dict/refresh/{dictCode}
      */
     @PostMapping("/refresh/{dictCode}")
+    @RequireRole
     public Result<Void> refreshDictCache(@PathVariable String dictCode) {
         dictService.refreshDictCache(dictCode);
         return Result.success();

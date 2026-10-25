@@ -1,6 +1,7 @@
 package com.afs.module.user.controller;
 
-import com.afs.common.JwtUtil;
+import com.afs.security.JwtUtil;
+import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.user.dto.LoginDTO;
 import com.afs.module.user.dto.RegisterDTO;
@@ -40,7 +41,7 @@ public class UserController {
     @PostMapping("/login")
     public Result<LoginVO> login(@Valid @RequestBody LoginDTO request) {
         User user = userService.login(request.getUsername(), request.getPassword());
-        return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId()), user));
+        return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId(), user.getRole()), user));
     }
 
     @Operation(summary = "获取用户详情")
@@ -78,6 +79,7 @@ public class UserController {
     }
 
     @Operation(summary = "获取所有用户列表（管理员接口）")
+    @RequireRole
     @GetMapping("/list")
     public Result<List<UserVO>> getAllUsers() {
         List<UserVO> userList = userService.getAllUsers().stream()
@@ -87,6 +89,7 @@ public class UserController {
     }
 
     @Operation(summary = "创建用户（管理员接口）")
+    @RequireRole
     @PostMapping("/create")
     public Result<UserVO> createUser(@RequestBody UserUpsertDTO request) {
         User user = new User();
@@ -96,11 +99,13 @@ public class UserController {
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         user.setAvatar(request.getAvatar());
+        user.setRole(request.getRole());
         User createdUser = userService.createUser(user);
         return Result.success("创建成功", UserVO.from(createdUser));
     }
 
     @Operation(summary = "管理员更新用户信息")
+    @RequireRole
     @PutMapping("/admin/update/{id}")
     public Result<UserVO> updateUserByAdmin(
             @Parameter(description = "用户 ID", required = true) @PathVariable Long id,
@@ -110,12 +115,14 @@ public class UserController {
         req.setPhone(request.getPhone());
         req.setEmail(request.getEmail());
         req.setAvatar(request.getAvatar());
+        req.setRole(request.getRole());
         req.setPassword(request.getPassword());
         User updatedUser = userService.updateUserByAdmin(id, req);
         return Result.success("更新成功", UserVO.from(updatedUser));
     }
 
     @Operation(summary = "删除用户（管理员接口）")
+    @RequireRole
     @DeleteMapping("/delete/{id}")
     public Result<Void> deleteUser(
             @Parameter(description = "用户 ID", required = true) @PathVariable Long id) {

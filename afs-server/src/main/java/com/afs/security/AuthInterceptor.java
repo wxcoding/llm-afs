@@ -1,4 +1,6 @@
-package com.afs.common;
+package com.afs.security;
+
+import com.afs.common.Result;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.DispatcherType;
@@ -23,6 +25,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String USER_ID_ATTRIBUTE = "userId";
 
+    /** 当前登录用户角色在请求属性中的键，由 RoleInterceptor 消费 */
+    public static final String ROLE_ATTRIBUTE = "role";
+
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper;
 
@@ -40,9 +45,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            Long userId = jwtUtil.parseUserId(authorization.substring(7));
+            String token = authorization.substring(7);
+            Long userId = jwtUtil.parseUserId(token);
             if (userId != null) {
                 request.setAttribute(USER_ID_ATTRIBUTE, userId);
+                request.setAttribute(ROLE_ATTRIBUTE, jwtUtil.parseRole(token));
                 return true;
             }
         }

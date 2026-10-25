@@ -24,9 +24,11 @@
         </el-input>
       </template>
       <template #right>
-        <el-button type="primary" @click="showAddDialog">+ 新增知识</el-button>
-        <el-button type="success" @click="showUploadDialog">📎 上传文档</el-button>
-        <el-button type="warning" :loading="syncing" @click="syncVectorStore">同步向量库</el-button>
+        <template v-if="isAdmin">
+          <el-button type="primary" @click="showAddDialog">+ 新增知识</el-button>
+          <el-button type="success" @click="showUploadDialog">📎 上传文档</el-button>
+          <el-button type="warning" :loading="syncing" @click="syncVectorStore">同步向量库</el-button>
+        </template>
       </template>
     </FilterBar>
 
@@ -53,7 +55,7 @@
     </div>
 
     <el-empty v-if="knowledgeList.length === 0 && searchMode === 'keyword'" description="暂无知识内容">
-      <el-button type="primary" @click="showUploadDialog">上传文档</el-button>
+      <el-button v-if="isAdmin" type="primary" @click="showUploadDialog">上传文档</el-button>
     </el-empty>
 
     <KnowledgeFormDialog
@@ -80,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAllKnowledge,
@@ -118,6 +120,7 @@ const fileList = ref([])
 const form = ref({ id: null, title: '', category: '', content: '' })
 const uploadForm = ref({ category: '' })
 const userStore = useUserStore()
+const isAdmin = computed(() => userStore.isAdmin)
 const submitMode = ref('direct')
 
 const categoryOptions = ref([])

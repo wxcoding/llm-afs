@@ -25,6 +25,9 @@ public class User {
 
     private String email;
 
+    /** 用户角色：user / admin，见 {@link com.afs.common.constant.Roles} */
+    private String role;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;

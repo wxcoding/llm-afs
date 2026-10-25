@@ -18,7 +18,7 @@
           {{ meta.icon }} {{ type }}
         </button>
       </div>
-      <el-button type="primary" @click="showAddDialog">
+      <el-button v-if="isAdmin" type="primary" @click="showAddDialog">
         <el-icon style="margin-right: 4px"><Plus /></el-icon>新增案例
       </el-button>
     </div>
@@ -41,7 +41,7 @@
           >
             {{ typeMeta[c.type]?.icon }} {{ c.type }}
           </el-tag>
-          <span class="card-actions" @click.stop>
+          <span v-if="isAdmin" class="card-actions" @click.stop>
             <el-button link type="primary" size="small" @click="showEditDialog(c)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(c.id)">删除</el-button>
           </span>
@@ -116,7 +116,12 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { storeToRefs } from 'pinia'
 import { getAllCases, getCasesByType, addCase, updateCase, deleteCase } from '@/api/cases'
+import { useUserStore } from '@/stores/user'
+
+// 仅管理员可见案例增删改操作
+const { isAdmin } = storeToRefs(useUserStore())
 
 
 // 类型元信息：统一驱动徽章配色与图标

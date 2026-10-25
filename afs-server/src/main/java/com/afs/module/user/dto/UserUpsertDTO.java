@@ -19,4 +19,7 @@ public class UserUpsertDTO {
     private String email;
 
     private String avatar;
+
+    /** 角色：user / admin；为空时默认为 user */
+    private String role;
 }

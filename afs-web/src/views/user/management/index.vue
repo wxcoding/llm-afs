@@ -33,6 +33,13 @@
               </template>
             </el-table-column>
             <el-table-column prop="username" label="用户名" width="120" />
+            <el-table-column label="角色" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.role === 'admin' ? 'danger' : 'info'" size="small">
+                  {{ row.role === 'admin' ? '管理员' : '普通用户' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="nickname" label="昵称" width="120" />
             <el-table-column prop="phone" label="手机号" width="130" />
             <el-table-column prop="email" label="邮箱" width="200" />
@@ -86,6 +93,12 @@
           <el-form-item label="邮箱" prop="email">
             <el-input v-model="formData.email" placeholder="请输入邮箱" />
           </el-form-item>
+          <el-form-item label="角色" prop="role">
+            <el-select v-model="formData.role" placeholder="请选择角色" style="width: 100%">
+              <el-option label="普通用户" value="user" />
+              <el-option label="管理员" value="admin" />
+            </el-select>
+          </el-form-item>
         </el-form>
         <template #footer>
           <el-button @click="dialogVisible = false">取消</el-button>
@@ -131,7 +144,8 @@ const formData = reactive({
   password: '',
   nickname: '',
   phone: '',
-  email: ''
+  email: '',
+  role: 'user'
 })
 
 const rules = {
@@ -199,7 +213,8 @@ const showCreateDialog = () => {
     password: '',
     nickname: '',
     phone: '',
-    email: ''
+    email: '',
+    role: 'user'
   })
   dialogVisible.value = true
 }
@@ -213,7 +228,8 @@ const showEditDialog = (user) => {
     password: '',
     nickname: user.nickname,
     phone: user.phone,
-    email: user.email
+    email: user.email,
+    role: user.role || 'user'
   })
   dialogVisible.value = true
 }

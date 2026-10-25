@@ -1,5 +1,6 @@
 package com.afs.module.user.service;
 
+import com.afs.common.constant.Roles;
 import com.afs.exception.BusinessException;
 import com.afs.module.user.entity.User;
 import com.afs.module.user.mapper.UserMapper;
@@ -52,6 +53,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setNickname(username);
         user.setAvatar(DEFAULT_AVATAR);
+        user.setRole(Roles.USER);
         user.setCreateTime(LocalDateTime.now());
 
         userMapper.insert(user);
@@ -128,6 +130,11 @@ public class UserService {
         if (user.getAvatar() == null || user.getAvatar().isBlank()) {
             user.setAvatar(DEFAULT_AVATAR);
         }
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole(Roles.USER);
+        } else if (!Roles.USER.equals(user.getRole()) && !Roles.ADMIN.equals(user.getRole())) {
+            throw BusinessException.badRequest("非法角色: " + user.getRole());
+        }
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
@@ -153,6 +160,12 @@ public class UserService {
         }
         if (req.getAvatar() != null) {
             existing.setAvatar(req.getAvatar());
+        }
+        if (req.getRole() != null && !req.getRole().isBlank()) {
+            if (!Roles.USER.equals(req.getRole()) && !Roles.ADMIN.equals(req.getRole())) {
+                throw BusinessException.badRequest("非法角色: " + req.getRole());
+            }
+            existing.setRole(req.getRole());
         }
         if (req.getPassword() != null && !req.getPassword().isBlank()) {
             existing.setPassword(passwordEncoder.encode(req.getPassword()));

@@ -1,6 +1,6 @@
 package com.afs.module.chat.controller;
 
-import com.afs.common.AuthInterceptor;
+import com.afs.security.AuthInterceptor;
 import com.afs.module.chat.dto.SendMessageDTO;
 import com.afs.module.chat.entity.ChatMessage;
 import com.afs.module.chat.entity.ChatSession;

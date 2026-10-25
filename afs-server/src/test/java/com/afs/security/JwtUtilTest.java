@@ -1,4 +1,6 @@
-package com.afs.common;
+package com.afs.security;
+
+import com.afs.common.constant.Roles;
 
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
@@ -23,14 +25,34 @@ class JwtUtilTest {
     private static final String SECRET = "test-jwt-secret-key-for-unit-test-0123456789abcdef";
 
     @Test
-    // 签发后可以解析回相同的用户 ID
-    void generateTokenThenParseReturnsSameUserId() {
+    // 签发后可以解析回相同的用户 ID 与角色
+    void generateTokenThenParseReturnsSameUserIdAndRole() {
         JwtUtil jwtUtil = new JwtUtil(SECRET, 72);
 
-        String token = jwtUtil.generateToken(42L);
+        String token = jwtUtil.generateToken(42L, Roles.ADMIN);
 
         assertThat(token).isNotBlank();
         assertThat(jwtUtil.parseUserId(token)).isEqualTo(42L);
+        assertThat(jwtUtil.parseRole(token)).isEqualTo("admin");
+    }
+
+    @Test
+    // 非法令牌解析角色返回 null；无角色 claim 的旧令牌也返回 null
+    void parseRoleReturnsNullForInvalidTokenAndTokenWithoutRole() {
+        JwtUtil jwtUtil = new JwtUtil(SECRET, 72);
+
+        assertThat(jwtUtil.parseRole(null)).isNull();
+        assertThat(jwtUtil.parseRole("not-a-jwt-token")).isNull();
+
+        // 手工签发一个不含 role claim 的合法令牌
+        SecretKey key = (SecretKey) ReflectionTestUtils.getField(jwtUtil, "secretKey");
+        String legacyToken = Jwts.builder()
+                .subject("42")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600_000L))
+                .signWith(key)
+                .compact();
+        assertThat(jwtUtil.parseRole(legacyToken)).isNull();
     }
 
     @Test
@@ -49,7 +71,7 @@ class JwtUtilTest {
         JwtUtil issuer = new JwtUtil(SECRET, 72);
         JwtUtil verifier = new JwtUtil("another-secret-key-totally-different-0123456789", 72);
 
-        String token = issuer.generateToken(1L);
+        String token = issuer.generateToken(1L, Roles.USER);
 
         assertThat(verifier.parseUserId(token)).isNull();
     }
@@ -59,7 +81,7 @@ class JwtUtilTest {
     void parseUserIdReturnsNullForExpiredToken() {
         JwtUtil jwtUtil = new JwtUtil(SECRET, -1);
 
-        String token = jwtUtil.generateToken(7L);
+        String token = jwtUtil.generateToken(7L, Roles.USER);
 
         assertThat(jwtUtil.parseUserId(token)).isNull();
     }

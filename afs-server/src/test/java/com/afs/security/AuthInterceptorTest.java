@@ -1,4 +1,4 @@
-package com.afs.common;
+package com.afs.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.DispatcherType;
@@ -64,18 +64,20 @@ class AuthInterceptorTest {
     }
 
     @Test
-    // 合法 Bearer Token：放行并把用户 ID 写入请求属性
-    void validBearerTokenSetsUserIdAndPasses() throws Exception {
+    // 合法 Bearer Token：放行并把用户 ID 与角色写入请求属性
+    void validBearerTokenSetsUserIdAndRoleAndPasses() throws Exception {
         when(request.getDispatcherType()).thenReturn(DispatcherType.REQUEST);
         when(request.getMethod()).thenReturn("GET");
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
-        // 打桩：合法令牌解析出用户 1001
+        // 打桩：合法令牌解析出用户 1001，角色 admin
         when(jwtUtil.parseUserId("valid-token")).thenReturn(1001L);
+        when(jwtUtil.parseRole("valid-token")).thenReturn("admin");
 
         boolean allowed = interceptor.preHandle(request, response, new Object());
 
         assertThat(allowed).isTrue();
         verify(request).setAttribute(AuthInterceptor.USER_ID_ATTRIBUTE, 1001L);
+        verify(request).setAttribute(AuthInterceptor.ROLE_ATTRIBUTE, "admin");
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.afs.module.user.controller;
 
-import com.afs.common.JwtUtil;
+import com.afs.security.JwtUtil;
 import com.afs.exception.BusinessException;
 import com.afs.exception.GlobalExceptionHandler;
 import com.afs.module.user.entity.User;
@@ -77,6 +77,7 @@ class UserControllerTest {
         user.setUsername("alice");
         user.setNickname("爱丽丝");
         user.setAvatar("/avatars/default.jpg");
+        user.setRole("user");
         user.setCreateTime(LocalDateTime.of(2024, 1, 1, 12, 0));
         return user;
     }
@@ -118,7 +119,7 @@ class UserControllerTest {
     @Test
     void login_returnsTokenAndUser() throws Exception {
         when(userService.login("alice", "secret6")).thenReturn(sampleUser());
-        when(jwtUtil.generateToken(1L)).thenReturn("token-abc");
+        when(jwtUtil.generateToken(1L, "user")).thenReturn("token-abc");
 
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,7 +131,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.token").value("token-abc"))
                 .andExpect(jsonPath("$.data.user.id").value(1))
                 .andExpect(jsonPath("$.data.user.username").value("alice"));
-        verify(jwtUtil).generateToken(1L);
+        verify(jwtUtil).generateToken(1L, "user");
     }
 
     /** 登录失败：用户名或密码错误时由全局异常处理器返回 401 */
