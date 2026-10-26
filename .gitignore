@@ -78,3 +78,6 @@ afs-web/.nuxt/
 # Coverage reports
 coverage/
 *.lcov
+
+# pnpm-lock.yaml
+pnpm-lock.yaml

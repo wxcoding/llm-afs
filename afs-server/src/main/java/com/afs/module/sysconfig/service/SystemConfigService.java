@@ -4,8 +4,11 @@ import com.afs.module.sysconfig.entity.SystemConfig;
 import com.afs.module.sysconfig.mapper.SystemConfigMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +17,14 @@ import java.util.Map;
 /**
  * 系统配置服务类
  *
- * 负责系统参数配置的管理和初始化
+ * 负责系统参数配置的管理和初始化；getConfigValue 走 Redis 缓存（fail-open 直连数据库）
  */
+@Slf4j
 @Service
 public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemConfig> {
+
+    private static final String CONFIG_KEY_PREFIX = "cache:sysconfig:";
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     private static final Map<String, String> DEFAULT_CONFIGS = new HashMap<>();
     static {
@@ -26,6 +33,12 @@ public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemC
         DEFAULT_CONFIGS.put("max_tokens", "2000");
         DEFAULT_CONFIGS.put("temperature", "0.7");
         DEFAULT_CONFIGS.put("vector_sync_interval", "3600");
+    }
+
+    private final StringRedisTemplate redisTemplate;
+
+    public SystemConfigService(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
 
     public void initDefaultConfigs() {
@@ -41,6 +54,8 @@ public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemC
                 config.setCreateTime(LocalDateTime.now());
                 config.setUpdateTime(LocalDateTime.now());
                 baseMapper.insert(config);
+                // 防止 Redis 中残留旧值覆盖新初始化的默认配置
+                evict(CONFIG_KEY_PREFIX + entry.getKey());
             }
         }
     }
@@ -52,14 +67,58 @@ public class SystemConfigService extends ServiceImpl<SystemConfigMapper, SystemC
             config.setConfigValue(configValue);
             config.setUpdateTime(LocalDateTime.now());
             baseMapper.updateById(config);
+            evict(CONFIG_KEY_PREFIX + configKey);
         }
         return config;
     }
 
     public String getConfigValue(String configKey) {
+        String key = CONFIG_KEY_PREFIX + configKey;
+        String cached = redisGet(key);
+        if (cached != null) {
+            return cached;
+        }
         SystemConfig config = baseMapper.selectOne(
                 new QueryWrapper<SystemConfig>().eq("config_key", configKey));
-        return config != null ? config.getConfigValue() : DEFAULT_CONFIGS.get(configKey);
+        String value = config != null ? config.getConfigValue() : DEFAULT_CONFIGS.get(configKey);
+        if (value != null) {
+            redisSet(key, value);
+        }
+        return value;
+    }
+
+    /**
+     * Redis 读取（fail-open：异常时返回 null，走回源）
+     */
+    private String redisGet(String key) {
+        try {
+            return redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.warn("[系统配置] Redis 读取失败，回源数据库: key={}, 原因: {}", key, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Redis 写入（fail-open：异常仅记录日志）
+     */
+    private void redisSet(String key, String value) {
+        try {
+            redisTemplate.opsForValue().set(key, value, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("[系统配置] Redis 写入失败: key={}, 原因: {}", key, e.getMessage());
+        }
+    }
+
+    /**
+     * 缓存失效（fail-open：异常仅记录日志）
+     */
+    private void evict(String key) {
+        try {
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.warn("[系统配置] Redis 删除失败: key={}, 原因: {}", key, e.getMessage());
+        }
     }
 
     public List<SystemConfig> getAllConfigs() {

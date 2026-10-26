@@ -1,6 +1,7 @@
 package com.afs.module.scamcase.service;
 
 import com.afs.exception.BusinessException;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
@@ -31,6 +32,9 @@ class ScamCaseServiceTest {
 
     @Mock
     private RagIngestionService ragIngestionService;
+
+    @Mock
+    private RagIngestionDispatcher ragIngestionDispatcher;
 
     @InjectMocks
     private ScamCaseService scamCaseService;
@@ -76,8 +80,8 @@ class ScamCaseServiceTest {
 
         assertNotNull(result.getCreateTime());
         verify(scamCaseMapper).insert(scamCase);
-        // tips 为空时应以空字符串兜底
-        verify(ragIngestionService).addScamCaseDocument(eq(10L), eq("新案例"), eq("电信诈骗"), eq("正文内容"), eq(""));
+        // 内容非空时派发 MQ 入库任务（消费者回读最新内容构建索引）
+        verify(ragIngestionDispatcher).dispatchScamCaseUpsert(10L);
     }
 
     // 新增案例：内容为空时不同步向量库
@@ -89,7 +93,7 @@ class ScamCaseServiceTest {
         scamCaseService.addCase(scamCase);
 
         verify(scamCaseMapper).insert(scamCase);
-        verifyNoInteractions(ragIngestionService);
+        verifyNoInteractions(ragIngestionDispatcher);
     }
 
     // 更新案例：案例不存在时抛出业务异常
@@ -101,10 +105,10 @@ class ScamCaseServiceTest {
                 () -> scamCaseService.updateCase(99L, buildCase(99L, "更新")));
         assertEquals("案例不存在", ex.getMessage());
         verify(scamCaseMapper, never()).updateById(any());
-        verifyNoInteractions(ragIngestionService);
+        verifyNoInteractions(ragIngestionService, ragIngestionDispatcher);
     }
 
-    // 更新案例：先删旧向量再按新内容重建
+    // 更新案例：派发 MQ 入库任务，消费者回读最新内容先删后建
     @Test
     void updateCaseRebuildsVectorDocument() {
         ScamCase existing = buildCase(7L, "旧标题");
@@ -117,13 +121,12 @@ class ScamCaseServiceTest {
         assertEquals("新标题", result.getTitle());
         assertEquals("新提示", result.getTips());
         verify(scamCaseMapper).updateById(existing);
-        verify(ragIngestionService).deleteScamCaseDocument(7L);
-        verify(ragIngestionService).addScamCaseDocument(7L, "新标题", "电信诈骗", "正文内容", "新提示");
+        verify(ragIngestionDispatcher).dispatchScamCaseUpsert(7L);
     }
 
-    // 更新案例：新内容为空时只删旧向量、不再新增
+    // 更新案例：新内容为空时同样派发任务，索引清除由消费者负责
     @Test
-    void updateCaseOnlyDeletesVectorWhenContentEmpty() {
+    void updateCase_dispatchesUpsertWhenContentEmpty() {
         ScamCase existing = buildCase(8L, "旧标题");
         when(scamCaseMapper.selectById(8L)).thenReturn(existing);
         ScamCase update = buildCase(null, "新标题");
@@ -131,8 +134,7 @@ class ScamCaseServiceTest {
 
         scamCaseService.updateCase(8L, update);
 
-        verify(ragIngestionService).deleteScamCaseDocument(8L);
-        verify(ragIngestionService, never()).addScamCaseDocument(any(), any(), any(), any(), any());
+        verify(ragIngestionDispatcher).dispatchScamCaseUpsert(8L);
     }
 
     // 删除案例：先删向量文档再删数据库记录
@@ -175,7 +177,9 @@ class ScamCaseServiceTest {
         scamCaseService.syncAllToVectorStore();
 
         verify(ragIngestionService).clearScamCaseIndex();
-        verify(ragIngestionService, times(1)).addScamCaseDocument(any(), any(), any(), any(), any());
+        // 空内容案例不派发，有内容的派发 MQ 入库任务
+        verify(ragIngestionDispatcher, times(1)).dispatchScamCaseUpsert(1L);
+        verify(ragIngestionDispatcher, never()).dispatchScamCaseUpsert(2L);
     }
 
     private ScamCase buildCase(Long id, String title) {

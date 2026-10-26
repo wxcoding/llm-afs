@@ -29,6 +29,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static final String ROLE_ATTRIBUTE = "role";
 
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -47,7 +48,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
             Long userId = jwtUtil.parseUserId(token);
-            if (userId != null) {
+            // 已吊销（登出）的令牌视为未登录
+            if (userId != null && !tokenBlacklistService.isRevoked(token)) {
                 request.setAttribute(USER_ID_ATTRIBUTE, userId);
                 request.setAttribute(ROLE_ATTRIBUTE, jwtUtil.parseRole(token));
                 return true;

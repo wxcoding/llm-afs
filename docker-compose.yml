@@ -7,6 +7,7 @@
 #
 # 服务说明:
 #   - postgres: PostgreSQL 数据库（带 pgvector 向量扩展）
+#   - redis: Redis 缓存（令牌吊销、登录限流）
 #   - afs-server: Spring Boot 后端服务
 #   - afs-web: Vue 3 前端服务（基于 Nginx）
 
@@ -34,6 +35,25 @@ services:
     networks:
       - afs-network  # 使用自定义网络
 
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: afs-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes  # 开启 AOF 持久化
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - afs-network
+
   # Spring Boot 后端服务
   afs-server:
     build:
@@ -44,12 +64,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy  # 等待 postgres 健康检查通过后再启动
+      redis:
+        condition: service_healthy  # 等待 redis 健康检查通过后再启动
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/afs?stringtype=unspecified  # JDBC 连接
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis  # Redis 主机（容器名）
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}  # Redis 密码（可选）
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}  # 通义千问 API Key
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen3.8-max-0902}  # AI 模型
+      SPRING_PROFILES_ACTIVE: json-log  # 容器环境输出 JSON 结构化日志
       JAVA_OPTS: "-Xmx512m -Xms256m"  # JVM 内存配置
       APP_CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://192.168.16.11:3000  # CORS 允许的来源
     ports:
@@ -89,6 +115,7 @@ services:
 # 数据卷配置（持久化数据）
 volumes:
   postgres_data:  # PostgreSQL 数据卷
+  redis_data:  # Redis 数据卷
 
 # 网络配置（服务间通信）
 networks:

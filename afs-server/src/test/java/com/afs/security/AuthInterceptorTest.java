@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 class AuthInterceptorTest {
 
     private JwtUtil jwtUtil;
+    private TokenBlacklistService tokenBlacklistService;
     private AuthInterceptor interceptor;
     private HttpServletRequest request;
     private HttpServletResponse response;
@@ -34,8 +35,9 @@ class AuthInterceptorTest {
     @BeforeEach
     void setUp() {
         jwtUtil = mock(JwtUtil.class);
+        tokenBlacklistService = mock(TokenBlacklistService.class);
         // 使用真实 ObjectMapper，避免对 JSON 序列化打桩
-        interceptor = new AuthInterceptor(jwtUtil, new ObjectMapper());
+        interceptor = new AuthInterceptor(jwtUtil, tokenBlacklistService, new ObjectMapper());
         request = mock(HttpServletRequest.class);
         response = mock(HttpServletResponse.class);
     }
@@ -69,9 +71,10 @@ class AuthInterceptorTest {
         when(request.getDispatcherType()).thenReturn(DispatcherType.REQUEST);
         when(request.getMethod()).thenReturn("GET");
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
-        // 打桩：合法令牌解析出用户 1001，角色 admin
+        // 打桩：合法令牌解析出用户 1001，角色 admin，且未吊销
         when(jwtUtil.parseUserId("valid-token")).thenReturn(1001L);
         when(jwtUtil.parseRole("valid-token")).thenReturn("admin");
+        when(tokenBlacklistService.isRevoked("valid-token")).thenReturn(false);
 
         boolean allowed = interceptor.preHandle(request, response, new Object());
 
@@ -102,6 +105,22 @@ class AuthInterceptorTest {
         when(request.getHeader("Authorization")).thenReturn("Bearer bad-token");
         // 打桩：非法令牌解析结果为 null
         when(jwtUtil.parseUserId("bad-token")).thenReturn(null);
+        StringWriter body = stubResponseWriter();
+
+        boolean allowed = interceptor.preHandle(request, response, new Object());
+
+        assertThat(allowed).isFalse();
+        assertThat(body.toString()).contains("未登录或登录已过期");
+    }
+
+    @Test
+    // 令牌已被吊销：返回 401
+    void revokedTokenReturns401() throws Exception {
+        when(request.getDispatcherType()).thenReturn(DispatcherType.REQUEST);
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn("Bearer revoked-token");
+        when(jwtUtil.parseUserId("revoked-token")).thenReturn(1001L);
+        when(tokenBlacklistService.isRevoked("revoked-token")).thenReturn(true);
         StringWriter body = stubResponseWriter();
 
         boolean allowed = interceptor.preHandle(request, response, new Object());

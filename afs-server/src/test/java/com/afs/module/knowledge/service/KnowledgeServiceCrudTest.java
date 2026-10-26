@@ -8,6 +8,7 @@ import com.afs.module.knowledge.mapper.KnowledgeMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagRelationMapper;
 import com.afs.module.knowledge.mapper.KnowledgeVersionMapper;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.rag.search.RagSearchService;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,8 @@ class KnowledgeServiceCrudTest {
     @Mock
     private RagIngestionService ragIngestionService;
     @Mock
+    private RagIngestionDispatcher ragIngestionDispatcher;
+    @Mock
     private RagSearchService ragSearchService;
 
     @InjectMocks
@@ -103,8 +106,8 @@ class KnowledgeServiceCrudTest {
         assertEquals(KnowledgeStatus.ACTIVE.getCode(), result.getStatus());
         assertNotNull(result.getCreateTime());
         verify(knowledgeMapper).insert(knowledge);
-        // ACTIVE 且内容非空，需同步向量库（id 由数据库生成，mock 下为 null）
-        verify(ragIngestionService).addKnowledgeDocument(isNull(), eq("标题"), eq("分类"), eq("内容"));
+        // ACTIVE 且内容非空，派发 MQ 入库任务（id 由数据库生成，mock 下为 null）
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(isNull());
     }
 
     // 新增时状态为空字符串，同样按默认 ACTIVE 处理
@@ -128,10 +131,10 @@ class KnowledgeServiceCrudTest {
 
         knowledgeService.addKnowledge(knowledge);
 
-        verify(ragIngestionService, never()).addKnowledgeDocument(any(), any(), any(), any());
+        verifyNoInteractions(ragIngestionDispatcher);
     }
 
-    // ACTIVE 状态但内容为空，不同步向量库
+    // ACTIVE 状态但内容为空，不派发入库任务
     @Test
     void addKnowledge_emptyContent_skipsVectorSync() {
         Knowledge knowledge = new Knowledge();
@@ -139,7 +142,7 @@ class KnowledgeServiceCrudTest {
 
         knowledgeService.addKnowledge(knowledge);
 
-        verify(ragIngestionService, never()).addKnowledgeDocument(any(), any(), any(), any());
+        verifyNoInteractions(ragIngestionDispatcher);
     }
 
     // 更新不存在的知识抛出 404 业务异常
@@ -152,10 +155,10 @@ class KnowledgeServiceCrudTest {
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         assertEquals("知识不存在", exception.getMessage());
-        verifyNoInteractions(ragIngestionService);
+        verifyNoInteractions(ragIngestionService, ragIngestionDispatcher);
     }
 
-    // 更新 ACTIVE 知识：字段被覆盖且向量库先删后加
+    // 更新 ACTIVE 知识：字段被覆盖并派发入库任务（先删后建由消费者完成）
     @Test
     void updateKnowledge_active_resyncsVectorStore() {
         Knowledge existing = new Knowledge();
@@ -173,13 +176,12 @@ class KnowledgeServiceCrudTest {
         assertEquals("新分类", result.getCategory());
         assertEquals("新内容", result.getContent());
         verify(knowledgeMapper).updateById(existing);
-        verify(ragIngestionService).deleteKnowledgeDocument(1L);
-        verify(ragIngestionService).addKnowledgeDocument(null, "新标题", "新分类", "新内容");
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(1L);
     }
 
-    // 更新非 ACTIVE 知识：仅删除旧向量，不再新增
+    // 更新非 ACTIVE 知识：同样派发任务，索引清除由消费者负责
     @Test
-    void updateKnowledge_nonActive_onlyDeletesVector() {
+    void updateKnowledge_nonActive_dispatchesUpsert() {
         Knowledge existing = new Knowledge();
         existing.setStatus(KnowledgeStatus.PENDING_REVIEW.getCode());
         when(knowledgeMapper.selectById(1L)).thenReturn(existing);
@@ -189,7 +191,7 @@ class KnowledgeServiceCrudTest {
 
         knowledgeService.updateKnowledge(1L, update);
 
-        verify(ragIngestionService).deleteKnowledgeDocument(1L);
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(1L);
         verify(ragIngestionService, never()).addKnowledgeDocument(any(), any(), any(), any());
     }
 
@@ -258,7 +260,8 @@ class KnowledgeServiceCrudTest {
         knowledgeService.syncAllToVectorStore();
 
         verify(ragIngestionService).clearKnowledgeIndex();
-        verify(ragIngestionService, times(1)).addKnowledgeDocument(null, "t", "c", "content");
+        // 仅 ACTIVE 且内容非空的知识派发入库任务（id 均为 null）
+        verify(ragIngestionDispatcher, times(1)).dispatchKnowledgeUpsert(isNull());
     }
 
     // 更新时将 DTO 字段拷贝到已存在的实体上（通过捕获参数验证）

@@ -4,6 +4,8 @@ import com.afs.module.sysconfig.entity.SystemConfig;
 import com.afs.module.sysconfig.mapper.SystemConfigMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -18,17 +20,23 @@ import static org.mockito.Mockito.*;
  *
  * 覆盖系统配置的初始化、读取（含默认值回退）、更新（可编辑性校验）与按类型聚合。
  * 由于继承 MyBatis-Plus ServiceImpl，通过 ReflectionTestUtils 注入 mock 的 baseMapper。
+ * Redis mock 默认全部未命中，验证回源与缓存失效逻辑。
  */
 class SystemConfigServiceTest {
 
     private SystemConfigMapper configMapper;
+
+    @SuppressWarnings("unchecked")
+    private final ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
 
     private SystemConfigService configService;
 
     @BeforeEach
     void setUp() {
         configMapper = mock(SystemConfigMapper.class);
-        configService = new SystemConfigService();
+        StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        configService = new SystemConfigService(redisTemplate);
         // ServiceImpl 的 baseMapper 由父类持有，需反射注入
         ReflectionTestUtils.setField(configService, "baseMapper", configMapper);
     }

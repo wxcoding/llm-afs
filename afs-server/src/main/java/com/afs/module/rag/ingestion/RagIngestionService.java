@@ -10,6 +10,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,9 @@ public class RagIngestionService {
     /**
      * 将知识库条目写入向量索引与全文索引（已存在时先删后建，幂等重建）。
      *
+     * 由 RagIngestionProcessor 在独立线程池中异步调用；
+     * 失败由调用方记录状态，检索端短暂不可见新文档。
+     *
      * @param id       知识库记录主键
      * @param title    条目标题，同时参与全文检索词项构造
      * @param category 条目分类，用于检索过滤
@@ -58,6 +62,8 @@ public class RagIngestionService {
 
     /**
      * 将诈骗案例写入向量索引与全文索引（已存在时先删后建，幂等重建）。
+     *
+     * 由 RagIngestionProcessor 在独立线程池中异步调用。
      *
      * @param id      案例记录主键
      * @param title   案例标题

@@ -82,4 +82,20 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    /**
+     * 计算令牌剩余有效期（秒），用于登出吊销时设置黑名单 TTL
+     *
+     * @param token JWT 字符串
+     * @return 剩余秒数；令牌无效或已过期时返回 0
+     */
+    public long getRemainingSeconds(String token) {
+        try {
+            Date expiration = parseClaims(token).getExpiration();
+            long remaining = (expiration.getTime() - System.currentTimeMillis()) / 1000;
+            return Math.max(remaining, 0);
+        } catch (JwtException | IllegalArgumentException e) {
+            return 0;
+        }
+    }
 }

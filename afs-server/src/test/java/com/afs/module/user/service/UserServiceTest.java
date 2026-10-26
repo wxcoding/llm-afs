@@ -3,6 +3,7 @@ package com.afs.module.user.service;
 import com.afs.exception.BusinessException;
 import com.afs.module.user.entity.User;
 import com.afs.module.user.mapper.UserMapper;
+import com.afs.security.LoginRateLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,9 @@ class UserServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private LoginRateLimiter loginRateLimiter;
+
     /** 使用真实 BCrypt 加密器，与生产配置保持一致 */
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -45,7 +49,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userMapper, passwordEncoder);
+        userService = new UserService(userMapper, passwordEncoder, loginRateLimiter);
     }
 
     /** 注册成功：写入默认昵称/头像，密码以 BCrypt 加密存储 */
@@ -154,6 +158,47 @@ class UserServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("用户名或密码错误");
         verify(userMapper, never()).updateById(any(User.class));
+    }
+
+    /** 登录成功：通知限流器清零失败计数，且不记录失败 */
+    @Test
+    void login_successClearsRateLimitCounter() {
+        User user = new User();
+        user.setUsername("bob");
+        user.setPassword(passwordEncoder.encode("secret6"));
+        when(userMapper.selectOne(any())).thenReturn(user);
+
+        userService.login("bob", "secret6");
+
+        verify(loginRateLimiter).checkLocked("bob");
+        verify(loginRateLimiter).onSuccess("bob");
+        verify(loginRateLimiter, never()).onFailure(any());
+    }
+
+    /** 登录失败：通知限流器累计失败次数，且不清零 */
+    @Test
+    void login_failureIncrementsRateLimitCounter() {
+        when(userMapper.selectOne(any())).thenReturn(null);
+
+        assertThatThrownBy(() -> userService.login("ghost", "secret6"))
+                .isInstanceOf(BusinessException.class);
+
+        verify(loginRateLimiter).onFailure("ghost");
+        verify(loginRateLimiter, never()).onSuccess(any());
+    }
+
+    /** 账号锁定中：限流器抛出 429 业务异常，且不访问数据库 */
+    @Test
+    void login_propagatesLockedExceptionWithoutQueryingDb() {
+        org.mockito.Mockito.doThrow(new BusinessException(HttpStatus.TOO_MANY_REQUESTS, "账号已临时锁定"))
+                .when(loginRateLimiter).checkLocked("bob");
+
+        assertThatThrownBy(() -> userService.login("bob", "secret6"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("账号已临时锁定")
+                .satisfies(e -> assertThat(((BusinessException) e).getStatus())
+                        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+        verify(userMapper, never()).selectOne(any());
     }
 
     /** 按 ID 查询：直接委托给 mapper.selectById */

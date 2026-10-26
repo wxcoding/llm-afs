@@ -25,6 +25,17 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=10m
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
   ai:
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
@@ -97,6 +108,12 @@ jwt:
   secret: ${JWT_SECRET:afs-jwt-secret-please-change-in-production-0123456789}
   expire-hours: 72
 
+# 登录防爆破策略（基于 Redis 计数，窗口到期自动解锁）
+security:
+  login:
+    max-failures: 5      # 连续失败 5 次后锁定
+    lock-seconds: 600    # 锁定时长 10 分钟
+
 springdoc:
   api-docs:
     enabled: true
@@ -111,13 +128,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when_authorized
   health:
     db:
       enabled: true
+  metrics:
+    tags:
+      application: afs-server
+
+info:
+  app:
+    name: afs-server
+    description: 智能防诈骗系统后端
+    version: 1.0.0
 
 
 logging:

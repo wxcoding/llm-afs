@@ -8,6 +8,7 @@ import com.afs.module.knowledge.mapper.KnowledgeTagMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagRelationMapper;
 import com.afs.module.knowledge.mapper.KnowledgeVersionMapper;
 import com.afs.module.knowledge.vo.BatchUploadResultVO;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.rag.search.RagSearchService;
 import com.afs.util.DocumentParser;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -56,6 +58,8 @@ class KnowledgeServiceUploadTest {
     private KnowledgeAuditMapper auditMapper;
     @Mock
     private RagIngestionService ragIngestionService;
+    @Mock
+    private RagIngestionDispatcher ragIngestionDispatcher;
     @Mock
     private RagSearchService ragSearchService;
 
@@ -166,9 +170,9 @@ class KnowledgeServiceUploadTest {
             assertEquals("a.txt", result.getSourceFile());
             assertEquals(1024L, result.getFileSize());
             assertEquals(8, result.getCharCount());
-            // 新增走 addKnowledge，默认 ACTIVE 并同步向量库
+            // 新增走 addKnowledge，默认 ACTIVE 并派发 MQ 入库任务（id 由数据库生成，mock 下为 null）
             verify(knowledgeMapper).insert(result);
-            verify(ragIngestionService).addKnowledgeDocument(null, "自动标题", "自动分类", "第一行 第二行");
+            verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(isNull());
         }
     }
 

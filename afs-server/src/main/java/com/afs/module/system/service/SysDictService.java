@@ -5,39 +5,37 @@ import com.afs.module.system.entity.SysDictType;
 import com.afs.module.system.mapper.SysDictItemMapper;
 import com.afs.module.system.mapper.SysDictTypeMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 字典服务（含内存缓存）
+ * 字典服务（Redis 缓存热点读，Redis 故障时 fail-open 直连数据库）
  */
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysDictService {
 
+    private static final String DICT_KEY_PREFIX = "cache:dict:";
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+
     private final SysDictTypeMapper dictTypeMapper;
 
     private final SysDictItemMapper dictItemMapper;
 
-    /**
-     * 字典缓存（内存缓存）
-     * key: dictCode
-     * value: List<DictItemVO>
-     */
-    private final Map<String, List<DictItemVO>> dictCache = new ConcurrentHashMap<>();
-    
-    /**
-     * 字典编码到名称映射缓存
-     */
-    private final Map<String, Map<String, String>> dictNameCache = new ConcurrentHashMap<>();
-    
+    private final StringRedisTemplate redisTemplate;
+
+    private final ObjectMapper objectMapper;
+
     /**
      * 启动时预热缓存
      */
@@ -46,7 +44,7 @@ public class SysDictService {
         refreshAllCache();
         log.info("[字典系统] 缓存初始化完成");
     }
-    
+
     /**
      * 刷新所有缓存
      */
@@ -56,65 +54,44 @@ public class SysDictService {
             refreshDictCache(type.getDictCode());
         }
     }
-    
+
     /**
-     * 刷新指定字典缓存
+     * 刷新指定字典缓存：失效后立即回源预热
      */
     public void refreshDictCache(String dictCode) {
-        List<SysDictItem> items = dictItemMapper.selectList(
-            new QueryWrapper<SysDictItem>()
-                .eq("dict_code", dictCode)
-                .eq("status", 1)
-                .orderByAsc("sort")
-        );
-        
-        List<DictItemVO> voList = items.stream().map(item -> {
-            DictItemVO vo = new DictItemVO();
-            vo.setItemCode(item.getItemCode());
-            vo.setItemName(item.getItemName());
-            vo.setItemValue(item.getItemValue());
-            vo.setSort(item.getSort());
-            vo.setRemark(item.getRemark());
-            return vo;
-        }).collect(Collectors.toList());
-        
-        dictCache.put(dictCode, voList);
-        
-        // 更新名称映射缓存
-        Map<String, String> nameMap = new HashMap<>();
-        for (DictItemVO vo : voList) {
-            nameMap.put(vo.getItemCode(), vo.getItemName());
-        }
-        dictNameCache.put(dictCode, nameMap);
+        evict(DICT_KEY_PREFIX + dictCode);
+        getDictItems(dictCode);
     }
-    
+
     /**
-     * 获取字典项列表
+     * 获取字典项列表（Redis 缓存，空集合也缓存防穿透）
      */
     public List<DictItemVO> getDictItems(String dictCode) {
-        List<DictItemVO> result = dictCache.get(dictCode);
-        if (result == null) {
-            refreshDictCache(dictCode);
-            result = dictCache.get(dictCode);
+        String key = DICT_KEY_PREFIX + dictCode;
+        String cached = redisGet(key);
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, new TypeReference<List<DictItemVO>>() {});
+            } catch (Exception e) {
+                log.warn("[字典系统] 缓存反序列化失败，回源数据库: key={}", key);
+            }
         }
-        return result != null ? result : Collections.emptyList();
+        List<DictItemVO> items = loadDictItems(dictCode);
+        redisSet(key, items);
+        return items != null ? items : Collections.emptyList();
     }
-    
+
     /**
      * 获取字典项名称
      */
     public String getDictItemName(String dictCode, String itemCode) {
-        Map<String, String> nameMap = dictNameCache.get(dictCode);
-        if (nameMap == null) {
-            refreshDictCache(dictCode);
-            nameMap = dictNameCache.get(dictCode);
-        }
-        if (nameMap != null) {
-            return nameMap.getOrDefault(itemCode, itemCode);
-        }
-        return itemCode;
+        return getDictItems(dictCode).stream()
+                .filter(item -> Objects.equals(item.getItemCode(), itemCode))
+                .map(DictItemVO::getItemName)
+                .findFirst()
+                .orElse(itemCode);
     }
-    
+
     /**
      * 批量获取多个字典
      */
@@ -125,14 +102,14 @@ public class SysDictService {
         }
         return result;
     }
-    
+
     /**
      * 获取所有字典类型
      */
     public List<SysDictType> getAllDictTypes() {
         return dictTypeMapper.selectList(new QueryWrapper<SysDictType>().orderByAsc("id"));
     }
-    
+
     /**
      * 创建字典类型
      */
@@ -142,7 +119,7 @@ public class SysDictService {
         dictTypeMapper.insert(dictType);
         return dictType;
     }
-    
+
     /**
      * 更新字典类型
      */
@@ -152,7 +129,7 @@ public class SysDictService {
         refreshDictCache(dictType.getDictCode());
         return dictType;
     }
-    
+
     /**
      * 删除字典类型
      */
@@ -161,11 +138,10 @@ public class SysDictService {
         if (type != null) {
             dictItemMapper.delete(new QueryWrapper<SysDictItem>().eq("dict_code", type.getDictCode()));
             dictTypeMapper.deleteById(id);
-            dictCache.remove(type.getDictCode());
-            dictNameCache.remove(type.getDictCode());
+            evict(DICT_KEY_PREFIX + type.getDictCode());
         }
     }
-    
+
     /**
      * 创建字典项
      */
@@ -176,7 +152,7 @@ public class SysDictService {
         refreshDictCache(dictItem.getDictCode());
         return dictItem;
     }
-    
+
     /**
      * 更新字典项
      */
@@ -186,7 +162,7 @@ public class SysDictService {
         refreshDictCache(dictItem.getDictCode());
         return dictItem;
     }
-    
+
     /**
      * 删除字典项
      */
@@ -197,7 +173,61 @@ public class SysDictService {
             refreshDictCache(item.getDictCode());
         }
     }
-    
+
+    /**
+     * Redis 读取（fail-open：异常时返回 null，走回源）
+     */
+    private String redisGet(String key) {
+        try {
+            return redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.warn("[字典系统] Redis 读取失败，回源数据库: key={}, 原因: {}", key, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Redis 写入（fail-open：异常仅记录日志）
+     */
+    private void redisSet(String key, List<DictItemVO> items) {
+        try {
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(items), CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("[字典系统] Redis 写入失败: key={}, 原因: {}", key, e.getMessage());
+        }
+    }
+
+    /**
+     * 缓存失效（fail-open：异常仅记录日志）
+     */
+    private void evict(String key) {
+        try {
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.warn("[字典系统] Redis 删除失败: key={}, 原因: {}", key, e.getMessage());
+        }
+    }
+
+    /**
+     * 从数据库加载字典项并转换为 VO（回源逻辑）
+     */
+    private List<DictItemVO> loadDictItems(String dictCode) {
+        List<SysDictItem> items = dictItemMapper.selectList(
+                new QueryWrapper<SysDictItem>()
+                        .eq("dict_code", dictCode)
+                        .eq("status", 1)
+                        .orderByAsc("sort"));
+        return items.stream().map(item -> {
+            DictItemVO vo = new DictItemVO();
+            vo.setItemCode(item.getItemCode());
+            vo.setItemName(item.getItemName());
+            vo.setItemValue(item.getItemValue());
+            vo.setSort(item.getSort());
+            vo.setRemark(item.getRemark());
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
     /**
      * 字典项VO
      */
@@ -207,7 +237,7 @@ public class SysDictService {
         private String itemValue;
         private Integer sort;
         private String remark;
-        
+
         public String getItemCode() { return itemCode; }
         public void setItemCode(String itemCode) { this.itemCode = itemCode; }
         public String getItemName() { return itemName; }

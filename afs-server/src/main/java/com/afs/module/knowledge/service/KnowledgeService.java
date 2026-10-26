@@ -13,6 +13,7 @@ import com.afs.module.knowledge.mapper.KnowledgeTagMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagRelationMapper;
 import com.afs.module.knowledge.mapper.KnowledgeVersionMapper;
 import com.afs.module.knowledge.vo.BatchUploadResultVO;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.rag.search.RagSearchService;
 import com.afs.util.DocumentParser;
@@ -52,6 +53,8 @@ public class KnowledgeService {
 
     private final RagIngestionService ragIngestionService;
 
+    private final RagIngestionDispatcher ragIngestionDispatcher;
+
     private final RagSearchService ragSearchService;
 
     public List<Knowledge> getAllKnowledge() {
@@ -81,15 +84,10 @@ public class KnowledgeService {
             knowledge.setStatus(KnowledgeStatus.ACTIVE.getCode());
         }
         knowledgeMapper.insert(knowledge);
-        
-        // 如果内容不为空且状态为 ACTIVE，同步到向量库
+
+        // 发布状态且内容非空时派发异步入库任务（独立线程池异步执行）
         if (KnowledgeStatus.ACTIVE.getCode().equals(knowledge.getStatus()) && knowledge.getContent() != null && !knowledge.getContent().isEmpty()) {
-            ragIngestionService.addKnowledgeDocument(
-                    knowledge.getId(),
-                    knowledge.getTitle(),
-                    knowledge.getCategory(),
-                    knowledge.getContent()
-            );
+            ragIngestionDispatcher.dispatchKnowledgeUpsert(knowledge.getId());
         }
         return knowledge;
     }
@@ -115,18 +113,8 @@ public class KnowledgeService {
         
         knowledgeMapper.updateById(existing);
 
-        // 删除旧的向量文档，重新添加
-        ragIngestionService.deleteKnowledgeDocument(id);
-        
-        if (KnowledgeStatus.ACTIVE.getCode().equals(existing.getStatus())
-                && existing.getContent() != null && !existing.getContent().isEmpty()) {
-            ragIngestionService.addKnowledgeDocument(
-                    existing.getId(),
-                    existing.getTitle(),
-                    existing.getCategory(),
-                    existing.getContent()
-            );
-        }
+        // 派发异步入库任务：消费者回读最新内容，先删后建；非发布/空内容由消费者清除索引
+        ragIngestionDispatcher.dispatchKnowledgeUpsert(id);
         return existing;
     }
 
@@ -334,7 +322,7 @@ public class KnowledgeService {
         for (Knowledge k : allKnowledge) {
             if (KnowledgeStatus.ACTIVE.getCode().equals(k.getStatus())
                     && k.getContent() != null && !k.getContent().isEmpty()) {
-                ragIngestionService.addKnowledgeDocument(k.getId(), k.getTitle(), k.getCategory(), k.getContent());
+                ragIngestionDispatcher.dispatchKnowledgeUpsert(k.getId());
             }
         }
     }
@@ -574,12 +562,8 @@ public class KnowledgeService {
             knowledge.setTitle(version.getTitle());
             knowledge.setContent(version.getContent());
             knowledgeMapper.updateById(knowledge);
-            if (KnowledgeStatus.ACTIVE.getCode().equals(knowledge.getStatus())) {
-                syncToVectorStore(knowledge.getId(), knowledge.getTitle(),
-                        knowledge.getCategory(), knowledge.getContent());
-            } else {
-                ragIngestionService.deleteKnowledgeDocument(knowledge.getId());
-            }
+            // 派发异步入库任务：发布状态重建索引，非发布状态由消费者清除索引
+            ragIngestionDispatcher.dispatchKnowledgeUpsert(knowledge.getId());
         }
         return version;
     }
@@ -681,9 +665,12 @@ public class KnowledgeService {
                 knowledge.setStatus(KnowledgeStatus.ACTIVE.getCode());
                 knowledgeMapper.updateById(knowledge);
 
-                // 同步向量库（失败不影响审核）
-                syncToVectorStore(audit.getKnowledgeId(), audit.getTitle(),
-                        audit.getCategory(), audit.getContent());
+                // 派发异步入库任务（线程池异步重建索引）；派发失败不影响审核结果
+                try {
+                    ragIngestionDispatcher.dispatchKnowledgeUpsert(audit.getKnowledgeId());
+                } catch (Exception e) {
+                    log.error("派发向量入库任务失败 [{}]: {}", audit.getKnowledgeId(), e.getMessage());
+                }
             } else {
                 // 新增知识（审核通过后创建正式记录）
                 Knowledge knowledge = new Knowledge();
@@ -699,9 +686,12 @@ public class KnowledgeService {
                 audit.setKnowledgeId(knowledge.getId());
                 auditMapper.updateById(audit);
 
-                // 同步向量库
-                syncToVectorStore(knowledge.getId(), knowledge.getTitle(),
-                        knowledge.getCategory(), knowledge.getContent());
+                // 派发异步入库任务（线程池异步构建索引）；派发失败不影响审核结果
+                try {
+                    ragIngestionDispatcher.dispatchKnowledgeUpsert(knowledge.getId());
+                } catch (Exception e) {
+                    log.error("派发向量入库任务失败 [{}]: {}", knowledge.getId(), e.getMessage());
+                }
             }
         }
         return audit;
@@ -743,29 +733,5 @@ public class KnowledgeService {
         return audit;
     }
 
-    /**
-     * 同步知识到向量库
-     *
-     * <p>先删除旧的向量记录，再添加新的向量记录。
-     * 该操作采用静默失败策略，向量同步失败不影响主业务流程。
-     *
-     * @param knowledgeId 知识ID
-     * @param title 知识标题
-     * @param category 知识分类
-     * @param content 知识内容
-     */
-    private void syncToVectorStore(Long knowledgeId, String title, String category, String content) {
-        try {
-            // 先删除旧的向量记录
-            ragIngestionService.deleteKnowledgeDocument(knowledgeId);
-
-            // 添加新的向量记录（内容不为空时）
-            if (content != null && !content.isEmpty()) {
-                ragIngestionService.addKnowledgeDocument(knowledgeId, title, category, content);
-            }
-        } catch (Exception e) {
-            // 向量同步失败仅记录日志，不影响主流程
-            log.error("同步向量库失败 [{}]: {}", knowledgeId, e.getMessage());
-        }
-    }
+    // 向量入库走线程池异步链路：见 RagIngestionDispatcher / RagIngestionProcessor / RagIngestionRecovery
 }

@@ -27,6 +27,22 @@ services:
     networks:
       - afs-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: afs-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - afs-network
+
   afs-server:
     build:
       context: ./afs-server
@@ -36,15 +52,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?stringtype=unspecified
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen3.8-max-0902}
       JWT_SECRET: ${JWT_SECRET:-afs-jwt-secret-please-change-in-production-0123456789}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # 生产环境输出 JSON 结构化日志（接入 ELK/Loki 采集）
+      SPRING_PROFILES_ACTIVE: json-log
       # 生产环境默认关闭 API 文档
       SPRINGDOC_API_DOCS_ENABLED: ${SPRINGDOC_API_DOCS_ENABLED:-false}
       SPRINGDOC_SWAGGER_UI_ENABLED: ${SPRINGDOC_SWAGGER_UI_ENABLED:-false}
@@ -87,6 +110,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

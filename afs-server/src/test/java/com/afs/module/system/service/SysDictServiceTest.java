@@ -4,12 +4,17 @@ import com.afs.module.system.entity.SysDictItem;
 import com.afs.module.system.entity.SysDictType;
 import com.afs.module.system.mapper.SysDictItemMapper;
 import com.afs.module.system.mapper.SysDictTypeMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,8 +25,8 @@ import static org.mockito.Mockito.*;
 /**
  * SysDictService 单元测试
  *
- * 覆盖字典内存缓存的加载/刷新/失效、字典项查询与名称映射回退，
- * 以及字典类型/字典项的增删改对缓存的联动刷新。
+ * 覆盖字典 Redis 缓存（内存 Map 模拟有状态 Redis：写后可读、删后未命中）的加载/刷新/失效、
+ * 字典项查询与名称映射回退，以及字典类型/字典项的增删改对缓存的联动刷新。
  */
 @ExtendWith(MockitoExtension.class)
 class SysDictServiceTest {
@@ -32,8 +37,33 @@ class SysDictServiceTest {
     @Mock
     private SysDictItemMapper dictItemMapper;
 
-    @InjectMocks
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
     private SysDictService dictService;
+
+    // 内存 Map 模拟 Redis 存储，保证"写后能读、删后未命中"的真实缓存语义
+    private final Map<String, String> redisStore = new HashMap<>();
+
+    @BeforeEach
+    void setUp() {
+        redisStore.clear();
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(valueOperations.get(anyString()))
+                .thenAnswer(inv -> redisStore.get(inv.getArgument(0)));
+        lenient().doAnswer(inv -> {
+            redisStore.put(inv.getArgument(0), inv.getArgument(1));
+            return null;
+        }).when(valueOperations).set(anyString(), anyString(), any(Duration.class));
+        lenient().doAnswer(inv -> {
+            redisStore.remove(inv.getArgument(0));
+            return null;
+        }).when(redisTemplate).delete(anyString());
+        dictService = new SysDictService(dictTypeMapper, dictItemMapper, redisTemplate, new ObjectMapper());
+    }
 
     // 刷新全部缓存：仅为启用状态的类型加载字典项
     @Test

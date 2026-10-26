@@ -9,6 +9,7 @@ import com.afs.module.knowledge.mapper.KnowledgeMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagMapper;
 import com.afs.module.knowledge.mapper.KnowledgeTagRelationMapper;
 import com.afs.module.knowledge.mapper.KnowledgeVersionMapper;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.rag.search.RagSearchService;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -37,9 +37,9 @@ import static org.mockito.Mockito.when;
  * KnowledgeService 版本控制与审核流程单元测试
  *
  * 版本控制覆盖：保存版本、版本历史查询、回滚（版本不存在返回 null、
- * ACTIVE 知识回滚后重同步向量、非 ACTIVE 回滚后仅删向量）。
+ * ACTIVE/非 ACTIVE 知识回滚后均派发 MQ 入库任务，由消费者决定重建或清除索引）。
  * 审核流程覆盖：提交审核（新增/修改/知识不存在三分支）、待审核列表、
- * 审核通过（记录不存在、关联已有知识、新增知识三分支）、
+ * 审核通过（记录不存在、关联已有知识、新增知识、派发失败静默四分枝）、
  * 审核拒绝（记录不存在、知识置 REJECTED、知识缺失三分支）。
  */
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +57,8 @@ class KnowledgeServiceVersionAuditTest {
     private KnowledgeAuditMapper auditMapper;
     @Mock
     private RagIngestionService ragIngestionService;
+    @Mock
+    private RagIngestionDispatcher ragIngestionDispatcher;
     @Mock
     private RagSearchService ragSearchService;
 
@@ -97,10 +99,10 @@ class KnowledgeServiceVersionAuditTest {
         when(versionMapper.selectById(9L)).thenReturn(null);
 
         assertNull(knowledgeService.rollbackToVersion(9L));
-        verifyNoInteractions(knowledgeMapper, ragIngestionService);
+        verifyNoInteractions(knowledgeMapper, ragIngestionService, ragIngestionDispatcher);
     }
 
-    // 回滚：ACTIVE 知识先存当前版本再恢复目标内容，并重同步向量库
+    // 回滚：ACTIVE 知识先存当前版本再恢复目标内容，并派发入库任务重建索引
     @Test
     void rollbackToVersion_activeKnowledge_savesHistoryAndResyncs() {
         KnowledgeVersion target = new KnowledgeVersion();
@@ -127,14 +129,13 @@ class KnowledgeServiceVersionAuditTest {
         verify(knowledgeMapper).updateById(captor.capture());
         assertEquals("旧标题", captor.getValue().getTitle());
         assertEquals("旧内容", captor.getValue().getContent());
-        // ACTIVE 状态重同步向量库（先删后加）
-        verify(ragIngestionService).deleteKnowledgeDocument(1L);
-        verify(ragIngestionService).addKnowledgeDocument(1L, "旧标题", "分类", "旧内容");
+        // ACTIVE 状态派发 MQ 入库任务（先删后建由消费者完成）
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(1L);
     }
 
-    // 回滚：非 ACTIVE 知识恢复内容后仅删除向量记录
+    // 回滚：非 ACTIVE 知识恢复内容后同样派发任务，索引清除由消费者负责
     @Test
-    void rollbackToVersion_nonActiveKnowledge_deletesVectorOnly() {
+    void rollbackToVersion_nonActiveKnowledge_dispatchesUpsert() {
         KnowledgeVersion target = new KnowledgeVersion();
         target.setKnowledgeId(1L);
         target.setTitle("旧标题");
@@ -148,7 +149,8 @@ class KnowledgeServiceVersionAuditTest {
 
         knowledgeService.rollbackToVersion(100L);
 
-        verify(ragIngestionService).deleteKnowledgeDocument(1L);
+        // 非 ACTIVE 状态同样派发任务，索引清除由消费者负责
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(1L);
         verify(ragIngestionService, never()).addKnowledgeDocument(any(), any(), any(), any());
     }
 
@@ -217,7 +219,7 @@ class KnowledgeServiceVersionAuditTest {
         ArgumentCaptor<KnowledgeAudit> captor = ArgumentCaptor.forClass(KnowledgeAudit.class);
         verify(auditMapper).insert(captor.capture());
         assertEquals(3L, captor.getValue().getKnowledgeId());
-        verifyNoInteractions(ragIngestionService);
+        verifyNoInteractions(ragIngestionService, ragIngestionDispatcher);
     }
 
     // 查询待审核列表透传 mapper 结果
@@ -236,7 +238,7 @@ class KnowledgeServiceVersionAuditTest {
 
         assertNull(knowledgeService.approveAudit(9L, 1L, "同意"));
         verify(auditMapper, never()).updateById(any(KnowledgeAudit.class));
-        verifyNoInteractions(knowledgeMapper, ragIngestionService);
+        verifyNoInteractions(knowledgeMapper, ragIngestionService, ragIngestionDispatcher);
     }
 
     // 审核通过（关联已有知识）：审核记录置 approved，知识更新为 ACTIVE 并同步向量库
@@ -263,9 +265,8 @@ class KnowledgeServiceVersionAuditTest {
         verify(knowledgeMapper).updateById(captor.capture());
         assertEquals(5L, captor.getValue().getId());
         assertEquals(KnowledgeStatus.ACTIVE.getCode(), captor.getValue().getStatus());
-        // 向量库先删后加
-        verify(ragIngestionService).deleteKnowledgeDocument(5L);
-        verify(ragIngestionService).addKnowledgeDocument(5L, "标题", "分类", "内容");
+        // 派发 MQ 入库任务（先删后建由消费者完成）
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(5L);
     }
 
     // 审核通过（新增知识场景）：创建正式知识记录并回填审核记录的 knowledgeId
@@ -286,19 +287,19 @@ class KnowledgeServiceVersionAuditTest {
         // 审核记录更新两次：一次置状态，一次回填 knowledgeId
         verify(auditMapper, times(2)).updateById(audit);
         verify(knowledgeMapper, never()).updateById(any(Knowledge.class));
-        // 向量库同步（id 由数据库生成，mock 下为 null）
-        verify(ragIngestionService).addKnowledgeDocument(isNull(), eq("标题"), eq("分类"), eq("内容"));
+        // 派发 MQ 入库任务（id 由数据库生成，mock 下为 null）
+        verify(ragIngestionDispatcher).dispatchKnowledgeUpsert(isNull());
     }
 
-    // 审核通过：向量同步失败不影响审核结果（静默失败策略）
+    // 审核通过：入库任务派发失败不影响审核结果（静默失败策略）
     @Test
     void approveAudit_vectorSyncFails_stillReturnsApproved() {
         KnowledgeAudit audit = new KnowledgeAudit();
         audit.setKnowledgeId(5L);
         audit.setContent("内容");
         when(auditMapper.selectById(1L)).thenReturn(audit);
-        org.mockito.Mockito.doThrow(new RuntimeException("向量库不可用"))
-                .when(ragIngestionService).deleteKnowledgeDocument(5L);
+        org.mockito.Mockito.doThrow(new RuntimeException("MQ 不可用"))
+                .when(ragIngestionDispatcher).dispatchKnowledgeUpsert(5L);
 
         KnowledgeAudit result = knowledgeService.approveAudit(1L, 8L, "同意");
 

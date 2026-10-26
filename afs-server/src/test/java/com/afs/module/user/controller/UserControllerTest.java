@@ -1,6 +1,7 @@
 package com.afs.module.user.controller;
 
 import com.afs.security.JwtUtil;
+import com.afs.security.TokenBlacklistService;
 import com.afs.exception.BusinessException;
 import com.afs.exception.GlobalExceptionHandler;
 import com.afs.module.user.entity.User;
@@ -53,6 +54,9 @@ class UserControllerTest {
     @Mock
     private JwtUtil jwtUtil;
 
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -64,7 +68,7 @@ class UserControllerTest {
         jsonConverter.setDefaultCharset(StandardCharsets.UTF_8);
         // 注册全局异常处理器，使业务异常映射为对应的 HTTP 状态码
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new UserController(userService, jwtUtil))
+                .standaloneSetup(new UserController(userService, jwtUtil, tokenBlacklistService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(jsonConverter)
                 .build();
@@ -147,6 +151,30 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("用户名或密码错误"));
+    }
+
+    /** 登出成功：吊销当前 Bearer 令牌，黑名单 TTL 取令牌剩余有效期 */
+    @Test
+    void logout_revokesBearerToken() throws Exception {
+        when(jwtUtil.getRemainingSeconds("token-abc")).thenReturn(3600L);
+
+        mockMvc.perform(post("/api/user/logout")
+                        .header("Authorization", "Bearer token-abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("已退出登录"));
+
+        verify(tokenBlacklistService).revoke("token-abc", 3600L);
+    }
+
+    /** 登出成功：未携带令牌时不触发吊销，仍返回成功（幂等） */
+    @Test
+    void logout_withoutTokenStillSucceeds() throws Exception {
+        mockMvc.perform(post("/api/user/logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(tokenBlacklistService, org.mockito.Mockito.never()).revoke(any(), org.mockito.Mockito.anyLong());
     }
 
     /** 查询用户详情：用户存在时返回 200 与用户信息 */

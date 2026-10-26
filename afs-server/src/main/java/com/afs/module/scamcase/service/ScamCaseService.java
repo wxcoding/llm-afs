@@ -1,6 +1,7 @@
 package com.afs.module.scamcase.service;
 
 import com.afs.exception.BusinessException;
+import com.afs.module.rag.ingestion.RagIngestionDispatcher;
 import com.afs.module.rag.ingestion.RagIngestionService;
 import com.afs.module.scamcase.entity.ScamCase;
 import com.afs.module.scamcase.mapper.ScamCaseMapper;
@@ -24,6 +25,8 @@ public class ScamCaseService {
 
     private final RagIngestionService ragIngestionService;
 
+    private final RagIngestionDispatcher ragIngestionDispatcher;
+
     public List<ScamCase> getAllCases() {
         return scamCaseMapper.selectList(new QueryWrapper<ScamCase>().orderByDesc("create_time"));
     }
@@ -43,13 +46,7 @@ public class ScamCaseService {
         scamCaseMapper.insert(scamCase);
         
         if (scamCase.getContent() != null && !scamCase.getContent().isEmpty()) {
-            ragIngestionService.addScamCaseDocument(
-                    scamCase.getId(),
-                    scamCase.getTitle(),
-                    scamCase.getType(),
-                    scamCase.getContent(),
-                    scamCase.getTips() != null ? scamCase.getTips() : ""
-            );
+            ragIngestionDispatcher.dispatchScamCaseUpsert(scamCase.getId());
         }
         return scamCase;
     }
@@ -67,17 +64,8 @@ public class ScamCaseService {
         
         scamCaseMapper.updateById(existing);
 
-        ragIngestionService.deleteScamCaseDocument(id);
-        
-        if (existing.getContent() != null && !existing.getContent().isEmpty()) {
-            ragIngestionService.addScamCaseDocument(
-                    existing.getId(),
-                    existing.getTitle(),
-                    existing.getType(),
-                    existing.getContent(),
-                    existing.getTips() != null ? existing.getTips() : ""
-            );
-        }
+        // 派发异步入库任务：消费者回读最新内容，先删后建；空内容由消费者清除索引
+        ragIngestionDispatcher.dispatchScamCaseUpsert(id);
         return existing;
     }
 
@@ -152,13 +140,7 @@ public class ScamCaseService {
 
         for (ScamCase c : allCases) {
             if (c.getContent() != null && !c.getContent().isEmpty()) {
-                ragIngestionService.addScamCaseDocument(
-                        c.getId(),
-                        c.getTitle(),
-                        c.getType(),
-                        c.getContent(),
-                        c.getTips() != null ? c.getTips() : ""
-                );
+                ragIngestionDispatcher.dispatchScamCaseUpsert(c.getId());
             }
         }
     }

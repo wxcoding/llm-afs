@@ -4,6 +4,7 @@ import com.afs.common.constant.Roles;
 import com.afs.exception.BusinessException;
 import com.afs.module.user.entity.User;
 import com.afs.module.user.mapper.UserMapper;
+import com.afs.security.LoginRateLimiter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final LoginRateLimiter loginRateLimiter;
 
     /**
      * 用户注册
@@ -64,13 +66,27 @@ public class UserService {
      * 用户登录
      *
      * 历史明文密码登录成功后自动升级为 BCrypt 加密存储。
+     * 连续失败达到阈值会被临时锁定（见 {@link LoginRateLimiter}），成功登录清零计数。
      *
      * @param username 用户名
      * @param password 密码
      * @return 登录成功的用户对象
-     * @throws RuntimeException 用户名或密码错误时抛出异常
+     * @throws BusinessException 用户名或密码错误（401）、锁定中（429）
      */
     public User login(String username, String password) {
+        loginRateLimiter.checkLocked(username);
+        try {
+            User user = doLogin(username, password);
+            loginRateLimiter.onSuccess(username);
+            return user;
+        } catch (BusinessException e) {
+            loginRateLimiter.onFailure(username);
+            throw e;
+        }
+    }
+
+    /** 执行用户名密码校验，失败抛出 401 业务异常 */
+    private User doLogin(String username, String password) {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("username", username);
 

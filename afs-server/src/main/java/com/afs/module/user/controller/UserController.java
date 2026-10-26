@@ -1,6 +1,7 @@
 package com.afs.module.user.controller;
 
 import com.afs.security.JwtUtil;
+import com.afs.security.TokenBlacklistService;
 import com.afs.common.annotation.RequireRole;
 import com.afs.common.Result;
 import com.afs.module.user.dto.LoginDTO;
@@ -14,6 +15,7 @@ import com.afs.module.user.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +31,7 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
@@ -42,6 +45,18 @@ public class UserController {
     public Result<LoginVO> login(@Valid @RequestBody LoginDTO request) {
         User user = userService.login(request.getUsername(), request.getPassword());
         return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId(), user.getRole()), user));
+    }
+
+    @Operation(summary = "用户登出（吊销当前令牌）")
+    @PostMapping("/logout")
+    public Result<Void> logout(HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            // 黑名单 TTL 与令牌剩余有效期一致，令牌自然过期后自动清除
+            tokenBlacklistService.revoke(token, jwtUtil.getRemainingSeconds(token));
+        }
+        return Result.success("已退出登录");
     }
 
     @Operation(summary = "获取用户详情")
