@@ -4,6 +4,10 @@ export const login = (data) => {
   return request.post('/user/login', data)
 }
 
+export const logout = () => {
+  return request.post('/user/logout')
+}
+
 export const register = (data) => {
   return request.post('/user/register', data)
 }

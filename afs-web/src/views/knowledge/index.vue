@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getAllKnowledge,
@@ -141,6 +141,22 @@ const loadKnowledge = async () => {
   }
   if (res.success) {
     knowledgeList.value = res.data || []
+    scheduleVectorStatusPolling()
+  }
+}
+
+// 向量化状态轮询：列表中存在待处理/处理中的记录时，每 3 秒静默刷新，直至全部完成
+let pollTimer = null
+const scheduleVectorStatusPolling = () => {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+  const hasInProgress = knowledgeList.value.some(
+    k => k.vectorStatus === 'PENDING' || k.vectorStatus === 'PROCESSING'
+  )
+  if (hasInProgress) {
+    pollTimer = setTimeout(loadKnowledge, 3000)
   }
 }
 
@@ -315,6 +331,13 @@ const getStatusText = (status) => {
 onMounted(() => {
   initDicts()
   loadKnowledge()
+})
+
+onBeforeUnmount(() => {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
 })
 </script>
 

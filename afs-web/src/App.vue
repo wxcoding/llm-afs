@@ -133,6 +133,7 @@ import {
   ArrowDown
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { logout as logoutApi } from '@/api/user'
 import ShieldIcon from '@/components/common/ShieldIcon.vue'
 
 const router = useRouter()
@@ -161,7 +162,13 @@ const handleCommand = (command) => {
   }
 }
 
-const logout = () => {
+const logout = async () => {
+  try {
+    // 通知后端吊销当前令牌（Redis 黑名单），失败也不阻塞本地登出
+    await logoutApi()
+  } catch (e) {
+    // 忽略：网络异常或令牌已过期时仍需清理本地登录态
+  }
   userStore.clearUser()
   router.push('/login')
 }
