@@ -82,58 +82,39 @@ flowchart TB
 ### RAG 检索流程
 
 ```mermaid
-flowchart TB
-    Q(["用户问题"]) --> Extend{"开启查询扩展?"}
-    Extend -- 是 --> Syn["同义词扩展<br/>口语化改写"]
+flowchart LR
+    Q(["用户问题"]) --> Extend{"查询扩展?"}
+    Extend -- 是 --> Syn["同义词 + 口语化改写"]
     Extend -- 否 --> Raw["原始查询"]
-
-    Syn --> FT["全文召回 Top-20"]
-    Raw --> Vec["向量召回 Top-20"]
-    FT --> RRF["RRF 融合 K=60"]
+    Syn --> FT["全文 Top-20"]
+    Raw --> Vec["向量 Top-20"]
+    FT --> RRF(("RRF 融合 K=60"))
     Vec --> RRF
-
-    RRF --> RerankQ{"开启 ReRank?"}
+    RRF --> RerankQ{"ReRank?"}
     RerankQ -- 是 --> RerankN["ReRank Top-20"]
-    RerankQ -- 否 --> TopN["截取 Top-N"]
+    RerankQ -- 否 --> TopN["Top-N"]
     RerankN --> TopN
-
     TopN --> Ctx["拼装上下文"]
-    Ctx --> Prompt["注入 Prompt + 最近 10 条历史"]
-    Prompt --> Gen["LLM 流式生成"]
+    Ctx --> Prompt["Prompt + 历史"]
+    Prompt --> Gen["LLM 流式"]
     Gen --> Out(["SSE 输出"])
-
-    style RRF fill:#e8f5e9,stroke:#4caf50
-    style RerankN fill:#fff3e0,stroke:#ff9800
 ```
 
 多级降级：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案。
 
 ### 对话流程
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as 前端
-    participant C as ChatController
-    participant S as ChatService
-    participant R as RagSearchService
-    participant DB as PostgreSQL
-    participant AI as DashScope
-
-    U->>C: POST /api/chat/send (Bearer JWT)
-    C->>S: sendMessageStream(userId, sessionId, content)
-    Note over S: Flux.defer + boundedElastic
-    S->>DB: 读/建会话，写入用户消息
-    S->>R: searchWithMetadata(content, 5)
-    R-->>S: 检索结果 sources
-    S-->>U: SSE: sessionId / sources
-    S->>AI: messages + RAG context (stream)
-    loop 每个增量
-        AI-->>S: chunk
-        S-->>U: SSE: content
-    end
-    S->>DB: 保存助手消息（含 sources）
+```text
+1. 前端 POST /api/chat/send（Bearer JWT）→ ChatController
+2. ChatService.sendMessageStream（Flux.defer + boundedElastic，不阻塞请求线程）
+3. 读/建会话，写入用户消息（PostgreSQL）
+4. RagSearchService.searchWithMetadata 检索 → 返回 sources
+5. SSE 推送 sessionId / sources
+6. 调用 DashScope Chat（stream），循环推送增量 content
+7. 保存助手消息（含 sources）
 ```
+
+SSE 与 MVC 异步超时均为 120 秒；会话和消息按 `userId` 校验归属。
 
 ## 项目结构
 
