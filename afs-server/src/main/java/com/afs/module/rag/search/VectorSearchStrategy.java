@@ -21,14 +21,24 @@ import java.util.Map;
  * - 优点：语义理解能力强
  * - 缺点：对关键词变化敏感，召回率可能较低
  * 
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Slf4j
 @Component("vectorSearchStrategy")
 public class VectorSearchStrategy implements SearchStrategy {
 
+    /** 向量库，执行语义相似度检索 */
     private final VectorStore vectorStore;
 
+    /**
+     * 执行纯向量相似度检索，按相似度阈值 0.5 过滤明显不相关的结果。
+     *
+     * @param query   用户查询词，不能为空
+     * @param filters 过滤条件（可选）
+     * @param topK    返回结果数量，必须大于 0
+     * @return 相关文档列表
+     */
     @Override
     public List<Document> search(String query, Map<String, Object> filters, int topK) {
         if (query == null || query.isBlank()) {
@@ -55,6 +65,11 @@ public class VectorSearchStrategy implements SearchStrategy {
         return vectorStore.similaritySearch(builder.build());
     }
 
+    /**
+     * 返回策略名称。
+     *
+     * @return 策略名称 "vector"
+     */
     @Override
     public String getName() {
         return "vector";

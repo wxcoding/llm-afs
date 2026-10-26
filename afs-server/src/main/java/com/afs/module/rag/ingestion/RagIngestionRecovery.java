@@ -18,15 +18,23 @@ import java.util.List;
  * 入库任务在线程池的内存队列中排队，服务重启/发布会丢失未执行的任务
  * （业务记录已落库，但向量化没完成）。启动时扫描仍处于
  * PENDING / PROCESSING 状态的知识记录并重新派发，保证"重启不丢任务"。
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class RagIngestionRecovery implements ApplicationRunner {
 
+    /** 知识库记录 Mapper */
     private final KnowledgeMapper knowledgeMapper;
+    /** 入库任务派发器，用于重新派发中断的入库任务 */
     private final RagIngestionDispatcher ragIngestionDispatcher;
 
+    /**
+     * 应用启动后扫描处于 PENDING / PROCESSING 状态的知识记录并重新派发入库。
+     *
+     * @param args 应用启动参数
+     */
     @Override
     public void run(ApplicationArguments args) {
         List<Knowledge> interrupted = knowledgeMapper.selectList(new QueryWrapper<Knowledge>()

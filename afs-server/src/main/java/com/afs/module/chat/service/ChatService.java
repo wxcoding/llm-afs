@@ -30,22 +30,30 @@ import java.util.*;
  *
  * 负责处理对话管理、消息发送、历史记录查询等核心业务逻辑，
  * 集成RAG技术实现基于知识库的智能问答
+ *
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class ChatService {
 
+    /** 聊天会话数据访问接口 */
     private final ChatSessionMapper sessionMapper;
 
+    /** 聊天消息数据访问接口 */
     private final ChatMessageMapper messageMapper;
 
+    /** AI 对话客户端 */
     private final ChatClient chatClient;
 
+    /** RAG 检索服务 */
     private final RagSearchService ragSearchService;
 
+    /** RAG 上下文构建器 */
     private final RagContextBuilder ragContextBuilder;
 
+    /** JSON 序列化工具 */
     private final ObjectMapper objectMapper;
 
     /**
@@ -64,6 +72,14 @@ public class ChatService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * 准备会话与上下文并发起 AI 流式对话
+     *
+     * @param userId    用户ID
+     * @param sessionId 会话ID（为null时自动新建会话）
+     * @param content   用户输入内容
+     * @return SSE 事件流（头部事件 + AI 内容增量事件）
+     */
     private Flux<ServerSentEvent<String>> prepareAndChat(Long userId, Long sessionId, String content) {
         // 创建或获取会话
         if (sessionId == null) {
@@ -193,6 +209,13 @@ public class ChatService {
         return Flux.fromIterable(events);
     }
 
+    /**
+     * 将 AI 回复消息保存到数据库
+     *
+     * @param sessionId 会话ID
+     * @param content   AI 回复内容（为空时不保存）
+     * @param sources   RAG 检索来源，序列化为 JSON 后随消息入库，可为null
+     */
     private void saveAssistantMessage(Long sessionId, String content, List<Map<String, Object>> sources) {
         if (content == null || content.isEmpty()) {
             return;
@@ -206,10 +229,23 @@ public class ChatService {
         messageMapper.insert(assistantMsg);
     }
 
+    /**
+     * 将负载字符串包装为 SSE 事件对象
+     *
+     * @param payload 事件负载内容
+     * @return SSE 事件对象
+     */
     private ServerSentEvent<String> sse(String payload) {
         return ServerSentEvent.builder(payload).build();
     }
 
+    /**
+     * 将对象序列化为 JSON 字符串
+     *
+     * @param value 待序列化的对象
+     * @return JSON 字符串
+     * @throws IllegalStateException 序列化失败时抛出
+     */
     private String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
@@ -250,6 +286,12 @@ public class ChatService {
         return messages;
     }
 
+    /**
+     * 根据用户最后一条消息生成降级回复文案
+     *
+     * @param lastUserMsg 用户最后一条消息内容
+     * @return 匹配的防诈骗提示文案
+     */
     private String getMockResponse(String lastUserMsg) {
         String lowerMsg = lastUserMsg.toLowerCase();
 
@@ -290,6 +332,12 @@ public class ChatService {
         }
     }
 
+    /**
+     * 查询指定用户的所有会话列表
+     *
+     * @param userId 用户ID
+     * @return 会话列表，按创建时间倒序排列
+     */
     public List<ChatSession> getUserSessions(Long userId) {
         return sessionMapper.selectList(
                 new QueryWrapper<ChatSession>()
@@ -298,6 +346,13 @@ public class ChatService {
         );
     }
 
+    /**
+     * 查询指定会话的全部消息记录（校验会话归属）
+     *
+     * @param sessionId 会话ID
+     * @param userId    用户ID，用于校验会话归属
+     * @return 消息列表，按创建时间升序排列
+     */
     public List<ChatMessage> getSessionMessages(Long sessionId, Long userId) {
         requireOwnedSession(sessionId, userId);
         return messageMapper.selectList(
@@ -307,6 +362,12 @@ public class ChatService {
         );
     }
 
+    /**
+     * 删除指定会话及其全部消息（校验会话归属）
+     *
+     * @param sessionId 会话ID
+     * @param userId    用户ID，用于校验会话归属
+     */
     public void deleteSession(Long sessionId, Long userId) {
         requireOwnedSession(sessionId, userId);
         messageMapper.delete(new QueryWrapper<ChatMessage>().eq("session_id", sessionId));
@@ -327,6 +388,13 @@ public class ChatService {
         return session;
     }
 
+    /**
+     * 重命名指定会话的标题（校验会话归属，标题最长50字符）
+     *
+     * @param sessionId 会话ID
+     * @param userId    用户ID，用于校验会话归属
+     * @param title     新的会话标题
+     */
     public void renameSession(Long sessionId, Long userId, String title) {
         ChatSession session = requireOwnedSession(sessionId, userId);
         String trimmed = title == null ? "" : title.trim();

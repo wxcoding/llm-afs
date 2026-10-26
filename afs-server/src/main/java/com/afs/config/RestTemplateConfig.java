@@ -7,6 +7,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
+/**
+ * RestTemplate 配置类
+ *
+ * 提供带超时控制的 RestTemplate Bean，用于调用外部 HTTP API（如 ReRank 服务）。
+ *
+ * @author guanwx
+ */
 @Configuration
 public class RestTemplateConfig {
 

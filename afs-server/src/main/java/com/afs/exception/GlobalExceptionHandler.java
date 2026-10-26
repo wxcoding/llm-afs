@@ -23,6 +23,8 @@ import java.util.Map;
  * 全局异常处理器
  *
  * 统一处理应用中抛出的各种异常，返回统一的错误响应格式。
+ *
+ * @author guanwx
  */
 @Slf4j
 @RestControllerAdvice

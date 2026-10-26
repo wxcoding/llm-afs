@@ -10,13 +10,16 @@ import java.util.Map;
 
 /**
  * 根据配置解析当前可用的检索策略。
+ * @author guanwx
  */
 @Slf4j
 @Component
 public class SearchStrategyResolver {
 
+    /** 已注册的可用检索策略（策略名 → 策略实例） */
     private final Map<String, SearchStrategy> strategyMap;
 
+    /** 是否启用混合检索 */
     @Value("${spring.ai.vectorstore.hybrid-search.enabled:false}")
     private boolean hybridSearchEnabled;
 
@@ -65,21 +68,10 @@ public class SearchStrategyResolver {
 
     /**
      * 获取所有可用策略
-     * 
+     *
      * @return 可用策略列表
      */
     public List<String> getAvailableStrategies() {
         return strategyMap.keySet().stream().toList();
-    }
-
-    /**
-     * 判断是否支持指定策略
-     * 
-     * @param name 策略名称
-     * @return true 如果支持
-     */
-    public boolean isStrategySupported(String name) {
-        SearchStrategy strategy = strategyMap.get(name);
-        return strategy != null;
     }
 }

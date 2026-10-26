@@ -20,12 +20,16 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Web MVC 配置类
  *
  * 配置 CORS、登录鉴权拦截器、异步任务线程池等。
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    /** 登录鉴权拦截器 */
     private final AuthInterceptor authInterceptor;
+    /** 角色校验拦截器 */
     private final RoleInterceptor roleInterceptor;
 
     /**
@@ -35,6 +39,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}")
     private String allowedOrigins;
 
+    /**
+     * 配置跨域规则：允许指定来源的常用 HTTP 方法与凭证
+     *
+     * @param registry CORS 注册器
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -68,6 +77,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(publicPaths);
     }
 
+    /**
+     * 配置静态资源映射，暴露 Swagger UI 与 API 文档路径
+     *
+     * @param registry 资源处理器注册器
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/swagger-ui/**")
@@ -86,6 +100,11 @@ public class WebConfig implements WebMvcConfigurer {
         configurer.setDefaultTimeout(120_000L);
     }
 
+    /**
+     * 创建 MVC 异步任务线程池
+     *
+     * @return 异步任务执行器，队列满时由调用方线程执行
+     */
     @Bean(name = "asyncTaskExecutor")
     public AsyncTaskExecutor asyncTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

@@ -17,13 +17,21 @@ import java.util.List;
  * 配置 Swagger 文档信息，访问地址：
  * - Swagger UI: http://localhost:8080/swagger-ui.html
  * - API Docs: http://localhost:8080/v3/api-docs
+ *
+ * @author guanwx
  */
 @Configuration
 public class OpenApiConfig {
 
+    /** 服务端口 */
     @Value("${server.port:8080}")
     private int serverPort;
 
+    /**
+     * 自定义 OpenAPI 文档信息
+     *
+     * @return OpenAPI 配置对象，包含标题、描述、联系方式、许可证与服务器列表
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()

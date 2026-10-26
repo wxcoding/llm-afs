@@ -23,16 +23,32 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 用户管理控制器
+ *
+ * 提供用户注册、登录、登出、个人信息管理以及管理员用户管理接口。
+ *
+ * @author guanwx
+ */
 @Tag(name = "用户管理", description = "用户注册、登录、个人信息管理、管理员用户管理等接口")
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
 
+    /** 用户服务 */
     private final UserService userService;
+    /** JWT 工具类，用于生成与解析令牌 */
     private final JwtUtil jwtUtil;
+    /** 令牌黑名单服务，用于登出吊销令牌 */
     private final TokenBlacklistService tokenBlacklistService;
 
+    /**
+     * 用户注册
+     *
+     * @param request 注册请求（用户名、密码）
+     * @return 注册成功的用户信息
+     */
     @Operation(summary = "用户注册")
     @PostMapping("/register")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO request) {
@@ -40,6 +56,12 @@ public class UserController {
         return Result.success("注册成功", UserVO.from(user));
     }
 
+    /**
+     * 用户登录
+     *
+     * @param request 登录请求（用户名、密码）
+     * @return 登录令牌与用户信息
+     */
     @Operation(summary = "用户登录")
     @PostMapping("/login")
     public Result<LoginVO> login(@Valid @RequestBody LoginDTO request) {
@@ -47,6 +69,12 @@ public class UserController {
         return Result.success("登录成功", LoginVO.from(jwtUtil.generateToken(user.getId(), user.getRole()), user));
     }
 
+    /**
+     * 用户登出（吊销当前令牌）
+     *
+     * @param request HTTP 请求，从 Authorization 头解析令牌
+     * @return 操作结果
+     */
     @Operation(summary = "用户登出（吊销当前令牌）")
     @PostMapping("/logout")
     public Result<Void> logout(HttpServletRequest request) {
@@ -59,6 +87,12 @@ public class UserController {
         return Result.success("已退出登录");
     }
 
+    /**
+     * 获取用户详情
+     *
+     * @param id 用户 ID
+     * @return 用户信息
+     */
     @Operation(summary = "获取用户详情")
     @GetMapping("/{id}")
     public Result<UserVO> getUser(
@@ -70,6 +104,12 @@ public class UserController {
         return Result.success(UserVO.from(user));
     }
 
+    /**
+     * 更新当前用户信息
+     *
+     * @param request 个人资料更新请求（字段可选）
+     * @return 更新后的用户信息
+     */
     @Operation(summary = "更新当前用户信息")
     @PutMapping("/update")
     public Result<UserVO> updateUser(@RequestBody UserProfileUpdateDTO request) {
@@ -93,6 +133,11 @@ public class UserController {
         return Result.success("更新成功", UserVO.from(updatedUser));
     }
 
+    /**
+     * 获取所有用户列表（管理员接口）
+     *
+     * @return 用户列表
+     */
     @Operation(summary = "获取所有用户列表（管理员接口）")
     @RequireRole
     @GetMapping("/list")
@@ -103,6 +148,12 @@ public class UserController {
         return Result.success(userList);
     }
 
+    /**
+     * 创建用户（管理员接口）
+     *
+     * @param request 用户创建请求
+     * @return 创建成功的用户信息
+     */
     @Operation(summary = "创建用户（管理员接口）")
     @RequireRole
     @PostMapping("/create")
@@ -119,6 +170,13 @@ public class UserController {
         return Result.success("创建成功", UserVO.from(createdUser));
     }
 
+    /**
+     * 管理员更新用户信息
+     *
+     * @param id 用户 ID
+     * @param request 用户更新请求
+     * @return 更新后的用户信息
+     */
     @Operation(summary = "管理员更新用户信息")
     @RequireRole
     @PutMapping("/admin/update/{id}")
@@ -136,6 +194,12 @@ public class UserController {
         return Result.success("更新成功", UserVO.from(updatedUser));
     }
 
+    /**
+     * 删除用户（管理员接口）
+     *
+     * @param id 用户 ID
+     * @return 操作结果
+     */
     @Operation(summary = "删除用户（管理员接口）")
     @RequireRole
     @DeleteMapping("/delete/{id}")

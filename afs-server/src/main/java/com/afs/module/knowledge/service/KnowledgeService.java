@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,38 +34,65 @@ import java.util.stream.Collectors;
  *
  * 负责知识库的增删改查、文档上传、向量同步等核心业务逻辑，
  * 以及标签管理、版本控制、审核流程等增强功能
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Slf4j
 @Service
 public class KnowledgeService {
 
+    /** 知识库条目 Mapper */
     private final KnowledgeMapper knowledgeMapper;
 
+    /** 知识库标签 Mapper */
     private final KnowledgeTagMapper tagMapper;
 
+    /** 知识库与标签关联关系 Mapper */
     private final KnowledgeTagRelationMapper tagRelationMapper;
 
+    /** 知识库版本记录 Mapper */
     private final KnowledgeVersionMapper versionMapper;
 
+    /** 知识库审核记录 Mapper */
     private final KnowledgeAuditMapper auditMapper;
 
+    /** RAG 向量入库服务 */
     private final RagIngestionService ragIngestionService;
 
+    /** RAG 入库任务派发器 */
     private final RagIngestionDispatcher ragIngestionDispatcher;
 
+    /** RAG 语义检索服务 */
     private final RagSearchService ragSearchService;
 
+    /**
+     * 获取所有知识库文档
+     *
+     * @return 知识库列表，按创建时间倒序排列
+     */
     public List<Knowledge> getAllKnowledge() {
         return knowledgeMapper.selectList(new QueryWrapper<Knowledge>().orderByDesc("create_time"));
     }
 
+    /**
+     * 按分类获取知识库文档
+     *
+     * @param category 分类名称
+     * @return 该分类下的知识库列表，按创建时间倒序排列
+     */
     public List<Knowledge> getKnowledgeByCategory(String category) {
         return knowledgeMapper.selectList(
                 new QueryWrapper<Knowledge>().eq("category", category).orderByDesc("create_time")
         );
     }
 
+    /**
+     * 根据 ID 获取知识库文档
+     *
+     * @param id 知识库ID
+     * @return 知识库对象，不存在时返回 null
+     */
     public Knowledge getKnowledgeById(Long id) {
         return knowledgeMapper.selectById(id);
     }
@@ -129,6 +155,12 @@ public class KnowledgeService {
         knowledgeMapper.deleteById(id);
     }
 
+    /**
+     * 按关键词搜索知识库文档，匹配标题、内容或分类
+     *
+     * @param keyword 搜索关键词
+     * @return 匹配的知识库列表，按创建时间倒序排列
+     */
     public List<Knowledge> searchKnowledge(String keyword) {
         return knowledgeMapper.selectList(
                 new QueryWrapper<Knowledge>()
@@ -141,10 +173,20 @@ public class KnowledgeService {
         );
     }
 
+    /**
+     * 语义搜索，基于向量相似度检索知识库
+     *
+     * @param query 搜索查询
+     * @param topK 返回结果数量
+     * @return 带元数据的搜索结果列表
+     */
     public List<Map<String, Object>> semanticSearch(String query, int topK) {
         return ragSearchService.searchWithMetadata(query, topK);
     }
 
+    /**
+     * 初始化默认知识库，知识库为空时写入内置的反诈知识条目
+     */
     public void initDefaultKnowledge() {
         if (knowledgeMapper.selectCount(new QueryWrapper<Knowledge>()) == 0) {
             Knowledge k1 = new Knowledge();
@@ -314,6 +356,9 @@ public class KnowledgeService {
         }
     }
 
+    /**
+     * 同步向量库，清空知识索引后将所有已发布知识重新派发到向量库
+     */
     public void syncAllToVectorStore() {
         List<Knowledge> allKnowledge = knowledgeMapper.selectList(new QueryWrapper<>());
 
@@ -327,8 +372,18 @@ public class KnowledgeService {
         }
     }
 
+    /** 上传文件大小上限（10MB） */
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    /**
+     * 上传文档，解析文件内容并创建知识库条目
+     *
+     * @param file 上传的文件，支持 PDF、Word、Markdown、Excel、TXT 等格式，最大 10MB
+     * @param category 文档分类，为空时自动推断
+     * @param title 文档标题，为空时从文件名提取
+     * @return 创建成功的知识库对象
+     * @throws BusinessException 文件为空、格式不支持、超限或解析失败时抛出
+     */
     public Knowledge uploadDocument(MultipartFile file, String category, String title) {
         if (file.isEmpty()) {
             throw BusinessException.badRequest("请选择要上传的文件");
@@ -387,6 +442,14 @@ public class KnowledgeService {
         return addKnowledge(knowledge);
     }
 
+    /**
+     * 批量上传文档，逐个解析并创建知识库条目
+     *
+     * @param files 上传的文件列表
+     * @param category 文档分类，为空时自动推断
+     * @return 批量上传结果，包含成功数、失败数及失败原因
+     * @throws BusinessException 文件列表为空时抛出
+     */
     public BatchUploadResultVO uploadDocumentsBatch(MultipartFile[] files, String category) {
         if (files == null || files.length == 0) {
             throw BusinessException.badRequest("请选择要上传的文件");

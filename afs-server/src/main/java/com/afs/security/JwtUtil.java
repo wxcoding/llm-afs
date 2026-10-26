@@ -15,13 +15,23 @@ import java.util.Date;
  * JWT 令牌工具
  *
  * 负责登录令牌的签发与解析，令牌载荷仅包含用户 ID 与过期时间。
+ *
+ * @author guanwx
  */
 @Component
 public class JwtUtil {
 
+    /** HMAC 签名密钥 */
     private final SecretKey secretKey;
+    /** 令牌有效期（小时） */
     private final long expireHours;
 
+    /**
+     * 构造 JWT 工具
+     *
+     * @param secret      HMAC 签名密钥
+     * @param expireHours 令牌有效期（小时）
+     */
     public JwtUtil(@Value("${jwt.secret:afs-jwt-secret-please-change-in-production-0123456789}") String secret,
                    @Value("${jwt.expire-hours:72}") long expireHours) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -75,6 +85,12 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * 解析令牌载荷
+     *
+     * @param token JWT 字符串
+     * @return 令牌 Claims
+     */
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)

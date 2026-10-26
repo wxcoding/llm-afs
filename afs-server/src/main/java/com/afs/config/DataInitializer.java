@@ -8,10 +8,26 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 数据初始化配置
+ *
+ * 应用启动后初始化默认系统配置、诈骗案例与知识库数据，
+ * 并同步到向量库；向量库同步失败仅记录警告，不影响应用启动。
+ *
+ * @author guanwx
+ */
 @Slf4j
 @Configuration
 public class DataInitializer {
 
+    /**
+     * 启动时初始化默认数据并同步向量库
+     *
+     * @param scamCaseService 诈骗案例服务
+     * @param knowledgeService 知识库服务
+     * @param systemConfigService 系统配置服务
+     * @return 初始化执行器
+     */
     @Bean
     public CommandLineRunner initData(ScamCaseService scamCaseService, KnowledgeService knowledgeService,
                                       SystemConfigService systemConfigService) {

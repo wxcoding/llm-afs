@@ -9,12 +9,16 @@ import java.util.Set;
 
 /**
  * 统一校验并构造 RAG 检索使用的元数据过滤条件。
+ * @author guanwx
  */
 public final class RagSearchFilters {
 
     /** 支持的过滤字段白名单；caseType 是复合条件，会展开为 type=scamcase + category=值 */
     private static final Set<String> SUPPORTED_FILTERS = Set.of("type", "dbId", "category", "caseType");
 
+    /**
+     * 工具类，禁止实例化。
+     */
     private RagSearchFilters() {
     }
 

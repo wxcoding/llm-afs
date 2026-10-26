@@ -7,6 +7,7 @@ import java.util.Map;
 
 /**
  * 将检索来源转换为可注入提示词的上下文文本。
+ * @author guanwx
  */
 @Component
 public class RagContextBuilder {

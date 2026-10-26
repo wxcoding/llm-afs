@@ -18,6 +18,8 @@ import java.util.HexFormat;
  * 登出时将令牌的 SHA-256 摘要写入黑名单，TTL 与令牌剩余有效期一致，
  * 拦截器命中黑名单即视为未登录。Redis 不可用时降级放行（fail-open）
  * 并记录告警，避免缓存故障拖垮全部受保护接口。
+ *
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class TokenBlacklistService {
     /** Redis key 前缀，value 恒为 "1"，存在即代表已吊销 */
     private static final String KEY_PREFIX = "token:blacklist:";
 
+    /** Redis 字符串模板，用于黑名单键的读写 */
     private final StringRedisTemplate redisTemplate;
 
     /**

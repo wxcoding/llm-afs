@@ -221,28 +221,6 @@ class RagIngestionServiceTest {
         verify(jdbcTemplate).update("DELETE FROM rag_chunk WHERE source_type = 'scamcase'");
     }
 
-    // 全量重建前的清理：直接 TRUNCATE 两张表，不走向量删除接口
-    @Test
-    void clearAllIndexesTruncatesBothTablesWithoutVectorDelete() {
-        service.clearAllIndexes();
-
-        verify(jdbcTemplate).update("TRUNCATE vector_store");
-        verify(jdbcTemplate).update("TRUNCATE rag_chunk");
-        verify(vectorStore, never()).delete(any(Filter.Expression.class));
-        verify(vectorStore, never()).add(anyList());
-    }
-
-    // 按类型删除：向量与全文索引使用同一来源类型
-    @Test
-    void deleteByTypeDeletesGivenSourceType() {
-        service.deleteByType("knowledge");
-
-        ArgumentCaptor<Filter.Expression> filterCaptor = ArgumentCaptor.forClass(Filter.Expression.class);
-        verify(vectorStore).delete(filterCaptor.capture());
-        assertEqExpression(filterCaptor.getValue(), "type", "knowledge");
-        verify(jdbcTemplate).update("DELETE FROM rag_chunk WHERE source_type = ?", "knowledge");
-    }
-
     // 生成足够长且不可压缩的中文文本，确保超过 TokenTextSplitter 的默认块大小
     private static String longVariedContent() {
         String chars = "的一是不了在人有我他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对";

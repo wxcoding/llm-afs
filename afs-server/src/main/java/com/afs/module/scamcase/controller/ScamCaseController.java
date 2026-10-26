@@ -12,6 +12,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 诈骗案例管理控制器
+ *
+ * 提供诈骗案例的增删改查接口，支持按类型筛选；写操作仅管理员可用
+ *
+ * @author guanwx
+ */
 @Tag(name = "诈骗案例管理", description = "诈骗案例的增删改查，支持按类型筛选")
 @RequiredArgsConstructor
 @RestController
@@ -19,8 +26,15 @@ import java.util.List;
 @CrossOrigin
 public class ScamCaseController {
 
+    /** 诈骗案例服务 */
     private final ScamCaseService scamCaseService;
 
+    /**
+     * 获取案例列表，可按案例类型筛选
+     *
+     * @param type 案例类型（可选），为空时返回全部案例
+     * @return 案例列表
+     */
     @Operation(summary = "获取案例列表", description = "支持按案例类型筛选，如'电信诈骗'、'网络诈骗'等")
     @GetMapping
     public Result<List<ScamCase>> getCases(
@@ -34,6 +48,12 @@ public class ScamCaseController {
         return Result.success(cases);
     }
 
+    /**
+     * 根据 ID 获取案例详情
+     *
+     * @param id 案例 ID
+     * @return 案例详情
+     */
     @Operation(summary = "获取案例详情")
     @GetMapping("/{id}")
     public Result<ScamCase> getCaseById(
@@ -41,6 +61,12 @@ public class ScamCaseController {
         return Result.success(scamCaseService.getCaseById(id));
     }
 
+    /**
+     * 添加诈骗案例
+     *
+     * @param scamCase 案例信息
+     * @return 新增的案例
+     */
     @Operation(summary = "添加诈骗案例")
     @RequireRole
     @PostMapping
@@ -48,6 +74,13 @@ public class ScamCaseController {
         return Result.success("添加成功", scamCaseService.addCase(scamCase));
     }
 
+    /**
+     * 更新诈骗案例
+     *
+     * @param id       案例 ID
+     * @param scamCase 更新的案例信息
+     * @return 更新后的案例
+     */
     @Operation(summary = "更新诈骗案例")
     @RequireRole
     @PutMapping("/{id}")
@@ -57,6 +90,12 @@ public class ScamCaseController {
         return Result.success("更新成功", scamCaseService.updateCase(id, scamCase));
     }
 
+    /**
+     * 删除诈骗案例
+     *
+     * @param id 案例 ID
+     * @return 操作结果
+     */
     @Operation(summary = "删除诈骗案例")
     @RequireRole
     @DeleteMapping("/{id}")

@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
  *
  * 配置 Spring AI 的 ChatClient，包括系统提示词（System Prompt）。
  * 系统提示词定义了 AI 助手的角色定位和行为准则。
+ *
+ * @author guanwx
  */
 @Configuration
 public class AiConfig {

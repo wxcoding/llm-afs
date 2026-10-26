@@ -13,12 +13,15 @@ import java.util.Map;
 
 /**
  * 字典管理接口
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/sys/dict")
 public class SysDictController {
 
+    /** 字典服务 */
     private final SysDictService dictService;
 
     // ========================================

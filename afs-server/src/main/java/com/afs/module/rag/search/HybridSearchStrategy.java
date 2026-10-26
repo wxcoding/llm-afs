@@ -23,17 +23,28 @@ import java.util.Map;
  * 2. 向量检索：根据语义相似度计算相关性分数
  * 3. RRF 融合：将两种检索结果按排名融合
  * 
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component("hybridSearchStrategy")
 public class HybridSearchStrategy implements SearchStrategy {
 
+    /** PostgreSQL 混合检索服务，融合全文与向量两路召回 */
     private final PostgresHybridSearchService hybridSearchService;
 
+    /** 是否启用混合检索 */
     @Value("${spring.ai.vectorstore.hybrid-search.enabled:false}")
     private boolean hybridSearchEnabled;
 
+    /**
+     * 执行混合检索：委托给 PostgreSQL 混合检索服务，融合全文与向量两路召回。
+     *
+     * @param query   用户查询词
+     * @param filters 过滤条件（可选）
+     * @param topK    返回结果数量
+     * @return 相关文档列表
+     */
     @Override
     public List<Document> search(String query, Map<String, Object> filters, int topK) {
         log.debug("使用混合检索策略，查询词: {}, topK: {}", query, topK);
@@ -49,6 +60,11 @@ public class HybridSearchStrategy implements SearchStrategy {
         return results;
     }
 
+    /**
+     * 返回策略名称。
+     *
+     * @return 策略名称 "hybrid"
+     */
     @Override
     public String getName() {
         return "hybrid";

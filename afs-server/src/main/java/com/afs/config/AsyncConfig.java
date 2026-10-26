@@ -18,6 +18,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 通过专用线程池异步执行，避免阻塞管理端 HTTP 请求。
  * 队列满时回退调用方线程执行（CallerRunsPolicy），形成背压。
  * void 异步方法的异常统一由 uncaughtExceptionHandler 记录，避免静默丢失。
+ *
+ * @author guanwx
  */
 @Slf4j
 @EnableAsync

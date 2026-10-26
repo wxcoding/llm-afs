@@ -21,6 +21,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 知识库管理控制器
+ *
+ * 提供知识库的增删改查、文档上传、向量同步、标签管理、版本控制、审核流程等 REST 接口
+ *
+ * @author guanwx
+ */
 @Tag(name = "知识库管理", description = "知识库的增删改查、文档上传、向量同步、标签管理、版本控制、审核流程等接口")
 @RequiredArgsConstructor
 @RestController
@@ -28,12 +35,21 @@ import java.util.Map;
 @CrossOrigin
 public class KnowledgeController {
 
+    /** 知识库业务服务 */
     private final KnowledgeService knowledgeService;
 
+    /** 上传文件大小上限（10MB） */
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
     // ==================== 基础 CRUD ====================
 
+    /**
+     * 获取知识库列表，支持按分类或关键词筛选
+     *
+     * @param category 分类筛选
+     * @param keyword 关键词搜索
+     * @return 知识库列表
+     */
     @Operation(summary = "获取知识库列表", description = "支持按分类或关键词筛选")
     @GetMapping
     public Result<List<Knowledge>> getKnowledge(
@@ -50,6 +66,12 @@ public class KnowledgeController {
         return Result.success(list);
     }
 
+    /**
+     * 根据 ID 获取知识库
+     *
+     * @param id 知识库 ID
+     * @return 知识库详情
+     */
     @Operation(summary = "根据 ID 获取知识库")
     @GetMapping("/{id}")
     public Result<Knowledge> getKnowledgeById(
@@ -57,6 +79,12 @@ public class KnowledgeController {
         return Result.success(knowledgeService.getKnowledgeById(id));
     }
 
+    /**
+     * 添加知识库
+     *
+     * @param request 新增知识条目请求
+     * @return 创建成功的知识库对象
+     */
     @Operation(summary = "添加知识库")
     @RequireRole
     @PostMapping
@@ -68,6 +96,13 @@ public class KnowledgeController {
         return Result.success("添加成功", knowledgeService.addKnowledge(knowledge));
     }
 
+    /**
+     * 更新知识库
+     *
+     * @param id 知识库 ID
+     * @param request 更新知识条目请求
+     * @return 更新后的知识库对象
+     */
     @Operation(summary = "更新知识库")
     @RequireRole
     @PutMapping("/{id}")
@@ -81,6 +116,11 @@ public class KnowledgeController {
         return Result.success("更新成功", knowledgeService.updateKnowledge(id, knowledge));
     }
 
+    /**
+     * 删除知识库
+     *
+     * @param id 知识库 ID
+     */
     @Operation(summary = "删除知识库")
     @RequireRole
     @DeleteMapping("/{id}")
@@ -92,6 +132,13 @@ public class KnowledgeController {
 
     // ==================== 搜索与向量同步 ====================
 
+    /**
+     * 语义搜索，基于向量相似度检索
+     *
+     * @param query 搜索查询
+     * @param topK 返回结果数量
+     * @return 语义搜索结果列表
+     */
     @Operation(summary = "语义搜索", description = "基于向量相似度的语义搜索")
     @GetMapping("/search/semantic")
     public Result<List<Map<String, Object>>> semanticSearch(
@@ -100,6 +147,9 @@ public class KnowledgeController {
         return Result.success(knowledgeService.semanticSearch(query, topK));
     }
 
+    /**
+     * 同步向量库，将所有知识库和诈骗案例同步到向量库
+     */
     @Operation(summary = "同步向量库", description = "将所有知识库和诈骗案例同步到向量库")
     @RequireRole
     @PostMapping("/sync-vector")
@@ -110,6 +160,14 @@ public class KnowledgeController {
 
     // ==================== 文档上传 ====================
 
+    /**
+     * 上传文档，支持 PDF、Word、Markdown、Excel、TXT 等格式
+     *
+     * @param file 上传的文件
+     * @param category 文档分类
+     * @param title 文档标题
+     * @return 创建的知识库对象
+     */
     @Operation(summary = "上传文档", description = "支持 PDF、Word、Markdown、Excel、TXT 等格式")
     @RequireRole
     @PostMapping("/upload")
@@ -120,6 +178,13 @@ public class KnowledgeController {
         return Result.success("文档上传成功", knowledgeService.uploadDocument(file, category, title));
     }
 
+    /**
+     * 批量上传文档
+     *
+     * @param files 上传的文件列表
+     * @param category 文档分类
+     * @return 批量上传结果
+     */
     @Operation(summary = "批量上传文档")
     @RequireRole
     @PostMapping("/upload/batch")
@@ -138,6 +203,11 @@ public class KnowledgeController {
         return Result.success(message, batchResult);
     }
 
+    /**
+     * 获取支持的文件类型
+     *
+     * @return 支持的文件类型及大小限制
+     */
     @Operation(summary = "获取支持的文件类型")
     @GetMapping("/supported-types")
     public Result<Map<String, Object>> getSupportedTypes() {
@@ -160,6 +230,12 @@ public class KnowledgeController {
 
     // ==================== 标签管理 ====================
 
+    /**
+     * 创建知识库分类标签
+     *
+     * @param request 创建标签请求
+     * @return 创建成功的标签
+     */
     @Operation(summary = "创建标签", description = "创建知识库分类标签")
     @RequireRole
     @PostMapping("/tags")
@@ -168,12 +244,22 @@ public class KnowledgeController {
                 request.getName(), request.getColor(), request.getDescription()));
     }
 
+    /**
+     * 获取系统中所有知识库标签
+     *
+     * @return 标签列表
+     */
     @Operation(summary = "获取所有标签", description = "获取系统中所有知识库标签")
     @GetMapping("/tags")
     public Result<List<KnowledgeTag>> getAllTags() {
         return Result.success(knowledgeService.getAllTags());
     }
 
+    /**
+     * 删除指定标签，同时解除与知识库的关联
+     *
+     * @param tagId 标签 ID
+     */
     @Operation(summary = "删除标签", description = "删除指定标签，同时解除与知识库的关联")
     @RequireRole
     @DeleteMapping("/tags/{tagId}")
@@ -183,6 +269,12 @@ public class KnowledgeController {
         return Result.success();
     }
 
+    /**
+     * 为知识库添加标签，建立关联关系
+     *
+     * @param knowledgeId 知识库 ID
+     * @param tagId 标签 ID
+     */
     @Operation(summary = "为知识库添加标签", description = "建立知识库与标签的关联关系")
     @RequireRole
     @PostMapping("/tags/knowledge/{knowledgeId}")
@@ -193,6 +285,12 @@ public class KnowledgeController {
         return Result.success();
     }
 
+    /**
+     * 移除知识库标签，解除关联关系
+     *
+     * @param knowledgeId 知识库 ID
+     * @param tagId 标签 ID
+     */
     @Operation(summary = "移除知识库标签", description = "解除知识库与标签的关联关系")
     @RequireRole
     @DeleteMapping("/tags/knowledge/{knowledgeId}")
@@ -203,6 +301,12 @@ public class KnowledgeController {
         return Result.success();
     }
 
+    /**
+     * 获取指定知识库关联的所有标签
+     *
+     * @param knowledgeId 知识库 ID
+     * @return 标签列表
+     */
     @Operation(summary = "获取知识库标签", description = "获取指定知识库关联的所有标签")
     @GetMapping("/tags/knowledge/{knowledgeId}")
     public Result<List<KnowledgeTag>> getTagsForKnowledge(
@@ -212,6 +316,12 @@ public class KnowledgeController {
 
     // ==================== 版本控制 ====================
 
+    /**
+     * 获取知识库文档的所有版本记录
+     *
+     * @param knowledgeId 知识库 ID
+     * @return 版本记录列表
+     */
     @Operation(summary = "获取版本历史", description = "获取知识库文档的所有版本记录")
     @GetMapping("/versions/{knowledgeId}")
     public Result<List<KnowledgeVersion>> getVersionHistory(
@@ -219,6 +329,12 @@ public class KnowledgeController {
         return Result.success(knowledgeService.getVersionHistory(knowledgeId));
     }
 
+    /**
+     * 回滚到指定版本，将知识库文档恢复到该版本内容
+     *
+     * @param versionId 版本 ID
+     * @return 回滚到的版本
+     */
     @Operation(summary = "回滚到指定版本", description = "将知识库文档恢复到指定版本")
     @RequireRole
     @PostMapping("/versions/{versionId}/rollback")
@@ -229,6 +345,12 @@ public class KnowledgeController {
 
     // ==================== 审核流程 ====================
 
+    /**
+     * 提交审核，提交知识库内容变更申请进行审核
+     *
+     * @param request 提交审核请求
+     * @return 创建的审核记录
+     */
     @Operation(summary = "提交审核", description = "提交知识库内容变更申请进行审核")
     @PostMapping("/audit/submit")
     public Result<KnowledgeAudit> submitForAudit(@RequestBody AuditSubmitDTO request) {
@@ -240,6 +362,11 @@ public class KnowledgeController {
                 request.getSubmitUserId()));
     }
 
+    /**
+     * 获取待审核列表
+     *
+     * @return 待审核的知识库变更申请列表
+     */
     @Operation(summary = "获取待审核列表", description = "获取所有待审核的知识库变更申请")
     @RequireRole
     @GetMapping("/audit/pending")
@@ -247,6 +374,14 @@ public class KnowledgeController {
         return Result.success(knowledgeService.getPendingAudits());
     }
 
+    /**
+     * 审核通过，批准知识库变更申请
+     *
+     * @param auditId 审核 ID
+     * @param auditUserId 审核人 ID
+     * @param comment 审核意见
+     * @return 更新后的审核记录
+     */
     @Operation(summary = "审核通过", description = "批准知识库变更申请")
     @RequireRole
     @PostMapping("/audit/{auditId}/approve")
@@ -257,6 +392,14 @@ public class KnowledgeController {
         return Result.success(knowledgeService.approveAudit(auditId, auditUserId, comment));
     }
 
+    /**
+     * 审核拒绝，拒绝知识库变更申请
+     *
+     * @param auditId 审核 ID
+     * @param auditUserId 审核人 ID
+     * @param comment 拒绝理由
+     * @return 更新后的审核记录
+     */
     @Operation(summary = "审核拒绝", description = "拒绝知识库变更申请")
     @RequireRole
     @PostMapping("/audit/{auditId}/reject")

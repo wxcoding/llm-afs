@@ -4,10 +4,13 @@ import lombok.Data;
 
 /**
  * 发送聊天消息请求
+ *
+ * @author guanwx
  */
 @Data
 public class SendMessageDTO {
 
+    /** 用户 ID */
     private Long userId;
 
     /**
@@ -15,5 +18,6 @@ public class SendMessageDTO {
      */
     private Long sessionId;
 
+    /** 消息内容 */
     private String content;
 }

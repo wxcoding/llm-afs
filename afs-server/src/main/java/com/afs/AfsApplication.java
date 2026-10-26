@@ -17,6 +17,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - 知识库管理
  *
  * 技术栈：Spring Boot + MyBatis-Plus + PostgreSQL + Spring AI + pgvector
+ *
+ * @author guanwx
  */
 @SpringBootApplication
 @MapperScan("com.afs.module.**.mapper")

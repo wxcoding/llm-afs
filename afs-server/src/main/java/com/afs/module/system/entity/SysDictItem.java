@@ -9,11 +9,14 @@ import java.time.LocalDateTime;
 
 /**
  * 字典项实体
+ *
+ * @author guanwx
  */
 @Data
 @TableName("sys_dict_item")
 public class SysDictItem {
     
+    /** 主键 ID，自增 */
     @TableId(type = IdType.AUTO)
     private Long id;
     

@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * 1. Jina Reranker: https://jina.ai/reranker/ (免费 1 万 token)
  * 2. Cohere Rerank: https://cohere.com/rerank (免费 API)
  * 
+ * @author guanwx
  */
 @Slf4j
 @Service
@@ -104,6 +105,11 @@ public class RerankService {
      */
     private final RestTemplate restTemplate;
 
+    /**
+     * 创建 ReRank 服务并注入 HTTP 客户端。
+     *
+     * @param restTemplate 调用外部 ReRank API 使用的 RestTemplate
+     */
     public RerankService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }

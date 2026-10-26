@@ -22,13 +22,25 @@ import java.util.Arrays;
  * 在 AuthInterceptor 之后执行，读取 @RequireRole 注解（方法优先于类），
  * 将当前用户角色（AuthInterceptor 写入的请求属性）与允许角色比对，
  * 不匹配时返回 403。未标注 @RequireRole 的接口只需登录即可访问。
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Component
 public class RoleInterceptor implements HandlerInterceptor {
 
+    /** JSON 序列化器，用于输出 403 错误响应 */
     private final ObjectMapper objectMapper;
 
+    /**
+     * 请求前置处理：按 @RequireRole 注解校验当前用户角色，不匹配返回 403
+     *
+     * @param request  HTTP 请求
+     * @param response HTTP 响应
+     * @param handler  处理器
+     * @return true 放行；false 拦截并返回 403
+     * @throws Exception 处理过程中发生错误时抛出
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {

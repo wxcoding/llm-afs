@@ -12,6 +12,8 @@ import java.lang.annotation.Target;
  *
  * 标注在 Controller 方法或类上，要求当前登录用户具备指定角色之一，
  * 否则由 RoleInterceptor 返回 403。方法上的注解优先于类上的注解。
+ *
+ * @author guanwx
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

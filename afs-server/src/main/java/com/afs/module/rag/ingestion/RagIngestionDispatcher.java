@@ -16,15 +16,26 @@ import java.util.concurrent.Executor;
  * 统一提交到独立线程池异步执行，不占用 Tomcat 请求线程；
  * 队列满时由 CallerRunsPolicy 提供背压。
  * 派发时将知识记录置为 PENDING，由 RagIngestionProcessor 流转后续状态。
+ * @author guanwx
  */
 @Slf4j
 @Component
 public class RagIngestionDispatcher {
 
+    /** 入库任务处理器 */
     private final RagIngestionProcessor ragIngestionProcessor;
+    /** 知识库记录 Mapper */
     private final KnowledgeMapper knowledgeMapper;
+    /** RAG 入库专用线程池 */
     private final Executor ragIngestionExecutor;
 
+    /**
+     * 创建派发器并注入依赖。
+     *
+     * @param ragIngestionProcessor 入库任务处理器
+     * @param knowledgeMapper       知识库记录 Mapper
+     * @param ragIngestionExecutor  RAG 入库专用线程池
+     */
     public RagIngestionDispatcher(RagIngestionProcessor ragIngestionProcessor,
                                   KnowledgeMapper knowledgeMapper,
                                   @Qualifier("ragIngestionExecutor") Executor ragIngestionExecutor) {
@@ -48,6 +59,11 @@ public class RagIngestionDispatcher {
         ragIngestionExecutor.execute(() -> ragIngestionProcessor.processScamCase(caseId));
     }
 
+    /**
+     * 将知识记录的向量化状态置为 PENDING，标记等待入库。
+     *
+     * @param knowledgeId 知识库记录主键
+     */
     private void markPending(Long knowledgeId) {
         Knowledge update = new Knowledge();
         update.setId(knowledgeId);

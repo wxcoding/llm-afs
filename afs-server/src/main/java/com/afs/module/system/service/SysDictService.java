@@ -19,21 +19,29 @@ import java.util.stream.Collectors;
 
 /**
  * 字典服务（Redis 缓存热点读，Redis 故障时 fail-open 直连数据库）
+ *
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysDictService {
 
+    /** 字典缓存 Key 前缀 */
     private static final String DICT_KEY_PREFIX = "cache:dict:";
+    /** 缓存过期时间 */
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
+    /** 字典类型数据访问接口 */
     private final SysDictTypeMapper dictTypeMapper;
 
+    /** 字典项数据访问接口 */
     private final SysDictItemMapper dictItemMapper;
 
+    /** Redis 操作模板 */
     private final StringRedisTemplate redisTemplate;
 
+    /** JSON 序列化工具 */
     private final ObjectMapper objectMapper;
 
     /**
@@ -232,10 +240,15 @@ public class SysDictService {
      * 字典项VO
      */
     public static class DictItemVO {
+        /** 字典项编码 */
         private String itemCode;
+        /** 字典项名称 */
         private String itemName;
+        /** 字典项值 */
         private String itemValue;
+        /** 排序 */
         private Integer sort;
+        /** 备注 */
         private String remark;
 
         public String getItemCode() { return itemCode; }

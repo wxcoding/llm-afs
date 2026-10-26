@@ -10,10 +10,23 @@ import org.springframework.stereotype.Service;
  * 消息反馈服务类
  * 
  * 负责用户对AI回复消息的评分、反馈收集等业务逻辑
+ *
+ * @author guanwx
  */
 @Service
 public class MessageFeedbackService extends ServiceImpl<MessageFeedbackMapper, MessageFeedback> {
 
+    /**
+     * 保存用户对消息的反馈（同一用户同一消息已存在时执行更新）
+     *
+     * @param messageId       消息ID
+     * @param userId          用户ID
+     * @param rating          评分（1-5星）
+     * @param isHelpful       是否有帮助
+     * @param feedbackType    反馈类型
+     * @param feedbackContent 反馈内容
+     * @return 保存后的反馈记录
+     */
     public MessageFeedback saveFeedback(Long messageId, Long userId, Integer rating, Boolean isHelpful,
                                         String feedbackType, String feedbackContent) {
         QueryWrapper<MessageFeedback> wrapper = new QueryWrapper<>();

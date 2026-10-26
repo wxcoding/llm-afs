@@ -7,29 +7,45 @@ import java.time.LocalDateTime;
 
 /**
  * 用户信息视图对象（不含密码等敏感字段）
+ *
+ * @author guanwx
  */
 @Data
 public class UserVO {
 
+    /** 用户 ID */
     private Long id;
 
+    /** 用户名 */
     private String username;
 
+    /** 昵称 */
     private String nickname;
 
+    /** 头像路径 */
     private String avatar;
 
+    /** 手机号 */
     private String phone;
 
+    /** 邮箱 */
     private String email;
 
     /** 用户角色：user / admin */
     private String role;
 
+    /** 创建时间 */
     private LocalDateTime createTime;
 
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
+    /**
+     * 从用户实体构建视图对象
+     *
+     * @param user 用户实体
+     * @return 用户视图对象，user 为 null 时返回 null
+     */
     public static UserVO from(User user) {
         if (user == null) {
             return null;

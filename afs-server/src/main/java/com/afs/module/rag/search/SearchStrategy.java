@@ -14,6 +14,7 @@ import java.util.Map;
  * 2. 单一职责：每个策略只关注一种检索方式
  * 3. 解耦合：策略实现与调用方解耦
  *
+ * @author guanwx
  */
 public interface SearchStrategy {
     

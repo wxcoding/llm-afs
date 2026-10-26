@@ -9,12 +9,17 @@ import java.util.regex.Pattern;
 /**
  * PostgreSQL simple 配置全文检索使用的确定性分词器。
  * 连续中文按重叠二元词切分，其他字母和数字序列统一转成小写词项。
+ * @author guanwx
  */
 public final class FullTextTokenizer {
 
+    /** 词项匹配模式：连续汉字串，或字母与数字序列 */
     private static final Pattern TOKEN_PATTERN =
             Pattern.compile("\\p{IsHan}+|[\\p{L}\\p{N}]+");
 
+    /**
+     * 工具类，禁止实例化。
+     */
     private FullTextTokenizer() {
     }
 

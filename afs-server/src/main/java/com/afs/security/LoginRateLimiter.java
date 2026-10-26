@@ -16,6 +16,8 @@ import java.time.Duration;
  * 同一用户名连续登录失败达到阈值后锁定一段时间，锁定窗口内直接拒绝登录尝试，
  * 登录成功立即清零。失败计数键带 TTL，窗口到期自动解锁。
  * Redis 不可用时降级放行（fail-open）并记录告警。
+ *
+ * @author guanwx
  */
 @Slf4j
 @Service
@@ -24,10 +26,20 @@ public class LoginRateLimiter {
     /** Redis key 前缀，value 为窗口内失败次数 */
     private static final String KEY_PREFIX = "login:fail:";
 
+    /** Redis 字符串模板，用于失败计数的读写 */
     private final StringRedisTemplate redisTemplate;
+    /** 窗口内允许的最大失败次数 */
     private final int maxFailures;
+    /** 锁定时长（秒） */
     private final long lockSeconds;
 
+    /**
+     * 构造登录限流器
+     *
+     * @param redisTemplate Redis 字符串模板
+     * @param maxFailures   窗口内允许的最大失败次数
+     * @param lockSeconds   锁定时长（秒）
+     */
     public LoginRateLimiter(StringRedisTemplate redisTemplate,
                             @Value("${security.login.max-failures:5}") int maxFailures,
                             @Value("${security.login.lock-seconds:600}") long lockSeconds) {

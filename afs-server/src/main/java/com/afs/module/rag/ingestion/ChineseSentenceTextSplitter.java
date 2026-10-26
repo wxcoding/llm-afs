@@ -12,6 +12,7 @@ import java.util.List;
  * 1. 以中文句读（。！？；）等标点作为切分锚点，不会在句子中间硬切；
  * 2. 相邻块之间保留固定长度的重叠内容，缓解块边界的上下文丢失；
  * 3. 按字符数控制块长。中文场景下 1 字 ≈ 1 token（cl100k），与 token 计量近似等价。
+ * @author guanwx
  */
 public class ChineseSentenceTextSplitter extends TextSplitter {
 
@@ -27,10 +28,21 @@ public class ChineseSentenceTextSplitter extends TextSplitter {
     /** 低于该长度的碎块会被并入前一块，避免产生无意义的短向量 */
     private final int minChunkSize;
 
+    /**
+     * 使用默认参数创建切分器（块长 400 字、重叠 60 字、碎块阈值 20 字）。
+     */
     public ChineseSentenceTextSplitter() {
         this(400, 60, 20);
     }
 
+    /**
+     * 创建切分器并指定切分参数。
+     *
+     * @param maxChunkSize 单个块的最大字符数，必须大于 0
+     * @param overlap      相邻块之间重叠的字符数，必须满足 0 <= overlap < maxChunkSize
+     * @param minChunkSize 碎块阈值，低于该长度的块并入前一块，不能为负数
+     * @throws IllegalArgumentException 参数不满足约束时抛出
+     */
     public ChineseSentenceTextSplitter(int maxChunkSize, int overlap, int minChunkSize) {
         if (maxChunkSize <= 0) {
             throw new IllegalArgumentException("maxChunkSize 必须大于 0");
@@ -47,6 +59,12 @@ public class ChineseSentenceTextSplitter extends TextSplitter {
         this.minChunkSize = minChunkSize;
     }
 
+    /**
+     * 将文本按句子边界贪心切分为块，相邻块保留重叠内容。
+     *
+     * @param text 待切分文本，为空时返回空列表
+     * @return 切分后的文本块列表
+     */
     @Override
     public List<String> splitText(String text) {
         List<String> chunks = new ArrayList<>();
@@ -127,6 +145,12 @@ public class ChineseSentenceTextSplitter extends TextSplitter {
         return previousChunk.substring(Math.min(from, previousChunk.length()));
     }
 
+    /**
+     * 判断字符是否为句子结束符。
+     *
+     * @param c 待判断字符
+     * @return 是句子结束符时返回 true
+     */
     private boolean isSentenceEnding(char c) {
         return SENTENCE_ENDINGS.indexOf(c) >= 0;
     }

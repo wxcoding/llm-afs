@@ -6,7 +6,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,8 +89,6 @@ class SearchStrategyResolverTest {
         SearchStrategyResolver resolver = resolverWith(false, supportedStrategy("vector"), unsupported);
 
         assertEquals(List.of("vector"), resolver.getAvailableStrategies());
-        assertTrue(resolver.isStrategySupported("vector"));
-        assertFalse(resolver.isStrategySupported("hybrid"));
     }
 
     // 可用策略列表包含全部已注册策略名

@@ -18,20 +18,27 @@ import java.util.stream.Collectors;
 
 /**
  * 编排 RAG 召回与候选重排，并提供检索结果的应用级查询接口。
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Slf4j
 @Service
 public class RagSearchService {
 
+    /** 向量库，执行分类限定的相似度检索 */
     private final VectorStore vectorStore;
+    /** 检索策略解析器，选择当前可用的检索策略 */
     private final SearchStrategyResolver strategyResolver;
+    /** ReRank 重排序服务 */
     private final RerankService rerankService;
+    /** 向量库元数据过滤表达式构造器 */
     private final FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
 
+    /** 是否启用 ReRank 重排 */
     @Value("${spring.ai.rerank.enabled:false}")
     private boolean rerankEnabled;
 
+    /** 启用重排时扩大后的候选池大小 */
     @Value("${spring.ai.rerank.candidate-top-k:20}")
     private int rerankCandidateTopK;
 
@@ -97,22 +104,6 @@ public class RagSearchService {
                     return result;
                 })
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 在指定分类下做纯向量检索（仅知识库来源）。
-     */
-    public List<Document> searchByCategory(String query, String category, int topK) {
-        validateRequest(query, topK);
-        var filter = filterBuilder.and(
-                filterBuilder.eq("type", "knowledge"),
-                filterBuilder.eq("category", category)
-        ).build();
-        return vectorStore.similaritySearch(SearchRequest.builder()
-                .query(query)
-                .topK(topK)
-                .filterExpression(filter)
-                .build());
     }
 
     /**

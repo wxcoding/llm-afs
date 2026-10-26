@@ -28,6 +28,8 @@ import java.util.Set;
  * 文档解析工具类
  * 支持解析 PDF、Word、Markdown、Excel、Text 等常见文档格式
  * 用于从上传的文档中提取文本内容，存入向量数据库
+ *
+ * @author guanwx
  */
 public class DocumentParser {
 

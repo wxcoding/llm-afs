@@ -16,31 +16,59 @@ import java.util.List;
  * 诈骗案例服务类
  * 
  * 负责诈骗案例的增删改查、向量同步等业务逻辑
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Service
 public class ScamCaseService {
 
+    /** 诈骗案例数据访问接口 */
     private final ScamCaseMapper scamCaseMapper;
 
+    /** RAG 向量入库服务，用于案例向量索引的增删 */
     private final RagIngestionService ragIngestionService;
 
+    /** RAG 入库任务派发器，用于异步派发案例向量入库任务 */
     private final RagIngestionDispatcher ragIngestionDispatcher;
 
+    /**
+     * 获取所有案例（按创建时间倒序）
+     *
+     * @return 案例列表
+     */
     public List<ScamCase> getAllCases() {
         return scamCaseMapper.selectList(new QueryWrapper<ScamCase>().orderByDesc("create_time"));
     }
 
+    /**
+     * 按类型获取案例（按创建时间倒序）
+     *
+     * @param type 案例类型
+     * @return 该类型的案例列表
+     */
     public List<ScamCase> getCasesByType(String type) {
         return scamCaseMapper.selectList(
                 new QueryWrapper<ScamCase>().eq("type", type).orderByDesc("create_time")
         );
     }
 
+    /**
+     * 根据 ID 获取案例详情
+     *
+     * @param id 案例 ID
+     * @return 案例详情；不存在时返回 null
+     */
     public ScamCase getCaseById(Long id) {
         return scamCaseMapper.selectById(id);
     }
 
+    /**
+     * 新增案例：入库后若内容非空则派发异步向量入库任务
+     *
+     * @param scamCase 案例信息
+     * @return 入库后的案例（含生成的 ID）
+     */
     public ScamCase addCase(ScamCase scamCase) {
         scamCase.setCreateTime(LocalDateTime.now());
         scamCaseMapper.insert(scamCase);
@@ -51,6 +79,13 @@ public class ScamCaseService {
         return scamCase;
     }
 
+    /**
+     * 更新案例：更新数据库后派发异步向量入库任务
+     *
+     * @param id       案例 ID
+     * @param scamCase 更新的案例信息
+     * @return 更新后的案例
+     */
     public ScamCase updateCase(Long id, ScamCase scamCase) {
         ScamCase existing = scamCaseMapper.selectById(id);
         if (existing == null) {
@@ -69,11 +104,19 @@ public class ScamCaseService {
         return existing;
     }
 
+    /**
+     * 删除案例：先删除向量索引，再删除数据库记录
+     *
+     * @param id 案例 ID
+     */
     public void deleteCase(Long id) {
         ragIngestionService.deleteScamCaseDocument(id);
         scamCaseMapper.deleteById(id);
     }
 
+    /**
+     * 初始化默认诈骗案例：表为空时插入内置示例案例
+     */
     public void initDefaultCases() {
         if (scamCaseMapper.selectCount(new QueryWrapper<ScamCase>()) == 0) {
             ScamCase c1 = new ScamCase();
@@ -134,6 +177,9 @@ public class ScamCaseService {
         }
     }
 
+    /**
+     * 全量同步案例到向量库：清空索引后对所有非空内容案例重新入库
+     */
     public void syncAllToVectorStore() {
         List<ScamCase> allCases = scamCaseMapper.selectList(new QueryWrapper<>());
         ragIngestionService.clearScamCaseIndex();

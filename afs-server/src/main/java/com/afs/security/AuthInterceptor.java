@@ -18,20 +18,35 @@ import java.nio.charset.StandardCharsets;
  *
  * 校验请求头中的 Bearer Token，解析出用户 ID 写入请求属性，
  * 后续 Controller 通过 request.getAttribute("userId") 获取当前用户。
+ *
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
+    /** 当前登录用户 ID 在请求属性中的键 */
     public static final String USER_ID_ATTRIBUTE = "userId";
 
     /** 当前登录用户角色在请求属性中的键，由 RoleInterceptor 消费 */
     public static final String ROLE_ATTRIBUTE = "role";
 
+    /** JWT 工具，用于令牌解析 */
     private final JwtUtil jwtUtil;
+    /** 令牌黑名单服务，用于判断令牌是否已吊销 */
     private final TokenBlacklistService tokenBlacklistService;
+    /** JSON 序列化器，用于输出 401 错误响应 */
     private final ObjectMapper objectMapper;
 
+    /**
+     * 请求前置处理：校验 Bearer Token，合法时将用户 ID 与角色写入请求属性
+     *
+     * @param request  HTTP 请求
+     * @param response HTTP 响应
+     * @param handler  处理器
+     * @return true 放行；false 拦截并返回 401
+     * @throws Exception 处理过程中发生错误时抛出
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {

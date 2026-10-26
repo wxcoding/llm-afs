@@ -2,6 +2,8 @@ package com.afs.enums;
 
 /**
  * 知识状态枚举
+ *
+ * @author guanwx
  */
 public enum KnowledgeStatus {
 
@@ -35,6 +37,12 @@ public enum KnowledgeStatus {
      */
     private final String description;
 
+    /**
+     * 构造方法
+     *
+     * @param code 状态编码
+     * @param description 状态描述
+     */
     KnowledgeStatus(String code, String description) {
         this.code = code;
         this.description = description;

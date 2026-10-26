@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 /**
  * 组合 PostgreSQL 全文检索与向量检索，并使用 RRF 融合两路结果。
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -31,22 +32,30 @@ public class PostgresHybridSearchService {
 
     /** RRF 融合常数：数值越大，排名靠后的结果分数衰减越平缓 */
     private static final int RRF_K = 60;
+    /** 向量库，向量召回通道 */
     private final VectorStore vectorStore;
+    /** JDBC 客户端，执行 PostgreSQL 全文检索与 chunk 回查 */
     private final JdbcTemplate jdbcTemplate;
+    /** 查询扩展器，为关键词召回生成扩展查询 */
     private final DictionaryQueryExpander queryExpander;
 
+    /** 是否启用混合检索 */
     @Value("${spring.ai.vectorstore.hybrid-search.enabled:false}")
     private boolean hybridSearchEnabled;
 
+    /** 是否启用查询扩展 */
     @Value("${spring.ai.vectorstore.hybrid-search.query-expansion:true}")
     private boolean queryExpansionEnabled;
 
+    /** 向量通道召回的候选数量 */
     @Value("${spring.ai.vectorstore.hybrid-search.vector-top-k:20}")
     private int vectorTopK;
 
+    /** 关键词通道召回的候选数量 */
     @Value("${spring.ai.vectorstore.hybrid-search.keyword-top-k:20}")
     private int keywordTopK;
 
+    /** 扩展查询的最大数量 */
     @Value("${spring.ai.vectorstore.hybrid-search.max-expansion-queries:5}")
     private int maxExpansionQueries;
 

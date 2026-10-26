@@ -20,6 +20,8 @@ import java.util.List;
  *
  * 负责用户注册、登录、个人信息管理、管理员用户管理等功能。
  * 密码统一使用 BCrypt 加密存储；历史明文密码在登录成功时自动升级。
+ *
+ * @author guanwx
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -29,8 +31,11 @@ public class UserService {
     /** 默认头像路径（前端 public 目录下，浏览器可直接访问） */
     private static final String DEFAULT_AVATAR = "/avatars/default.jpg";
 
+    /** 用户表数据访问接口 */
     private final UserMapper userMapper;
+    /** 密码加密器（BCrypt） */
     private final PasswordEncoder passwordEncoder;
+    /** 登录失败限流器 */
     private final LoginRateLimiter loginRateLimiter;
 
     /**
@@ -114,22 +119,48 @@ public class UserService {
         return user;
     }
 
+    /**
+     * 根据 ID 查询用户
+     *
+     * @param id 用户 ID
+     * @return 用户对象，不存在时返回 null
+     */
     public User getUserById(Long id) {
         return userMapper.selectById(id);
     }
 
+    /**
+     * 更新用户信息
+     *
+     * @param user 待更新的用户对象
+     * @return 更新后的用户对象
+     */
     public User updateUser(User user) {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
         return userMapper.selectById(user.getId());
     }
 
+    /**
+     * 查询所有用户（按创建时间倒序）
+     *
+     * @return 用户列表
+     */
     public List<User> getAllUsers() {
         return userMapper.selectList(
                 new LambdaQueryWrapper<User>().orderByDesc(User::getCreateTime)
         );
     }
 
+    /**
+     * 创建用户（管理员）
+     *
+     * 自动填充默认昵称、头像与角色，密码加密存储。
+     *
+     * @param user 待创建的用户对象
+     * @return 创建成功的用户对象
+     * @throws BusinessException 用户名已存在或角色非法时抛出
+     */
     public User createUser(User user) {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("username", user.getUsername());
@@ -159,6 +190,16 @@ public class UserService {
         return user;
     }
 
+    /**
+     * 管理员更新用户信息
+     *
+     * 仅更新请求中非 null 的字段，密码非空时加密更新。
+     *
+     * @param id 用户 ID
+     * @param req 更新内容
+     * @return 更新后的用户对象
+     * @throws BusinessException 用户不存在或角色非法时抛出
+     */
     public User updateUserByAdmin(Long id, User req) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
@@ -192,6 +233,11 @@ public class UserService {
         return existing;
     }
 
+    /**
+     * 删除用户
+     *
+     * @param id 用户 ID
+     */
     public void deleteUser(Long id) {
         userMapper.deleteById(id);
     }

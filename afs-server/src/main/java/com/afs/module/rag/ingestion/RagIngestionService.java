@@ -10,7 +10,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +22,17 @@ import java.util.UUID;
 
 /**
  * 负责 RAG 文档切分、向量化及全文索引的写入与维护。
+ * @author guanwx
  */
 @RequiredArgsConstructor
 @Service
 public class RagIngestionService {
 
+    /** 向量库，写入与删除向量索引 */
     private final VectorStore vectorStore;
+    /** JDBC 客户端，维护 rag_chunk 全文索引表 */
     private final JdbcTemplate jdbcTemplate;
+    /** 向量库元数据过滤表达式构造器 */
     private final FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
     // 中文句子级切分：按句读切分、贪心合并到 400 字、块间重叠 60 字，避免在句中硬切
     private final TextSplitter splitter = new ChineseSentenceTextSplitter();
@@ -189,27 +192,5 @@ public class RagIngestionService {
     public void clearScamCaseIndex() {
         vectorStore.delete(filterBuilder.eq("type", "scamcase").build());
         jdbcTemplate.update("DELETE FROM rag_chunk WHERE source_type = 'scamcase'");
-    }
-
-    /**
-     * 清空全部索引（向量表与全文表都截断，用于整体重建）。
-     */
-    @Transactional
-    @CacheEvict(value = "vectorSearch", allEntries = true)
-    public void clearAllIndexes() {
-        jdbcTemplate.update("TRUNCATE vector_store");
-        jdbcTemplate.update("TRUNCATE rag_chunk");
-    }
-
-    /**
-     * 按来源类型删除全部索引。
-     *
-     * @param type 来源类型（knowledge / scamcase）
-     */
-    @Transactional
-    @CacheEvict(value = "vectorSearch", allEntries = true)
-    public void deleteByType(String type) {
-        vectorStore.delete(filterBuilder.eq("type", type).build());
-        jdbcTemplate.update("DELETE FROM rag_chunk WHERE source_type = ?", type);
     }
 }
