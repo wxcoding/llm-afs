@@ -106,39 +106,39 @@ flowchart LR
 ```text
 llm-afs/
 ├── afs-server/                  # Spring Boot 后端
+│   ├── src/
+│   │   ├── main/java/com/afs/
+│   │   │   ├── common/          # Result 统一响应 / 注解 / 常量
+│   │   │   ├── security/        # JwtUtil / 鉴权与角色拦截器 / 令牌黑名单 / 登录限流
+│   │   │   ├── config/          # AI、异步线程池、CORS、鉴权、OpenAPI、初始化
+│   │   │   ├── module/
+│   │   │   │   ├── chat/        # 会话、消息、SSE 流式对话
+│   │   │   │   ├── knowledge/   # 知识库、文档上传、标签、版本、审核
+│   │   │   │   ├── scamcase/    # 诈骗案例库
+│   │   │   │   ├── user/        # 注册登录与用户管理
+│   │   │   │   ├── stats/       # 数据统计
+│   │   │   │   ├── feedback/    # 消息反馈
+│   │   │   │   ├── sysconfig/   # 系统参数配置
+│   │   │   │   ├── system/      # 数据字典
+│   │   │   │   └── rag/         # RAG 核心
+│   │   │   │       ├── ingestion/   # 文档切分与索引写入 / 线程池派发、处理与中断恢复
+│   │   │   │       ├── search/      # 策略解析、混合/向量检索、分词、过滤
+│   │   │   │       ├── query/       # 查询扩展
+│   │   │   │       ├── rerank/      # ReRank 重排
+│   │   │   │       └── context/     # 上下文组装
+│   │   │   └── util/            # DocumentParser
+│   │   ├── main/resources/
+│   │   │   ├── application.yml
+│   │   │   ├── logback-spring.xml   # json-log profile 切换 JSON 结构化日志
+│   │   │   └── db/migration/    # Flyway V1 ~ V15
+│   │   └── test/java/com/afs/   # 单元测试
 │   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/
-│       ├── main/java/com/afs/
-│       │   ├── common/          # Result 统一响应 / 注解 / 常量
-│       │   ├── security/        # JwtUtil / 鉴权与角色拦截器 / 令牌黑名单 / 登录限流
-│       │   ├── config/          # AI、异步线程池、CORS、鉴权、OpenAPI、初始化
-│       │   ├── module/
-│       │   │   ├── chat/        # 会话、消息、SSE 流式对话
-│       │   │   ├── knowledge/   # 知识库、文档上传、标签、版本、审核
-│       │   │   ├── scamcase/    # 诈骗案例库
-│       │   │   ├── user/        # 注册登录与用户管理
-│       │   │   ├── stats/       # 数据统计
-│       │   │   ├── feedback/    # 消息反馈
-│       │   │   ├── sysconfig/   # 系统参数配置
-│       │   │   ├── system/      # 数据字典
-│       │   │   └── rag/         # RAG 核心
-│       │   │       ├── ingestion/   # 文档切分与索引写入 / 线程池派发、处理与中断恢复
-│       │   │       ├── search/      # 策略解析、混合/向量检索、分词、过滤
-│       │   │       ├── query/       # 查询扩展
-│       │   │       ├── rerank/      # ReRank 重排
-│       │   │       └── context/     # 上下文组装
-│       │   └── util/            # DocumentParser
-│       ├── main/resources/
-│       │   ├── application.yml
-│       │   ├── logback-spring.xml   # json-log profile 切换 JSON 结构化日志
-│       │   └── db/migration/    # Flyway V1 ~ V15
-│       └── test/java/com/afs/   # 单元测试
+│   └── pom.xml
 ├── afs-web/                     # Vue 3 前端
+│   ├── src/                     # api / components / router / stores / views
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   ├── vite.config.js
-│   └── src/                     # api / components / router / stores / views
+│   └── vite.config.js
 ├── docker-compose.yml / docker-compose.prod.yml
 ├── .env.example
 ├── deployment.md                # 服务器部署与运维说明
