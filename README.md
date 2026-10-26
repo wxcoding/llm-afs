@@ -99,22 +99,7 @@ flowchart LR
     Prompt --> Gen["LLM 流式"]
     Gen --> Out(["SSE 输出"])
 ```
-
 多级降级：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案。
-
-### 对话流程
-
-```text
-1. 前端 POST /api/chat/send（Bearer JWT）→ ChatController
-2. ChatService.sendMessageStream（Flux.defer + boundedElastic，不阻塞请求线程）
-3. 读/建会话，写入用户消息（PostgreSQL）
-4. RagSearchService.searchWithMetadata 检索 → 返回 sources
-5. SSE 推送 sessionId / sources
-6. 调用 DashScope Chat（stream），循环推送增量 content
-7. 保存助手消息（含 sources）
-```
-
-SSE 与 MVC 异步超时均为 120 秒；会话和消息按 `userId` 校验归属。
 
 ## 项目结构
 
