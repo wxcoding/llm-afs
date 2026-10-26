@@ -169,6 +169,7 @@ git clone https://github.com/wxcoding/llm-afs.git && cd llm-afs
 cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_API_KEY
 docker compose up -d --build
 ```
+详细部署见 [deployment.md](deployment.md)
 
 | 入口 | 地址 |
 |------|------|
@@ -176,8 +177,6 @@ docker compose up -d --build
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | 健康检查 | http://localhost:8080/actuator/health |
 | Prometheus | http://localhost:8080/actuator/prometheus |
-
-本地开发：`docker compose up -d postgres redis`，再分别 `mvn spring-boot:run` 与 `npm run dev`（Vite 代理 `/api` → 8080）。
 
 ## 配置说明
 
@@ -192,31 +191,6 @@ docker compose up -d --build
 
 其余见 [.env.example](.env.example)；RAG、防爆破、JWT 有效期等见 [application.yml](afs-server/src/main/resources/application.yml)。
 
-## 接口说明
-
-前缀 `/api`，除注册、登录、Swagger、健康检查外需 `Authorization: Bearer <JWT>`。登录连续失败 5 次锁定 10 分钟，登出后令牌立即吊销。统一响应：
-
-```json
-{ "success": true, "message": "操作成功", "data": {}, "code": 200, "timestamp": 1730000000000 }
-```
-
-| 模块 | 主要接口 |
-|------|----------|
-| 用户 | `/user/register`、`/user/login`、`/user/logout`、`/user/{id}`、`/user/update` |
-| 对话 | `/chat/send`（SSE）、`/chat/sessions`、`/chat/history/{id}`、`/chat/session/{id}` |
-| 知识库 | `/knowledge` CRUD、`/search/semantic`、`/upload(/batch)`、`/tags/**`、`/versions/**`、`/audit/**` |
-| 案例 | `/cases` CRUD（`?type=` 筛选） |
-| 系统 | `/stats`、`/feedback/**`、`/config/**`、`/sys/dict/**` |
-
-`/chat/send` 为 `text/event-stream`，依次推送 `sessionId` → `sources` → 增量 `content`。
-
-## 测试与构建
-
-```bash
-cd afs-server && mvn test && mvn clean package -DskipTests   # 45 个测试类、369 个测试
-cd afs-web    && npm run lint && npm run build
-```
-
 ## 设计要点
 
 - **RAG 全链路自研**：切分、稳定 chunkId（`sourceType:sourceId:index`）、双通道召回、RRF、ReRank 显式实现，各环节可独立配置与降级
@@ -224,18 +198,3 @@ cd afs-web    && npm run lint && npm run build
 - **多级降级**：Redis 故障 fail-open；检索与 AI 链路逐级降级，外部依赖异常不影响主流程
 - **安全闭环**：JWT + Redis 黑名单实现可吊销令牌；失败计数防爆破；BCrypt 加密；RBAC 拦截
 - **可观测性**：Actuator + Prometheus，`json-log` profile 一键切换 JSON 日志接入 ELK / Loki
-
-## 部署与常见问题
-
-```bash
-cp .env.example .env
-vim .env                       # 务必覆盖数据库密码与 JWT_SECRET
-docker compose -f docker-compose.prod.yml up -d
-```
-
-- 向量库同步失败仍可用，问答退化为纯 AI 对话或兜底文案
-- `extension "vector" is not available`：使用 `pgvector/pgvector:pg17` 镜像或执行 `CREATE EXTENSION IF NOT EXISTS vector;`
-- 流式回答前端空白：关闭 Nginx `/api/` 的 `proxy_buffering` 并调大 `proxy_read_timeout`
-- 登出后 Token 立即失效（写入黑名单直至过期）
-
-详细部署见 [deployment.md](deployment.md)。
