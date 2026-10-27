@@ -36,68 +36,123 @@
 ### 总体架构
 
 ```mermaid
-flowchart LR
-    subgraph Client["客户端"]
+flowchart TB
+    subgraph Client["🌐 客户端"]
         Browser(["浏览器<br/>Vue 3 SPA"])
     end
 
-    subgraph Edge["接入层"]
-        Nginx["Nginx<br/>静态资源 + /api 反代"]
+    subgraph Edge["🚪 接入层"]
+        Nginx["Nginx<br/>静态资源 + API 反代"]
     end
 
-    subgraph App["应用层 · afs-server :8080"]
+    subgraph App["⚙️ 应用层 :8080"]
+        direction TB
         MVC["Spring MVC<br/>REST API + SSE"]
-        Auth["AuthInterceptor<br/>JWT · 吊销校验 · 限流"]
+        Auth["鉴权拦截器<br/>JWT · 黑名单 · 限流"]
         Modules["业务模块<br/>Chat · Knowledge · ScamCase<br/>Stats · Config · Dict · Feedback"]
-        RAG["RAG 子域<br/>入库 · 检索 · 扩展 · 重排"]
-        Cache["Redis 缓存<br/>热点数据 fail-open"]
+        RAG["RAG 引擎<br/>入库 · 检索 · 扩展 · 重排"]
+        Cache["缓存层<br/>Redis fail-open"]
     end
 
-    subgraph AI["阿里云百炼"]
+    subgraph AI["🤖 阿里云百炼"]
         LLM["Chat Model"]
         Emb["Embedding Model"]
         Rerank["ReRank Model"]
     end
 
-    subgraph Data["数据与中间件"]
-        PG[("PostgreSQL 17 + pgvector")]
+    subgraph Data["💾 数据与中间件"]
+        PG[("PostgreSQL 17<br/>+ pgvector")]
         Redis[("Redis 7")]
     end
 
-    Browser -- HTTP --> Nginx
-    Nginx -- "/api" --> MVC
+    Browser -->|HTTP| Nginx
+    Nginx -->|/api| MVC
     MVC --> Auth
     Auth --> Modules
     Modules --> RAG
-    Modules -->|线程池异步入库| RAG
-    Auth --> Redis
-    Cache --> Redis
+    Modules -.->|异步入库| RAG
+    Auth -.->|鉴权/黑名单| Redis
+    Cache -.->|缓存| Redis
     RAG --> Emb
     RAG --> Rerank
     RAG --> LLM
     Modules --> PG
     RAG --> PG
+
+    classDef client fill:#e1f5ff,stroke:#0288d1
+    classDef edge fill:#fff3e0,stroke:#f57c00
+    classDef app fill:#f3e5f5,stroke:#7b1fa2
+    classDef ai fill:#fce4ec,stroke:#c2185b
+    classDef data fill:#e8f5e9,stroke:#388e3c
+
+    class Browser client
+    class Nginx edge
+    class MVC,Auth,Modules,RAG,Cache app
+    class LLM,Emb,Rerank ai
+    class PG,Redis data
 ```
 
 ### RAG 检索流程
 
 ```mermaid
 flowchart TB
-    Q(["用户问题"]) --> Extend{"查询扩展?"}
-    Extend -- 是 --> Syn["同义词 + 口语化改写"]
-    Extend -- 否 --> Raw["原始查询"]
-    Syn --> FT["全文 Top-20"]
-    Raw --> Vec["向量 Top-20"]
-    FT --> RRF(("RRF 融合 K=60"))
+    Q(["📝 用户问题"]) --> Extend{"启用<br/>查询扩展?"}
+
+    subgraph Query["查询处理"]
+        direction LR
+        Syn["同义词 + 口语化改写"]
+        Raw["原始查询"]
+    end
+
+    subgraph Search["并行检索"]
+        direction LR
+        FT["全文检索"]
+        Vec["向量检索"]
+    end
+
+    Extend -- 是 --> Syn
+    Extend -- 否 --> Raw
+    Syn --> FT
+    Raw --> Vec
+
+    subgraph Merge["结果融合"]
+        RRF(("RRF 融合<br/>K=60"))
+        RerankQ{"启用<br/>ReRank?"}
+        RerankN["ReRank 重排"]
+    end
+
+    FT --> RRF
     Vec --> RRF
-    RRF --> RerankQ{"ReRank?"}
-    RerankQ -- 是 --> RerankN["ReRank Top-20"]
-    RerankQ -- 否 --> TopN["Top-N"]
+    RRF --> RerankQ
+    RerankQ -- 是 --> RerankN
+    RerankQ -- 否 --> TopN["截取 Top-N"]
+
+    subgraph Generate["生成回答"]
+        direction TB
+        Ctx["拼装上下文"]
+        Prompt["Prompt + 历史"]
+        Gen["LLM 流式生成"]
+    end
+
     RerankN --> TopN
-    TopN --> Ctx["拼装上下文"]
-    Ctx --> Prompt["Prompt + 历史"]
-    Prompt --> Gen["LLM 流式"]
-    Gen --> Out(["SSE 输出"])
+    TopN --> Ctx
+    Ctx --> Prompt
+    Prompt --> Gen
+    Gen --> Out(["✅ SSE 输出"])
+
+    classDef start fill:#e3f2fd,stroke:#1976d2
+    classDef query fill:#fff3e0,stroke:#f57c00
+    classDef search fill:#f3e5f5,stroke:#7b1fa2
+    classDef merge fill:#e8f5e9,stroke:#388e3c
+    classDef gen fill:#fce4ec,stroke:#c2185b
+    classDef end fill:#c8e6c9,stroke:#388e3c
+
+    class Q start
+    class Syn,Raw query
+    class FT,Vec search
+    class RRF,RerankQ,RerankN,TopN merge
+    class Ctx,Prompt,Gen gen
+    class Out end
 ```
 多级降级：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案。
 
