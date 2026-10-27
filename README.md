@@ -1,8 +1,6 @@
 # 智能反诈系统（AFS）
 
-> 基于 RAG 的防诈骗知识问答系统 - 让 AI 回答"这个是诈骗吗？"
-
-以真实防诈骗知识库与诈骗案例为可信数据源，通过 RAG 将相关内容注入通义千问提示词，提供带引用来源的流式多轮问答。
+基于 Spring Boot 3.4 + Spring AI + Vue 3 的防诈骗知识问答系统。以知识库与诈骗案例为可信数据源，通过 RAG 将相关内容注入通义千问提示词，提供带引用来源的流式多轮问答。。
 
 ![Java 17](https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?logo=springboot&logoColor=white)
@@ -11,62 +9,6 @@
 ![PostgreSQL 17 + pgvector](https://img.shields.io/badge/PostgreSQL%2017%20%2B%20pgvector-316192?logo=postgresql&logoColor=white)
 ![Redis 7](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-369%20passing-brightgreen)
-
-## ✨ 核心亮点
-
-- ✅ **可信回答**：回答附带引用来源，可追溯原始知识
-- ✅ **多轮对话**：支持上下文连贯的连续问答
-- ✅ **流式输出**：SSE 实时打字机效果
-- ✅ **混合检索**：向量 + 全文双通道，RRF 融合提升召回
-- ✅ **生产就绪**：JWT鉴权、限流、降级、监控、日志完整
-
-## 🚀 快速开始
-
-环境：Docker Compose 2.0+、阿里云百炼 API Key。
-
-```bash
-git clone https://github.com/wxcoding/llm-afs.git && cd llm-afs
-cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_API_KEY
-docker compose up -d --build
-```
-
-访问 http://localhost:3000 开始使用
-
-详细部署见 [deployment.md](deployment.md)
-
-## 📸 效果演示
-
-> [待添加：系统截图或 GIF 动图]
-
-## 🎯 功能特性
-
-### 智能问答
-- 多轮会话、SSE 流式输出
-- RAG 增强、回答附带来源引用
-
-### 混合检索
-- pgVector 向量 + PostgreSQL 全文双通道
-- RRF 融合、ReRank 重排
-- 反诈同义词扩展提升召回
-
-### 知识库管理
-- 支持 PDF / Word / Markdown / Excel / TXT
-- 语义搜索、标签、版本回滚、审核流转
-- 向量化状态机（PENDING → PROCESSING → SUCCESS/FAILED）
-
-### 案例库
-- 诈骗案例 CRUD、按类型筛选
-- 自动同步向量索引
-
-### 安全防护
-- JWT 鉴权 + Redis 黑名单（登出即吊销）
-- 登录失败锁定防爆破
-- RBAC 双角色权限控制
-- BCrypt 加密
-
-### 系统管理
-- 统计看板、消息反馈
-- 系统参数配置、数据字典
 
 ## 🛠️ 技术栈
 
@@ -79,80 +21,6 @@ docker compose up -d --build
 | 前端 | Vue 3、Vue Router 4、Pinia、Element Plus、Vite 5 |
 | 可观测性 | Actuator、Micrometer + Prometheus、JSON 日志 |
 | 部署 | Docker、Docker Compose、Nginx |
-
-## 🏗️ 系统架构
-
-### 总体架构
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         客户端                                    │
-│                    浏览器 (Vue 3 SPA)                            │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ HTTP
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        接入层                                    │
-│              Nginx (静态资源 + API 反代)                         │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ /api
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     应用层 :8080                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ Spring MVC   │→ │鉴权拦截器    │→ │ 业务模块     │          │
-│  │ REST API+SSE │  │ JWT·黑名单   │  │ Chat·Knowledge│          │
-│  └──────────────┘  │ 限流         │  │ ScamCase等   │          │
-│                    └──────────────┘  └──────┬───────┘          │
-│                                          │                      │
-│                                    ┌─────▼──────┐              │
-│                                    │ RAG 引擎   │              │
-│                                    │ 入库·检索  │              │
-│                                    │ 扩展·重排  │              │
-│                                    └─────┬──────┘              │
-│                                    ┌─────▼──────┐              │
-│                                    │ 缓存层     │              │
-│                                    │ Redis缓存  │              │
-│                                    └────────────┘              │
-└──────────────────────────┬────────────────────────────────────┘
-                           │
-           ┌───────────────┼───────────────┐
-           │               │               │
-           ▼               ▼               ▼
-┌─────────────────┐ ┌─────────────┐ ┌──────────────────┐
-│   阿里云百炼    │ │ PostgreSQL  │ │     Redis 7       │
-│ Chat/Embedding  │ │ + pgvector  │ │   (鉴权/缓存)     │
-│ ReRank Model    │ └─────────────┘ └──────────────────┘
-└─────────────────┘
-```
-
-### RAG 检索流程
-
-```
-用户问题
-    │
-    ├─→ 查询扩展（可选）
-    │       ├─ 同义词扩展
-    │       └─ 口语化改写
-    │
-    ├─→ 并行检索
-    │       ├─ 全文检索 (PostgreSQL 全文索引)
-    │       └─ 向量检索 (pgvector 相似度)
-    │
-    ├─→ 结果融合
-    │       ├─ RRF 融合 (K=60)
-    │       └─ ReRank 重排（可选）
-    │
-    ├─→ 上下文组装
-    │       ├─ 截取 Top-N 结果
-    │       └─ 拼装上下文 + 历史对话
-    │
-    └─→ LLM 生成
-            ├─ 构造 Prompt
-            └─ 流式输出 (SSE)
-```
-
-多级降级：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案。
 
 ## 📁 项目结构
 
@@ -197,6 +65,21 @@ llm-afs/
 ├── deployment.md                # 服务器部署与运维说明
 └── README.md
 ```
+
+## 🚀 快速开始
+
+环境：Docker Compose 2.0+、阿里云百炼 API Key。
+
+```bash
+git clone https://github.com/wxcoding/llm-afs.git && cd llm-afs
+cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_API_KEY
+docker compose up -d --build
+```
+
+访问 http://localhost:3000 开始使用
+
+详细部署见 [deployment.md](deployment.md)
+
 
 ## 💻 本地开发
 
@@ -247,7 +130,3 @@ SPRING_PROFILES_ACTIVE=json-log
 - **多级降级**：Redis 故障 fail-open；检索与 AI 链路逐级降级，外部依赖异常不影响主流程
 - **安全闭环**：JWT + Redis 黑名单实现可吊销令牌；失败计数防爆破；BCrypt 加密；RBAC 拦截
 - **可观测性**：Actuator + Prometheus，`json-log` profile 一键切换 JSON 日志接入 ELK / Loki
-
-## 📄 License
-
-MIT
