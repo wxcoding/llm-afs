@@ -76,56 +76,20 @@ cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_AP
 docker compose up -d --build
 ```
 
-访问 http://localhost:3000 开始使用
-
-详细部署见 [deployment.md](deployment.md)
+访问 http://localhost:3000 开始使用。详细部署见 [deployment.md](deployment.md)
 
 
 ## 💻 本地开发
 
-### 后端开发
+后端环境：JDK 17+、Maven 3.8+、PostgreSQL 17 + pgvector、Redis 7、阿里云百炼 API Key。 
 
-环境：JDK 17+、Maven 3.8+、PostgreSQL 17 + pgvector、Redis 7、阿里云百炼 API Key。
-
-```bash
-cd afs-server
-mvn spring-boot:run
-```
-
-### 前端开发
-
-环境：Node.js 18+。
-
-```bash
-cd afs-web
-npm install
-npm run dev
-```
-
-## ⚙️ 配置说明
-
-### 必填配置
-
-```bash
-POSTGRES_PASSWORD=your_password
-AI_DASHSCOPE_API_KEY=your_api_key
-```
-
-### 可选配置
-
-```bash
-JWT_SECRET=生产环境必填
-AI_DASHSCOPE_MODEL=qwen3.8-flash
-SERVER_PORT=8080
-WEB_PORT=3000
-SPRING_PROFILES_ACTIVE=json-log
-```
+前端环境：Node.js 18+。 
 
 完整配置见 [.env.example](.env.example)；RAG、防爆破、JWT 有效期等见 [application.yml](afs-server/src/main/resources/application.yml)。
 
 ## 🎨 设计要点
 
-- **RAG 全链路自研**：切分、稳定 chunkId（`sourceType:sourceId:index`）、双通道召回、RRF、ReRank 显式实现，各环节可独立配置与降级
+- **RAG 全链路**：切分、稳定 chunkId（`sourceType:sourceId:index`）、双通道召回、RRF、ReRank 显式实现，各环节可独立配置与降级
 - **异步入库 + 状态机**：`PENDING → PROCESSING → SUCCESS/FAILED` 全程可追溯，CallerRunsPolicy 背压，重启自动恢复中断任务
 - **多级降级**：Redis 故障 fail-open；检索与 AI 链路逐级降级，外部依赖异常不影响主流程
 - **安全闭环**：JWT + Redis 黑名单实现可吊销令牌；失败计数防爆破；BCrypt 加密；RBAC 拦截
