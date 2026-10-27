@@ -12,8 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 缓存配置类
- * 
- * 最佳实践：
+ *
  * 1. 使用 Caffeine 作为本地缓存（高性能）
  * 2. 配置合理的过期策略
  * 3. 限制缓存大小防止内存溢出
