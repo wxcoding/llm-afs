@@ -36,7 +36,7 @@
 ### 总体架构
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph Client["客户端"]
         Browser(["浏览器<br/>Vue 3 SPA"])
     end
@@ -82,7 +82,7 @@ flowchart TB
 ### RAG 检索流程
 
 ```mermaid
-flowchart LR
+flowchart TB
     Q(["用户问题"]) --> Extend{"查询扩展?"}
     Extend -- 是 --> Syn["同义词 + 口语化改写"]
     Extend -- 否 --> Raw["原始查询"]
