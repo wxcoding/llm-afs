@@ -22,6 +22,15 @@
 | 可观测性 | Actuator、Micrometer + Prometheus、JSON 日志 |
 | 部署 | Docker、Docker Compose、Nginx |
 
+## 🎯 功能特性
+
+- **智能问答**：多轮会话、SSE 流式输出、RAG 增强、回答附带来源引用
+- **混合检索**：pgVector 向量 + PostgreSQL 全文双通道、RRF 融合、ReRank 重排
+- **知识库**：PDF / Word / Markdown / Excel / TXT 解析、语义搜索、标签、版本回滚、审核流转
+- **案例库**：诈骗案例 CRUD、按类型筛选、自动同步向量索引
+- **用户与安全**：JWT 鉴权、登出即吊销（Redis 黑名单）、登录失败锁定防爆破、RBAC 双角色
+- **系统管理**：统计看板、消息反馈、系统参数配置、数据字典
+
 ## 📁 项目结构
 
 ```text
