@@ -33,7 +33,7 @@
 
 ## 🏗️ 系统架构
 
-详细的架构图和 RAG 检索流程见 [docs/architecture.md](docs/architecture.md)
+详细架构图和 RAG 检索流程见 [docs/architecture.md](docs/architecture.md)
 
 **简要说明**：
 - **分层结构**：客户端（Vue 3）→ Nginx → 应用层（Spring Boot）→ 外部服务（PostgreSQL + Redis + 阿里云百炼）
