@@ -31,6 +31,15 @@
 - **用户与安全**：JWT 鉴权、登出即吊销（Redis 黑名单）、登录失败锁定防爆破、RBAC 双角色
 - **系统管理**：统计看板、消息反馈、系统参数配置、数据字典
 
+## 🏗️ 系统架构
+
+详细的架构图和 RAG 检索流程见 [docs/architecture.md](docs/architecture.md)
+
+**简要说明**：
+- **分层结构**：客户端（Vue 3）→ Nginx → 应用层（Spring Boot）→ 外部服务（PostgreSQL + Redis + 阿里云百炼）
+- **RAG 检索链路**：查询扩展 → 并行检索（全文+向量）→ RRF 融合 → ReRank 重排 → 上下文组装 → LLM 流式输出
+- **多级降级**：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案
+
 ## 📁 项目结构
 
 ```text
@@ -72,6 +81,8 @@ llm-afs/
 ├── docker-compose.yml / docker-compose.prod.yml
 ├── .env.example
 ├── deployment.md                # 服务器部署与运维说明
+├── docs/
+│   └── architecture.md           # 系统架构与 RAG 流程详解
 └── README.md
 ```
 
