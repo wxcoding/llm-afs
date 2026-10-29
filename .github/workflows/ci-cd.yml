@@ -134,6 +134,9 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_SERVER }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 阿里云 ACR 个人版不识别 OCI 空描述符（application/vnd.oci.empty.v1.json），需关闭证明与 SBOM
+          provenance: false
+          sbom: false
 
       # 构建前端镜像
       - name: 构建并推送前端镜像
@@ -146,6 +149,9 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # 同后端镜像，关闭证明与 SBOM 以兼容 ACR 个人版
+          provenance: false
+          sbom: false
 
       # 输出镜像信息
       - name: 输出镜像标签
