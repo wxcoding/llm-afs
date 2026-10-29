@@ -27,7 +27,7 @@ const PUBLIC_PATHS = new Set(['/login'])
 router.beforeEach((to) => {
   const userStore = useUserStore()
   if (!PUBLIC_PATHS.has(to.path) && !userStore.isLoggedIn) {
-    return { path: '/login', query: { redirect: to.fullPath } }
+    return { path: '/login' }
   }
   if (to.meta.admin && !userStore.isAdmin) {
     return { path: '/' }
