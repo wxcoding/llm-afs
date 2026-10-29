@@ -20,7 +20,7 @@
 | 解析 | PDFBox 3、Apache POI 5、CommonMark、Apache Tika 2.9 |
 | 前端 | Vue 3、Vue Router 4、Pinia、Element Plus、Vite 5 |
 | 可观测性 | Actuator、Micrometer + Prometheus、JSON 日志 |
-| 部署 | Docker、Docker Compose、Nginx |
+| 部署 | Docker、Docker Compose、Nginx、GitHub Actions（CI/CD） |
 
 ## 🎯 功能特性
 
