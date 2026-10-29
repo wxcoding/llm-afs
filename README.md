@@ -96,7 +96,7 @@ cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_AP
 docker compose up -d --build
 ```
 
-访问 http://localhost:3000 开始使用。默认管理员账号 `admin`，密码 `admin123`（由 Flyway 迁移脚本自动初始化）。详细部署见 [deployment.md](deployment.md)
+访问 http://localhost:3000 默认管理员账号 `admin`，密码 `admin123`（由 Flyway 迁移脚本自动初始化）。详细部署见 [deployment.md](deployment.md)
 
 
 ## 💻 本地开发
