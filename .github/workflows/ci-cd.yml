@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy:
-        description: '是否推送镜像并部署到服务器'
+        description: '是否部署到服务器'
         type: boolean
         default: false
 
@@ -90,8 +90,8 @@ jobs:
     name: 构建并推送Docker镜像
     needs: build
     runs-on: ubuntu-latest
-    # 需要阿里云 ACR 凭据，仅在手动触发时执行，避免日常提交因缺少 secrets 失败
-    if: github.event_name == 'workflow_dispatch'
+    # 需要阿里云 ACR 凭据，push 与手动触发都会推送镜像
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
