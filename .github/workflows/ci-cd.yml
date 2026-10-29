@@ -46,13 +46,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: 运行后端单元测试
+      - name: 测试并打包后端
         working-directory: ./afs-server
-        run: mvn -B test
-
-      - name: 构建 Spring Boot 后端
-        working-directory: ./afs-server
-        run: mvn -B -DskipTests clean package
+        run: mvn -B clean package
 
       # 构建前端
       - name: 配置 Node.js ${{ env.NODE_VERSION }}
@@ -183,6 +179,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          script_stop: true
           script: |
             mkdir -p ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
 
@@ -207,14 +204,19 @@ jobs:
           port: ${{ secrets.SERVER_SSH_PORT || 22 }}
           timeout: 3600s # 总会话超时：30分钟（全局）
           command_timeout: 3000s # 单条命令超时：20分钟
+          script_stop: true # 任一命令失败立即终止，避免失败被后续命令掩盖
           script: |
             cd ${{ secrets.SERVER_PROJECT_PATH }}/${{ env.APP_NAME }}
+
+            # 记录上一版镜像 tag，用于部署失败时回滚
+            PREV_TAG=$(grep -E '^IMAGE_TAG=' .env 2>/dev/null | cut -d= -f2 || true)
+            echo "当前运行版本: ${PREV_TAG:-无}"
 
             # 登录阿里云容器镜像服务
             echo "${{ secrets.ALIYUN_ACR_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.ALIYUN_ACR_USERNAME }}" --password-stdin
 
-            # 生成 .env 文件，统一管理所有环境变量
-            cat > .env << EOF
+            # 生成 .env 文件；引号防止服务器侧对密码中的 $ 二次展开
+            cat > .env << 'EOF'
             IMAGE_TAG=${{ github.sha }}
             REGISTRY=${{ env.REGISTRY }}
             IMAGE_NAME_SERVER=${{ env.IMAGE_NAME_SERVER }}
@@ -225,15 +227,25 @@ jobs:
             AI_DASHSCOPE_API_KEY=${{ secrets.AI_DASHSCOPE_API_KEY }}
             AI_DASHSCOPE_MODEL=${{ env.AI_DASHSCOPE_MODEL }}
             EOF
+            chmod 600 .env
 
             # 拉取最新镜像
             docker compose -f docker-compose.prod.yml pull --timeout 3000
 
-            # 启动服务
-            docker compose -f docker-compose.prod.yml up -d
+            # 启动并等待各容器健康检查通过
+            if ! docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 600; then
+              echo "新版本启动失败，尝试回滚"
+              if [ -n "$PREV_TAG" ]; then
+                sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${PREV_TAG}/" .env
+                docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 600 || true
+                echo "已回滚到 ${PREV_TAG}"
+              fi
+              exit 1
+            fi
 
-            # 检查服务状态
-            sleep 30
+            # 断言后端健康端点，非 200 直接失败
+            curl -fsS http://localhost:8080/actuator/health
+            echo ""
             docker compose -f docker-compose.prod.yml ps
 
             # 清理
