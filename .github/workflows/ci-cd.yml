@@ -14,7 +14,7 @@ env:
   # 项目配置
   APP_NAME: llm-afs
   JAVA_VERSION: '17'
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   
   # Docker配置 - 阿里云容器镜像服务
   REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
