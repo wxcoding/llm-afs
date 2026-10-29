@@ -10,6 +10,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 env:
   # 项目配置
   APP_NAME: llm-afs
@@ -32,6 +35,7 @@ jobs:
   build:
     name: 构建应用
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -62,6 +66,10 @@ jobs:
         working-directory: ./afs-web
         run: npm install
 
+      - name: 前端代码检查
+        working-directory: ./afs-web
+        run: npm run lint
+
       - name: 构建 Vue 前端
         working-directory: ./afs-web
         run: npm run build
@@ -86,6 +94,7 @@ jobs:
     name: 构建并推送Docker镜像
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # 需要阿里云 ACR 凭据，push 与手动触发都会推送镜像
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
@@ -160,6 +169,7 @@ jobs:
     name: 部署到生产服务器
     needs: docker-build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # 需要目标服务器，手动触发并勾选 deploy 时才执行
     if: github.event_name == 'workflow_dispatch' && inputs.deploy
     environment: production
@@ -258,6 +268,7 @@ jobs:
     name: 发送部署通知
     needs: deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: always() && github.event_name == 'workflow_dispatch' && inputs.deploy
     steps:
       - name: 检查部署状态
