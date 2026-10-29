@@ -27,10 +27,13 @@ public class RagSearchService {
 
     /** 向量库，执行分类限定的相似度检索 */
     private final VectorStore vectorStore;
+
     /** 检索策略解析器，选择当前可用的检索策略 */
     private final SearchStrategyResolver strategyResolver;
+
     /** ReRank 重排序服务 */
     private final RerankService rerankService;
+
     /** 向量库元数据过滤表达式构造器 */
     private final FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
 

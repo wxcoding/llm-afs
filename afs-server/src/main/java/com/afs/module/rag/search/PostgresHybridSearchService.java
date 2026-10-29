@@ -32,10 +32,13 @@ public class PostgresHybridSearchService {
 
     /** RRF 融合常数：数值越大，排名靠后的结果分数衰减越平缓 */
     private static final int RRF_K = 60;
+
     /** 向量库，向量召回通道 */
     private final VectorStore vectorStore;
+
     /** JDBC 客户端，执行 PostgreSQL 全文检索与 chunk 回查 */
     private final JdbcTemplate jdbcTemplate;
+
     /** 查询扩展器，为关键词召回生成扩展查询 */
     private final DictionaryQueryExpander queryExpander;
 

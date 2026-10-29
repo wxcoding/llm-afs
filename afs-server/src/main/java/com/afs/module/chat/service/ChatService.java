@@ -270,6 +270,8 @@ public class ChatService {
                         .orderByDesc("create_time")
                         .last("LIMIT 10")
         );
+
+        // 反转最近十条历史消息，保证最近十条按语义顺序，由前到后的对话
         Collections.reverse(history);
 
         // 将数据库消息转换为AI消息格式
