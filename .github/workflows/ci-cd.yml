@@ -236,6 +236,7 @@ jobs:
             POSTGRES_DB=${{ env.POSTGRES_DB }}
             AI_DASHSCOPE_API_KEY=${{ secrets.AI_DASHSCOPE_API_KEY }}
             AI_DASHSCOPE_MODEL=${{ env.AI_DASHSCOPE_MODEL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
             EOF
             chmod 600 .env
 
