@@ -69,7 +69,7 @@ llm-afs/
 │   │   ├── main/resources/
 │   │   │   ├── application.yml
 │   │   │   ├── logback-spring.xml   # json-log profile 切换 JSON 结构化日志
-│   │   │   └── db/migration/    # Flyway V1 ~ V15
+│   │   │   └── db/migration/    # Flyway V1 ~ V16
 │   │   └── test/java/com/afs/   # 单元测试
 │   ├── Dockerfile
 │   └── pom.xml
@@ -96,7 +96,7 @@ cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_AP
 docker compose up -d --build
 ```
 
-访问 http://localhost:3000 开始使用。详细部署见 [deployment.md](deployment.md)
+访问 http://localhost:3000 开始使用。默认管理员账号 `admin`，密码 `admin123`（由 Flyway 迁移脚本自动初始化）。详细部署见 [deployment.md](deployment.md)
 
 
 ## 💻 本地开发
