@@ -20,7 +20,7 @@ export async function getDict(dictCode) {
     }
     
     try {
-        const res = await request.get(`/sys/dict/${dictCode}`);
+        const res = await request.get(`/sys/dict/${dictCode}`, { silent: true });
         if (res.success) {
             dictCache[dictCode] = res.data;
 
@@ -47,7 +47,7 @@ export async function getDict(dictCode) {
  */
 export async function getBatchDict(dictCodes) {
     try {
-        const res = await request.post('/sys/dict/batch', dictCodes);
+        const res = await request.post('/sys/dict/batch', dictCodes, { silent: true });
         if (res.success) {
             // 更新缓存
             Object.keys(res.data).forEach(dictCode => {

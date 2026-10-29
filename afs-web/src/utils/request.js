@@ -27,7 +27,9 @@ service.interceptors.response.use(
     const res = response.data
     // 后端统一返回 Result 结构，success === false 时集中提示
     if (res && res.success === false) {
-      ElMessage.error(res.message || '操作失败')
+      if (!response.config?.silent) {
+        ElMessage.error(res.message || '操作失败')
+      }
       return Promise.reject(new Error(res.message || '操作失败'))
     }
     return res
@@ -50,7 +52,10 @@ service.interceptors.response.use(
     }
     const message = error.response?.data?.message || error.message || '请求失败'
     console.error('Response error:', error)
-    ElMessage.error(message)
+    // 初始化类请求（如字典预加载）标记 silent，失败只记日志不打断用户
+    if (!error.config?.silent) {
+      ElMessage.error(message)
+    }
     return Promise.reject(error)
   }
 )
