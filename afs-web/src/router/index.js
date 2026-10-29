@@ -22,8 +22,8 @@ const router = createRouter({
   routes
 })
 
-// 登录守卫：未登录访问业务页面时重定向到登录页；管理员页面对非管理员重定向到首页
-const PUBLIC_PATHS = new Set(['/', '/login'])
+// 登录守卫：未登录访问任何页面（含首页）时重定向到登录页；管理员页面对非管理员重定向到首页
+const PUBLIC_PATHS = new Set(['/login'])
 router.beforeEach((to) => {
   const userStore = useUserStore()
   if (!PUBLIC_PATHS.has(to.path) && !userStore.isLoggedIn) {
