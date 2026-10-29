@@ -9,6 +9,7 @@
 ![PostgreSQL 17 + pgvector](https://img.shields.io/badge/PostgreSQL%2017%20%2B%20pgvector-316192?logo=postgresql&logoColor=white)
 ![Redis 7](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-369%20passing-brightgreen)
+[![CI](https://img.shields.io/github/actions/workflow/status/wxcoding/llm-afs/ci-cd.yml?branch=master&label=CI)](https://github.com/wxcoding/llm-afs/actions/workflows/ci-cd.yml)
 
 ## 🛠️ 技术栈
 
