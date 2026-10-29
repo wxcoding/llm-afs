@@ -1,21 +1,14 @@
 name: CI/CD 自动化部署流程
 
-# on:
-#   push:
-#     branches: [main, master]
-#   pull_request:
-#     types: [closed]
-#   workflow_dispatch:
-#     inputs:
-#       environment:
-#         description: '部署环境'
-#         type: choice
-#         options:
-#           - dev
-#           - test
-#           - prod
-#         default: 'prod'
-#         required: true
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: '是否推送镜像并部署到服务器'
+        type: boolean
+        default: false
 
 env:
   # 项目配置
@@ -39,7 +32,6 @@ jobs:
   build:
     name: 构建应用
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -98,6 +90,8 @@ jobs:
     name: 构建并推送Docker镜像
     needs: build
     runs-on: ubuntu-latest
+    # 需要阿里云 ACR 凭据，仅在手动触发时执行，避免日常提交因缺少 secrets 失败
+    if: github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
@@ -164,7 +158,8 @@ jobs:
     name: 部署到生产服务器
     needs: docker-build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    # 需要目标服务器，手动触发并勾选 deploy 时才执行
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
     environment: production
     steps:
       - name: 检出代码
@@ -241,7 +236,7 @@ jobs:
     name: 发送部署通知
     needs: deploy
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.deploy
     steps:
       - name: 检查部署状态
         run: |
