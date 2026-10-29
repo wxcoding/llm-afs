@@ -1,6 +1,6 @@
 # 智能反诈系统（AFS）
 
-基于 Spring Boot 3.4 + Spring AI + Vue 3 的防诈骗知识问答系统。以知识库与诈骗案例为可信数据源，通过 RAG 将相关内容注入通义千问提示词，提供带引用来源的流式多轮问答。。
+基于 Spring Boot 3.4 + Spring AI + Vue 3 的防诈骗知识问答系统。以知识库与诈骗案例为可信数据源，通过 RAG 将相关内容注入通义千问提示词，提供带引用来源的流式多轮问答。
 
 ![Java 17](https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?logo=springboot&logoColor=white)
