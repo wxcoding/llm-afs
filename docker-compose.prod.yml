@@ -17,6 +17,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # 使用 Flyway 进行数据库迁移，无需单独挂载 schema.sql
+    # 只绑定回环地址：公网不可达，供 Navicat 等客户端走 SSH 隧道连接（隧道入口即本机）
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
