@@ -173,6 +173,10 @@ jobs:
     # 需要目标服务器，手动触发并勾选 deploy 时才执行
     if: github.event_name == 'workflow_dispatch' && inputs.deploy
     environment: production
+    env:
+      # 服务器从 ACR VPC 内网拉镜像（同 region 不限速、不占公网带宽、免流量费）；
+      # 未配置 ALIYUN_ACR_REGISTRY_VPC secret 时回退公网域名。CI 推送侧仍用全局公网 REGISTRY。
+      REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY_VPC || secrets.ALIYUN_ACR_REGISTRY }}
     # 同一时间只允许一个部署任务，避免连续提交时并发覆盖线上
     concurrency:
       group: production-deploy
