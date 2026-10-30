@@ -112,7 +112,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      # 用 127.0.0.1 而非 localhost：alpine 容器内 localhost 解析到 ::1，nginx 只监听 IPv4，wget 会 Connection refused
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

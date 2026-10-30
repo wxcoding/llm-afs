@@ -105,7 +105,8 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/health || exit 1"]  # 健康检查
+      # 用 127.0.0.1 而非 localhost：alpine 容器内 localhost 解析到 ::1，nginx 只监听 IPv4，wget 会 Connection refused
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/health || exit 1"]  # 健康检查
       interval: 30s
       timeout: 10s
       retries: 3
