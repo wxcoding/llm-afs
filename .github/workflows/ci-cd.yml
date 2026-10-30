@@ -241,7 +241,7 @@ jobs:
             chmod 600 .env
 
             # 拉取最新镜像
-            docker compose -f docker-compose.prod.yml pull --timeout 3000
+            docker compose -f docker-compose.prod.yml pull
 
             # 启动并等待各容器健康检查通过
             if ! docker compose -f docker-compose.prod.yml up -d --wait --wait-timeout 600; then
