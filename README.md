@@ -10,6 +10,10 @@
 ![Redis 7](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/wxcoding/llm-afs/ci-cd.yml?branch=master&label=CI%2FCD)](https://github.com/wxcoding/llm-afs/actions/workflows/ci-cd.yml)
 
+## 🌐 在线体验
+
+- 地址：[智能反诈系统](http://47.95.231.138:3000/) 可注册账号，admin 功能权限该环境暂不可见
+
 ## 🛠️ 技术栈
 
 | 分类 | 技术 |
