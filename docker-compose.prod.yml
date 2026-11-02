@@ -1,7 +1,7 @@
 # - prod 环境 Docker Compose 配置
 #
 #   特别说明：
-# - 镜像来自阿里云 ACR，不包含 build 段
+# - 前后端服务镜像来自阿里云 ACR，不包含 build 段（便于.github/workflows/ci-cd.yml自动部署提速）
 # - 使用方式: 在部署目录放置 .env 后执行 docker compose -f docker-compose.prod.yml up -d
 # - 本地开发使用 docker-compose.yml
 
