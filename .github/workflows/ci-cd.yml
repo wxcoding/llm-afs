@@ -91,7 +91,7 @@ jobs:
 
   # ==================== Docker构建与推送 ====================
   docker-build:
-    name: 构建并推送Docker镜像
+    name: 构建并推送Docker镜像到阿里云ACR
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
