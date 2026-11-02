@@ -1,4 +1,4 @@
-# AFS 智能防诈骗系统 - Docker Compose 开发环境配置
+# - Docker Compose 开发环境配置
 # 使用方式:
 #   1. 复制 .env.example 为 .env 并填写配置
 #   2. 启动: docker compose up -d --build
