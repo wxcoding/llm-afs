@@ -4,8 +4,8 @@ import { useUserStore } from '@/stores/user'
 const routes = [
   { path: '/', component: () => import('@/views/home/index.vue'), meta: { title: '首页' } },
   { path: '/login', component: () => import('@/views/auth/index.vue'), meta: { blank: true, title: '登录' } },
-  { path: '/chat', component: () => import('@/views/chat/index.vue'), meta: { title: '智能问答' } },
-  { path: '/chat/:sessionId', component: () => import('@/views/chat/index.vue'), meta: { title: '智能问答' } },
+  { path: '/chat', component: () => import('@/views/chat/index.vue'), meta: { title: '智能问答', immersive: true } },
+  { path: '/chat/:sessionId', component: () => import('@/views/chat/index.vue'), meta: { title: '智能问答', immersive: true } },
   { path: '/cases', component: () => import('@/views/cases/index.vue'), meta: { title: '案例分析' } },
   { path: '/knowledge', component: () => import('@/views/knowledge/index.vue'), meta: { title: '知识库' } },
   { path: '/audit', component: () => import('@/views/audit/index.vue'), meta: { title: '知识审核', admin: true } },

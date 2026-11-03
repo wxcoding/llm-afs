@@ -12,7 +12,7 @@
 
       <div class="chat-main">
         <div ref="messagesContainer" class="chat-messages">
-          <QuickQuestions v-if="messages.length === 0" :questions="quickQuestions" @select="sendQuickQuestion" />
+          <QuickQuestions v-if="messages.length === 0" :groups="questionGroups" @select="sendQuickQuestion" />
 
           <MessageBubble
             v-for="(msg, index) in messages"
@@ -22,7 +22,7 @@
           />
 
           <div v-if="loading" class="message assistant">
-            <div class="message-avatar">🤖</div>
+            <div class="message-avatar"><ShieldIcon :size="18" /></div>
             <div class="message-content">
               <span class="loading-dots">正在思考中...</span>
             </div>
@@ -39,11 +39,13 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Phone, Lock } from '@element-plus/icons-vue'
 import { getChatSessions, getSessionMessages, deleteSession as deleteSessionApi, renameSession as renameSessionApi } from '@/api/chat'
 import SessionList from '@/components/business/SessionList.vue'
 import MessageBubble from '@/components/business/MessageBubble.vue'
 import ChatInput from '@/components/business/ChatInput.vue'
 import QuickQuestions from '@/components/business/QuickQuestions.vue'
+import ShieldIcon from '@/components/common/ShieldIcon.vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -57,13 +59,22 @@ const inputMessage = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
 
-const quickQuestions = [
-  '什么是电信诈骗？',
-  '如何识别网络诈骗？',
-  '遇到诈骗怎么办？',
-  '有哪些常见诈骗手法？',
-  '刷单返利是真的吗？',
-  '如何保护个人信息？'
+const questionGroups = [
+  {
+    label: '识别诈骗',
+    icon: Search,
+    questions: ['什么是电信诈骗？', '如何识别网络诈骗？', '刷单返利是真的吗？']
+  },
+  {
+    label: '应对措施',
+    icon: Phone,
+    questions: ['遇到诈骗怎么办？', '有哪些常见诈骗手法？']
+  },
+  {
+    label: '日常防护',
+    icon: Lock,
+    questions: ['如何保护个人信息？']
+  }
 ]
 
 const loadSessions = async () => {
@@ -262,16 +273,14 @@ onMounted(() => {
 
 <style scoped>
 .chat-page {
-  height: calc(100vh - 140px);
+  height: 100vh;
 }
 
 .chat-container {
   display: flex;
   height: 100%;
   background: white;
-  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
 }
 
 .chat-main {
@@ -284,8 +293,15 @@ onMounted(() => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  background-color: #fafafa;
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+/* 消息列居中限宽（子组件根元素会继承本作用域属性） */
+.chat-messages > * {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .loading-dots {
@@ -304,28 +320,27 @@ onMounted(() => {
 
 .message {
   display: flex;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 24px;
   align-items: flex-start;
 }
 
 .message-avatar {
-  font-size: 22px;
-  margin-right: 10px;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ecf5ff;
+  color: #409eff;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f2f5;
-  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .message-content {
-  background: white;
-  padding: 10px 14px;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  border: 1px solid #ebeef5;
+  padding: 4px 0;
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.7;
 }
 </style>

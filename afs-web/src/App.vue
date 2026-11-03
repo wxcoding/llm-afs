@@ -65,7 +65,7 @@
       </el-aside>
 
       <el-container class="right-container">
-        <el-header class="header">
+        <el-header v-if="!isImmersiveRoute" class="header">
           <div class="header-left">
             <el-icon class="collapse-btn" @click="toggleCollapse">
               <Expand v-if="isCollapse" />
@@ -105,7 +105,7 @@
           </div>
         </el-header>
 
-        <el-main class="main-content">
+        <el-main :class="['main-content', { immersive: isImmersiveRoute }]">
           <router-view />
         </el-main>
       </el-container>
@@ -148,6 +148,8 @@ const toggleCollapse = () => {
 
 const activeIndex = computed(() => route.path)
 const isBlankRoute = computed(() => route.meta?.blank === true)
+// 沉浸式路由（如智能问答）：隐藏 header、主区无 padding，页面占满视口
+const isImmersiveRoute = computed(() => route.meta?.immersive === true)
 const currentTitle = computed(() => route.meta?.title || '')
 
 const handleMenuSelect = (index) => {
@@ -419,5 +421,11 @@ const logout = async () => {
   padding: 20px;
   overflow-y: auto;
   background: var(--brand-bg-page, #f5f6fa);
+}
+
+.main-content.immersive {
+  padding: 0;
+  overflow: hidden;
+  background: #ffffff;
 }
 </style>
