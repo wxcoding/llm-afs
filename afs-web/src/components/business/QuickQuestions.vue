@@ -5,16 +5,16 @@
         <ShieldIcon :size="24" class="title-icon" />
         防诈骗问答助手
       </h2>
-      <p class="welcome-sub">基于专业反诈知识库，为你解答各类诈骗手法与应对方法</p>
+      <p class="welcome-sub">基于专业反诈知识库，为您解答各类诈骗手法与应对方法</p>
     </div>
 
     <div class="urgent-banner">
-      <el-icon :size="18" class="urgent-icon"><WarningFilled /></el-icon>
-      <div class="urgent-text">
-        <div class="urgent-title">正在遭遇诈骗？</div>
-        <div class="urgent-sub">立即停止转账并保存证据，拨打反诈专线</div>
-      </div>
-      <span class="urgent-num">96110</span>
+      <el-icon :size="15" class="urgent-icon"><WarningFilled /></el-icon>
+      <span class="urgent-text">正在遭遇诈骗？立即停止转账并保存证据，拨打反诈专线</span>
+      <span class="urgent-num">
+        <el-icon :size="13"><Phone /></el-icon>
+        96110
+      </span>
     </div>
 
     <div class="question-groups">
@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { WarningFilled, ArrowRight } from '@element-plus/icons-vue'
+import { WarningFilled, ArrowRight, Phone } from '@element-plus/icons-vue'
 import ShieldIcon from '@/components/common/ShieldIcon.vue'
 
 defineProps({
@@ -89,16 +89,15 @@ defineEmits(['select'])
   margin: 0;
 }
 
-/* 紧急求助横幅 */
+/* 紧急求助细条：轻量信息条，号码做成实心胶囊突出可拨打感 */
 .urgent-banner {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid #f56c6c;
+  gap: 10px;
+  padding: 9px 14px;
   border-radius: 8px;
-  background: #fef0f0;
+  background: #fdf4f4;
 }
 
 .urgent-icon {
@@ -109,25 +108,25 @@ defineEmits(['select'])
 .urgent-text {
   flex: 1;
   min-width: 0;
-}
-
-.urgent-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.urgent-sub {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 2px;
+  font-size: 13px;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .urgent-num {
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 14px;
   font-weight: 600;
-  color: #f56c6c;
-  white-space: nowrap;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 /* 分组快捷问题 */

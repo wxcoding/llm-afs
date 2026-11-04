@@ -16,7 +16,7 @@
             </div>
           </div>
           <h1 class="brand-title">智能反诈系统</h1>
-          <p class="brand-desc">基于大模型AI技术，智能识别诈骗手段，全方位守护您的安全</p>
+          <p class="brand-desc">智能识别诈骗手段，全方位守护您的安全</p>
           <div class="feature-list">
             <div class="feature-item">
               <div class="feature-icon-box">

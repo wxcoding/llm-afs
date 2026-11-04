@@ -5,7 +5,7 @@
       <div class="welcome-content">
         <div class="welcome-text">
           <h2 class="welcome-title">欢迎使用智能反诈系统</h2>
-          <p class="welcome-desc">基于大模型 AI 技术，智能识别诈骗手段，全方位守护您的安全</p>
+          <p class="welcome-desc">智能识别诈骗手段，全方位守护您的安全</p>
         </div>
         <div class="welcome-actions">
           <el-button type="primary" @click="$router.push('/chat')">
