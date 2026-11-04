@@ -22,13 +22,13 @@
 | :---: | :---: |
 | ![登录页](docs/images/login.png) | ![首页看板](docs/images/dashboard.png) |
 
-| 智能问答（附来源引用） | 知识库管理 |
+| 智能问答 | 智能问答（附来源引用） |
 | :---: | :---: |
-| ![智能问答](docs/images/chat-citations.png) | ![知识库管理](docs/images/knowledge.png) |
+| ![智能问答](docs/images/chat-welcome.png) | ![智能问答](docs/images/chat-citations.png) |
 
-| 案例分析 |
-| :---: |
-| ![案例分析](docs/images/cases.png) |
+| 知识库管理 | 案例分析 |
+| :---: | :---: |
+| ![知识库管理](docs/images/knowledge.png) | ![案例分析](docs/images/cases.png) |
 
 ## 🛠️ 技术栈
 
