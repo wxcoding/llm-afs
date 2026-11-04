@@ -340,7 +340,11 @@ public class RerankService {
             if (index < 0 || index >= candidates.size() || !seenIndexes.add(index)) {
                 throw new IllegalStateException("ReRank 响应包含越界或重复的候选索引");
             }
-            reranked.add(candidates.get(index));
+            // 把重排给出的相关性分数写入元数据，供展示层按阈值过滤来源
+            double relevanceScore = result.get("relevance_score") instanceof Number number
+                    ? number.doubleValue()
+                    : -1;
+            reranked.add(withRelevanceScore(candidates.get(index), relevanceScore));
             if (reranked.size() == rerankTopN) {
                 break;
             }
@@ -349,6 +353,20 @@ public class RerankService {
             throw new IllegalStateException("ReRank 响应没有有效候选结果");
         }
         return reranked;
+    }
+
+    /**
+     * 复制文档并附加重排相关性分数，保留原有元数据；
+     * 分数为 -1 表示本次重排未返回分数，展示层据此跳过阈值过滤。
+     */
+    private Document withRelevanceScore(Document document, double relevanceScore) {
+        Map<String, Object> metadata = new HashMap<>(document.getMetadata());
+        metadata.put("relevanceScore", relevanceScore);
+        return Document.builder()
+                .id(document.getId())
+                .text(document.getText())
+                .metadata(metadata)
+                .build();
     }
 
     /**
@@ -407,14 +425,21 @@ public class RerankService {
         // 按得分排序
         scoredDocs.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
         
-        // 取 Top N
+        // 取 Top N，并把无上限的命中分归一化到 0~1 的相关性分数
         List<Document> result = scoredDocs.stream()
                 .limit(rerankTopN)
-                .map(Map.Entry::getKey)
+                .map(entry -> withRelevanceScore(entry.getKey(), normalizeMockScore(entry.getValue())))
                 .collect(Collectors.toList());
         
         log.info("Mock ReRank 完成 - 输入: {}, 输出: {}", candidates.size(), result.size());
         return result;
+    }
+
+    /**
+     * 把 Mock 的累加命中分映射到 0~1：score / (score + 1)，保证与真实重排分同一量纲。
+     */
+    private double normalizeMockScore(double rawScore) {
+        return rawScore <= 0 ? 0.0 : rawScore / (rawScore + 1.0);
     }
 
     /**

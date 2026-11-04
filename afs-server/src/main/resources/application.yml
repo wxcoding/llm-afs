@@ -37,6 +37,15 @@ spring:
           max-idle: 8
           min-idle: 2
   ai:
+    # 重试配置：只重试限流(429)与服务端错误(5xx)；4xx（鉴权失败、模型未开通等）重试没有意义
+    retry:
+      max-attempts: 3              # 最多重试3次
+      on-client-errors: false      # 4xx 不重试
+      on-http-codes: 429           # 限流仍重试
+      backoff:
+        initial-interval: 5000     # 初始等待5秒（避开限流恢复窗口）
+        multiplier: 2              # 指数退避：5s → 10s → 20s
+        max-interval: 30000        # 最大等待30秒
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
 #      base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -49,13 +58,6 @@ spring:
       embedding:
         options:
           model: qwen3.7-text-embedding-flash
-      # 重试配置
-      retry:
-        max-attempts: 3              # 最多重试3次
-        backoff:
-          initial-interval: 5000     # 初始等待5秒（避开限流恢复窗口）
-          multiplier: 2              # 指数退避：5s → 10s → 20s
-          max-interval: 30000        # 最大等待30秒
       # HTTP客户端超时配置
       client:
         http:
@@ -93,6 +95,13 @@ spring:
       cohere:
         endpoint: https://api.cohere.ai/v1/rerank
         api-key: ${COHERE_API_KEY:}
+
+# RAG 引用展示配置
+rag:
+  citation:
+    # 参考来源展示阈值：仅展示相关度达到该值的检索结果；分数未知时不过滤。
+    # 调低可放宽（如 0.25），调高更严格（如 0.5）。设为 0 等同于关闭门控。
+    min-score: 0.35
 
 mybatis-plus:
   configuration:

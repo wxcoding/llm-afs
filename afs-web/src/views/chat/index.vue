@@ -91,6 +91,9 @@ const loadHistory = async (id) => {
     messages.value = (res.data || []).map(m => ({
       ...m,
       sources: m.sources ? (typeof m.sources === 'string' ? JSON.parse(m.sources) : m.sources) : [],
+      // 历史消息没有来源记录时，按"未引用知识库"展示
+      noEvidence: m.role === 'assistant' && !m.sources,
+      degraded: m.degraded === true,
       showSources: false
     }))
     scrollToBottom()
@@ -172,6 +175,8 @@ const sendMessage = async (content) => {
       role: 'assistant',
       content: '',
       sources: [],
+      noEvidence: false,
+      degraded: false,
       showSources: false
     }
     const assistantIndex = messages.value.length
@@ -213,6 +218,15 @@ const sendMessage = async (content) => {
         }
         if (json.sources) {
           messages.value[assistantIndex].sources = json.sources
+        }
+        // 后端完成来源门控后下发：无可引用来源时前端展示"未引用知识库"提示
+        if (json.noEvidence !== undefined) {
+          messages.value[assistantIndex].noEvidence = json.noEvidence
+        }
+        // 降级回复：本条不是模型生成。若仍有达标来源，后端会紧随其后下发 sources，
+        // 前端据此展示"知识库原文摘录"，因此此处不清空来源
+        if (json.degraded) {
+          messages.value[assistantIndex].degraded = true
         }
         if (json.content) {
           messages.value[assistantIndex].content += json.content

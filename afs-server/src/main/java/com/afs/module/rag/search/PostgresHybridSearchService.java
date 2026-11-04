@@ -92,7 +92,8 @@ public class PostgresHybridSearchService {
                 && vectorResult.scores().isEmpty() && keywordResult.scores().isEmpty()) {
             throw new IllegalStateException("检索通道发生错误且没有可用召回结果");
         }
-        List<Document> fusedResults = rrfFusion(vectorResult.scores(), keywordResult.scores(), topK);
+        List<Document> fusedResults = rrfFusion(vectorResult.scores(), keywordResult.scores(),
+                vectorResult.similarities(), topK);
 
         log.info("混合检索完成 - 原始查询: {}, 扩展查询数: {}, 向量命中: {}, 全文检索命中: {}, 最终返回: {}",
                 query, expandedQueries.size(), vectorResult.scores().size(),
@@ -111,7 +112,24 @@ public class PostgresHybridSearchService {
         if (filter != null) {
             builder.filterExpression(filter);
         }
-        return vectorStore.similaritySearch(builder.build());
+        List<Document> results = vectorStore.similaritySearch(builder.build());
+        return results.stream().map(PostgresHybridSearchService::withSimilarity).toList();
+    }
+
+    /**
+     * 复制文档元数据并补充 0~1 的余弦相似度，供重排不可用时兜底打分。
+     */
+    private static Document withSimilarity(Document document) {
+        Map<String, Object> metadata = new HashMap<>(document.getMetadata());
+        Object distance = metadata.get("distance");
+        if (distance instanceof Number number) {
+            metadata.put("similarity", Math.max(0.0, 1.0 - number.doubleValue()));
+        }
+        return Document.builder()
+                .id(document.getId())
+                .text(document.getText())
+                .metadata(metadata)
+                .build();
     }
 
     /**
@@ -119,6 +137,7 @@ public class PostgresHybridSearchService {
      */
     private RecallResult vectorSearch(String query, Map<String, Object> filters, int topK) {
         Map<String, Double> scores = new LinkedHashMap<>();
+        Map<String, Double> similarities = new HashMap<>();
         try {
             SearchRequest.Builder request = SearchRequest.builder().query(query).topK(topK);
             var filter = RagSearchFilters.buildVectorExpression(filters);
@@ -128,12 +147,19 @@ public class PostgresHybridSearchService {
             List<Document> results = vectorStore.similaritySearch(request.build());
             // RRF 只比较排名，不直接混用向量距离和全文相关性分数。
             for (int rank = 0; rank < results.size(); rank++) {
-                scores.put(results.get(rank).getId(), 1.0 / (RRF_K + rank + 1));
+                Document document = results.get(rank);
+                String chunkId = document.getId();
+                scores.put(chunkId, 1.0 / (RRF_K + rank + 1));
+                // 保留真实余弦相似度，重排不可用时用它兜底打分
+                Object distance = document.getMetadata().get("distance");
+                if (distance instanceof Number number) {
+                    similarities.put(chunkId, Math.max(0.0, 1.0 - number.doubleValue()));
+                }
             }
-            return new RecallResult(scores, false);
+            return new RecallResult(scores, similarities, false);
         } catch (Exception e) {
             log.error("向量检索失败，将仅使用全文检索结果参与融合", e);
-            return new RecallResult(scores, true);
+            return new RecallResult(scores, similarities, true);
         }
     }
 
@@ -166,7 +192,7 @@ public class PostgresHybridSearchService {
         bestRanks.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().thenComparing(Map.Entry::getKey))
                 .forEach(entry -> scores.put(entry.getKey(), 1.0 / (RRF_K + entry.getValue())));
-        return new RecallResult(scores, failed);
+        return new RecallResult(scores, Collections.emptyMap(), failed);
     }
 
     /**
@@ -240,6 +266,7 @@ public class PostgresHybridSearchService {
      */
     private List<Document> rrfFusion(Map<String, Double> vectorScores,
                                      Map<String, Double> keywordScores,
+                                     Map<String, Double> vectorSimilarities,
                                      int topK) {
         // 两路召回共用 chunk ID，因此可直接按 ID 累加倒数排名分数。
         Set<String> chunkIds = new LinkedHashSet<>();
@@ -257,7 +284,7 @@ public class PostgresHybridSearchService {
                         .thenComparing(Map.Entry::getKey))
                 .map(Map.Entry::getKey)
                 .toList();
-        return getDocumentsByIds(rankedIds, fusedScores).stream()
+        return getDocumentsByIds(rankedIds, fusedScores, vectorSimilarities).stream()
                 .limit(topK)
                 .toList();
     }
@@ -265,7 +292,8 @@ public class PostgresHybridSearchService {
     /**
      * 按 chunk_id 批量回查 rag_chunk，重建带元数据的 Document（distance 字段写入融合分数）。
      */
-    private List<Document> getDocumentsByIds(List<String> chunkIds, Map<String, Double> scores) {
+    private List<Document> getDocumentsByIds(List<String> chunkIds, Map<String, Double> scores,
+                                             Map<String, Double> similarities) {
         if (chunkIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -286,6 +314,10 @@ public class PostgresHybridSearchService {
             metadata.put("type", type);
             metadata.put("source", "scamcase".equals(type) ? "诈骗案例" : "知识库");
             metadata.put("distance", scores.getOrDefault(chunkId, 0.0));
+            Double similarity = similarities.get(chunkId);
+            if (similarity != null) {
+                metadata.put("similarity", similarity);
+            }
             if (row.get("category") != null) {
                 metadata.put("category", row.get("category"));
                 if ("scamcase".equals(type)) {
@@ -325,7 +357,8 @@ public class PostgresHybridSearchService {
         return stats.toString();
     }
 
-    /** 单路召回结果：chunk_id → RRF 分数，以及该路是否发生过错误 */
-    private record RecallResult(Map<String, Double> scores, boolean failed) {
+    /** 单路召回结果：chunk_id → RRF 分数、chunk_id → 余弦相似度，以及该路是否发生过错误 */
+    private record RecallResult(Map<String, Double> scores, Map<String, Double> similarities,
+                                boolean failed) {
     }
 }

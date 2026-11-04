@@ -125,8 +125,9 @@ class ChatServiceTest {
         assertEquals(23, saved.getTitle().length());
         assertTrue(saved.getTitle().endsWith("..."));
 
-        // 头部事件应携带回填后的会话ID
-        assertEquals("{\"sessionId\":99}", events.get(0).data());
+        // 头部事件应携带回填后的会话ID，并标记无可引用来源
+        assertTrue(events.get(0).data().contains("\"sessionId\":99"));
+        assertTrue(events.get(0).data().contains("\"noEvidence\":true"));
     }
 
     @Test
@@ -145,7 +146,8 @@ class ChatServiceTest {
                 .collectList().block();
 
         // 头部两个事件：sessionId + sources，之后是内容块
-        assertEquals("{\"sessionId\":5}", events.get(0).data());
+        assertTrue(events.get(0).data().contains("\"sessionId\":5"));
+        assertTrue(events.get(0).data().contains("\"noEvidence\":false"));
         assertTrue(events.get(1).data().contains("\"sources\""));
         assertEquals(4, events.size());
         assertEquals("你好世界", joinContent(events));
@@ -172,7 +174,8 @@ class ChatServiceTest {
 
         // 仅有 sessionId 头事件 + 一个内容块
         assertEquals(2, events.size());
-        assertEquals("{\"sessionId\":7}", events.get(0).data());
+        assertTrue(events.get(0).data().contains("\"sessionId\":7"));
+        assertTrue(events.get(0).data().contains("\"noEvidence\":true"));
         assertEquals("通用回答", joinContent(events));
     }
 
@@ -187,7 +190,7 @@ class ChatServiceTest {
                 .collectList().block();
 
         String content = joinContent(events);
-        assertEquals("抱歉，本次未能获取到有效回复，请稍后重试。", content);
+        assertEquals("抱歉，本次未能生成回答，请稍后重试。如遇诈骗，请立即拨打 96110。", content);
 
         // 兜底文案也应作为助手消息入库
         ArgumentCaptor<ChatMessage> msgCaptor = ArgumentCaptor.forClass(ChatMessage.class);
@@ -205,15 +208,68 @@ class ChatServiceTest {
                 .sendMessageStream(1L, 9L, "电信诈骗怎么办")
                 .collectList().block();
 
-        // 命中"电信诈骗"关键词的降级文案
+        // 无达标来源时只返回通用故障提示
         String content = joinContent(events);
-        assertTrue(content.contains("防诈骗提示"));
+        assertTrue(content.contains("本次未能生成回答"));
 
         ArgumentCaptor<ChatMessage> msgCaptor = ArgumentCaptor.forClass(ChatMessage.class);
         verify(messageMapper, times(2)).insert(msgCaptor.capture());
         ChatMessage assistantMsg = msgCaptor.getAllValues().get(1);
         assertEquals("assistant", assistantMsg.getRole());
         assertNull(assistantMsg.getSources());
+    }
+
+    @Test
+    void AI调用异常时若有达标来源则摘录知识库原文并保存来源() {
+        List<Map<String, Object>> sources = List.of(
+                Map.of("content", "公检法机关不会通过电话办案，不存在所谓的安全账户。",
+                        "title", "冒充公检法诈骗", "source", "知识库",
+                        "type", "knowledge", "score", 0.9));
+        when(ragSearchService.searchWithMetadata(anyString(), eq(5))).thenReturn(sources);
+        when(ragContextBuilder.buildContext(sources)).thenReturn("CTX");
+        stubEmptyHistory();
+        stubChatClient(Flux.error(new RuntimeException("AI 服务不可用")));
+
+        List<ServerSentEvent<String>> events = chatService
+                .sendMessageStream(1L, 11L, "冒充公检法怎么识破")
+                .collectList().block();
+
+        String content = joinContent(events);
+        assertTrue(content.contains("以下内容直接摘自知识库原文"));
+        assertTrue(content.contains("公检法机关不会通过电话办案"));
+
+        // 事件顺序：sessionId 头事件 → degraded → sources → 内容块
+        assertTrue(events.get(1).data().contains("\"degraded\":true"));
+        assertTrue(events.get(2).data().contains("\"sources\""));
+
+        ArgumentCaptor<ChatMessage> msgCaptor = ArgumentCaptor.forClass(ChatMessage.class);
+        verify(messageMapper, times(2)).insert(msgCaptor.capture());
+        ChatMessage assistantMsg = msgCaptor.getAllValues().get(1);
+        assertTrue(assistantMsg.getDegraded());
+        assertTrue(assistantMsg.getSources().contains("冒充公检法诈骗"));
+    }
+
+    @Test
+    void 摘录正文自带标题时不重复输出标题() {
+        List<Map<String, Object>> sources = List.of(
+                Map.of("content", "【防诈骗通用提示】\n1. 凡是自称公检法要求汇款的，都是诈骗\n2. 凡是让你汇款到安全账户的，都是诈骗",
+                        "title", "防诈骗通用提示", "source", "知识库",
+                        "type", "knowledge", "score", 0.9));
+        when(ragSearchService.searchWithMetadata(anyString(), eq(5))).thenReturn(sources);
+        when(ragContextBuilder.buildContext(sources)).thenReturn("CTX");
+        stubEmptyHistory();
+        stubChatClient(Flux.error(new RuntimeException("AI 服务不可用")));
+
+        List<ServerSentEvent<String>> events = chatService
+                .sendMessageStream(1L, 12L, "怎么防诈骗")
+                .collectList().block();
+
+        String content = joinContent(events);
+        // 标题只出现一次，且列表换行没有被压平
+        assertEquals(1, content.split("【防诈骗通用提示】", -1).length - 1);
+        assertTrue(content.contains("1. 凡是自称公检法要求汇款的"));
+        // 换行在 JSON 中为转义后的 \n，验证换行未被压平
+        assertTrue(content.contains("\\n2. 凡是让你汇款到安全账户的"));
     }
 
     @Test
@@ -227,9 +283,8 @@ class ChatServiceTest {
                 .sendMessageStream(1L, 10L, "网络诈骗有哪些")
                 .collectList().block();
 
-        // "网络诈骗有哪些" 含"诈骗"关键词，按关键词优先级命中第一条通用防骗文案
-        // （"网络诈骗"分支因判断顺序实际不可达，属主代码既有行为，此处按实际断言）
-        assertTrue(joinContent(events).contains("防诈骗提示"));
+        // 无达标来源时只返回通用故障提示
+        assertTrue(joinContent(events).contains("本次未能生成回答"));
     }
 
     @Test
@@ -287,7 +342,7 @@ class ChatServiceTest {
         stubChatClient(Flux.just(chunk("块1"), chunk("块2")));
 
         StepVerifier.create(chatService.sendMessageStream(1L, 13L, "问题"))
-                .expectNextMatches(e -> "{\"sessionId\":13}".equals(e.data()))
+                .expectNextMatches(e -> e.data().contains("\"sessionId\":13"))
                 .expectNextCount(2)
                 .verifyComplete();
     }

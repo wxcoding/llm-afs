@@ -16,12 +16,15 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -55,6 +58,16 @@ public class ChatService {
 
     /** JSON 序列化工具 */
     private final ObjectMapper objectMapper;
+
+    /** 来源展示的相关度阈值：低于该值的检索结果不作为"参考来源"展示给用户 */
+    @Value("${rag.citation.min-score:0.35}")
+    private double citationMinScore;
+
+    /** 模型不可用时，降级回答最多摘录的知识条目数（只给最高分一条，避免半成品答案被当成完整回答） */
+    private static final int MAX_EXCERPT_SOURCES = 1;
+
+    /** 降级回答中单条摘录的最大字符数 */
+    private static final int MAX_EXCERPT_CHARS = 300;
 
     /**
      * 发送消息并通过 SSE 流式返回 AI 响应
@@ -103,24 +116,50 @@ public class ChatService {
         // 通过RAG服务构建上下文，从知识库检索相关内容（带降级机制）
         String context = "";
         List<Map<String, Object>> sources = new ArrayList<>();
+        List<Map<String, Object>> displaySources = new ArrayList<>();
         try {
             sources = ragSearchService.searchWithMetadata(content, 5);
             if (!sources.isEmpty()) {
                 context = ragContextBuilder.buildContext(sources);
+                // 上下文仍使用全部召回内容，展示层只保留相关度达标的部分，避免低分结果被当作权威引用
+                displaySources = filterByRelevance(sources, citationMinScore);
+                log.info("RAG 引用门控 - 召回: {}, 达标: {}, 阈值: {}",
+                        sources.size(), displaySources.size(), citationMinScore);
             }
         } catch (Exception e) {
             log.warn("RAG 检索失败，已降级为纯 AI 对话模式", e);
         }
 
-        // 头部事件：会话ID、来源信息
+        // 头部事件：会话ID + 是否有可引用来源
+        // 来源本身在首个内容块到达时才下发，避免 AI 调用失败时"先显示来源又立刻清空"
         List<ServerSentEvent<String>> head = new ArrayList<>();
-        head.add(sse(toJson(Map.of("sessionId", sessionId))));
-        if (!sources.isEmpty()) {
-            head.add(sse(toJson(Map.of("sources", sources))));
-        }
+        head.add(sse(toJson(Map.of("sessionId", sessionId, "noEvidence", displaySources.isEmpty()))));
 
         return Flux.concat(Flux.fromIterable(head),
-                callAIStreamWithRag(sessionId, content, context, sources));
+                callAIStreamWithRag(sessionId, content, context, displaySources));
+    }
+
+    /**
+     * 按展示阈值过滤检索来源。
+     *
+     * <p>仅在分数可信（0~1）且低于阈值时丢弃；分数未知（-1，如重排关闭或重排降级）时保留，
+     * 保证任何情况下都不会因为拿不到分数而误杀正常召回。</p>
+     *
+     * @param sources  检索来源列表
+     * @param minScore 展示阈值
+     * @return 可用于展示的来源列表
+     */
+    private List<Map<String, Object>> filterByRelevance(List<Map<String, Object>> sources, double minScore) {
+        return sources.stream()
+                .filter(source -> {
+                    Object score = source.get("score");
+                    if (!(score instanceof Number number)) {
+                        return true;
+                    }
+                    double value = number.doubleValue();
+                    return value < 0 || value >= minScore;
+                })
+                .toList();
     }
 
     /**
@@ -136,6 +175,10 @@ public class ChatService {
                                                               String userContent,
                                                               String context,
                                                               List<Map<String, Object>> sources) {
+        // 降级时只摘录排名最高的一条，来源同步裁剪，避免"正文引一条、来源列五条"
+        List<Map<String, Object>> excerptSources = sources.stream()
+                .limit(MAX_EXCERPT_SOURCES)
+                .toList();
         try {
             // 构建对话历史消息列表
             List<Message> messages = buildMessages(sessionId);
@@ -161,6 +204,8 @@ public class ChatService {
                     .messages(messages);
 
             StringBuilder responseBuilder = new StringBuilder();
+            // 来源事件推迟到首个内容块到达时下发：AI 调用失败时不会先展示来源再立刻清空
+            AtomicBoolean sourcesSent = new AtomicBoolean(false);
             return request.stream().chatResponse()
                     // 超时兜底：首token及相邻增量间隔超过120秒判定为模型挂起
                     .timeout(Duration.ofSeconds(120))
@@ -172,36 +217,142 @@ public class ChatService {
                     .filter(chunk -> !chunk.isEmpty())
                     .doOnNext(responseBuilder::append)
                     .map(chunk -> sse(toJson(Map.of("content", chunk))))
+                    .flatMap(event -> {
+                        if (sourcesSent.compareAndSet(false, true) && sources != null && !sources.isEmpty()) {
+                            return Flux.just(sse(toJson(Map.of("sources", sources))), event);
+                        }
+                        return Flux.just(event);
+                    })
                     // 兜底：流结束但未产出任何有效内容（如思考型模型仅输出 reasoning_content、响应为空），
                     // 此时不会触发 onErrorResume，需在此降级，避免前端空白
                     .switchIfEmpty(Flux.defer(() -> {
                         log.warn("AI 流结束但未收到有效内容，返回降级响应");
-                        String fallback = "抱歉，本次未能获取到有效回复，请稍后重试。";
-                        saveAssistantMessage(sessionId, fallback, null);
-                        return mockStream(fallback);
+                        String fallback = buildDegradedAnswer(resolveDegradedMessage(null), excerptSources);
+                        saveAssistantMessage(sessionId, fallback, excerptSources, true);
+                        return degradedStream(fallback, excerptSources);
                     }))
-                    .doOnComplete(() -> saveAssistantMessage(sessionId, responseBuilder.toString(), sources))
+                    .doOnComplete(() -> saveAssistantMessage(sessionId, responseBuilder.toString(), sources, false))
                     .onErrorResume(e -> {
-                        log.error("AI 调用失败，返回降级响应", e);
-                        String mockResponse = getMockResponse(userContent);
-                        saveAssistantMessage(sessionId, mockResponse, null);
-                        return mockStream(mockResponse);
+                        logAiError(e);
+                        String fallback = buildDegradedAnswer(resolveDegradedMessage(e), excerptSources);
+                        saveAssistantMessage(sessionId, fallback, excerptSources, true);
+                        return degradedStream(fallback, excerptSources);
                     });
         } catch (Exception e) {
             // 构建请求阶段失败同样降级
-            log.error("AI 请求构建失败，返回降级响应", e);
-            String mockResponse = getMockResponse(userContent);
-            saveAssistantMessage(sessionId, mockResponse, null);
-            return mockStream(mockResponse);
+            logAiError(e);
+            String fallback = buildDegradedAnswer(resolveDegradedMessage(e), excerptSources);
+            saveAssistantMessage(sessionId, fallback, excerptSources, true);
+            return degradedStream(fallback, excerptSources);
         }
     }
 
     /**
-     * 降级文案也按小块流式发出：与正常回复一致的 SSE 分块，
-     * 避免单条超长 JSON 事件被网络分片截断导致前端解析失败。
+     * 解析降级文案：模型未开通/欠费/鉴权失败时给出可操作的提示，
+     * 其余异常返回通用失败提示。
      */
-    private Flux<ServerSentEvent<String>> mockStream(String mockText) {
+    private String resolveDegradedMessage(Throwable e) {
+        if (e instanceof WebClientResponseException httpError) {
+            String body = httpError.getResponseBodyAsString();
+            if (body.contains("Unpurchased")) {
+                return "抱歉，问答模型服务暂未开通（账户欠费或模型未购买），请联系管理员处理后再试。";
+            }
+            int status = httpError.getStatusCode().value();
+            if (status == 401 || status == 403) {
+                return "抱歉，问答模型鉴权失败，请联系管理员检查模型配置。";
+            }
+        }
+        return "抱歉，本次未能生成回答，请稍后重试。如遇诈骗，请立即拨打 96110。";
+    }
+
+    /**
+     * 构造降级回答。
+     *
+     * <p>若本次有相关度达标的检索结果，则在故障提示后直接摘录知识库原文，作为模型不可用时的
+     * 兜底答案；没有达标结果时只返回故障提示，避免把无关内容当作答案。</p>
+     *
+     * <p>摘录内容固定标注"未经模型总结改写"，避免用户把原文片段误认为模型结论。</p>
+     *
+     * @param hint    故障提示文案
+     * @param sources 已通过相关度过滤的检索来源
+     * @return 降级回答文本
+     */
+    private String buildDegradedAnswer(String hint, List<Map<String, Object>> sources) {
+        if (sources == null || sources.isEmpty()) {
+            return hint;
+        }
+        StringBuilder answer = new StringBuilder(hint);
+        answer.append("\n\n以下内容直接摘自知识库原文（未经模型总结改写）：\n\n");
+        int appended = 0;
+        for (Map<String, Object> source : sources) {
+            if (appended >= MAX_EXCERPT_SOURCES) {
+                break;
+            }
+            String excerpt = normalizeExcerpt(String.valueOf(source.getOrDefault("content", "")));
+            if (excerpt.isEmpty()) {
+                continue;
+            }
+            String title = String.valueOf(source.getOrDefault("title", "未命名"));
+            // 正文自身已带标题时不再重复加，避免出现两个相同的【标题】
+            if (!excerpt.startsWith("【" + title + "】")) {
+                answer.append("【").append(title).append("】\n");
+            }
+            answer.append(excerpt).append("\n\n");
+            appended++;
+        }
+        if (appended == 0) {
+            return hint;
+        }
+        answer.append("如需完整解答，请稍后重试。");
+        // 通用故障提示已包含 96110，避免同一条消息里重复
+        if (!hint.contains("96110")) {
+            answer.append("如遇诈骗，请立即拨打 96110。");
+        }
+        return answer.toString();
+    }
+
+    /**
+     * 规整摘录文本：压缩行内空白，保留换行（避免把列表挤成一整段），并截断到最大长度。
+     */
+    private String normalizeExcerpt(String raw) {
+        String text = raw.replace("\r\n", "\n")
+                .replaceAll("[ \\t\\u00A0]+", " ")
+                .replaceAll(" *\\n *", "\n")
+                .replaceAll("\\n{2,}", "\n")
+                .trim();
+        if (text.length() > MAX_EXCERPT_CHARS) {
+            return text.substring(0, MAX_EXCERPT_CHARS) + "…";
+        }
+        return text;
+    }
+
+    /**
+     * 打印 AI 调用失败的详细信息。
+     *
+     * <p>HTTP 异常（如 403/401/429）额外打印响应体，响应体里通常带具体的错误码
+     * （模型未授权、模型名错误、额度不足等），比堆栈更能定位问题。</p>
+     */
+    private void logAiError(Throwable e) {
+        if (e instanceof WebClientResponseException httpError) {
+            log.error("AI 调用失败 - HTTP {}, 响应体: {}", httpError.getStatusCode(),
+                    httpError.getResponseBodyAsString());
+        } else {
+            log.error("AI 调用失败，返回降级响应", e);
+        }
+    }
+
+    /**
+     * 降级响应流：先发 degraded 事件告知前端本条不是模型生成，
+     * 有待引用来源时随后发 sources 事件（供前端标注"原文摘录"并展示出处），
+     * 最后按小块输出兜底文案（与正常回复一致的分块，避免超长 JSON 事件被网络分片截断）。
+     */
+    private Flux<ServerSentEvent<String>> degradedStream(String mockText,
+                                                         List<Map<String, Object>> sources) {
         List<ServerSentEvent<String>> events = new ArrayList<>();
+        events.add(sse(toJson(Map.of("degraded", true))));
+        if (sources != null && !sources.isEmpty()) {
+            events.add(sse(toJson(Map.of("sources", sources))));
+        }
         for (int i = 0; i < mockText.length(); i += 50) {
             int end = Math.min(i + 50, mockText.length());
             events.add(sse(toJson(Map.of("content", mockText.substring(i, end)))));
@@ -215,8 +366,10 @@ public class ChatService {
      * @param sessionId 会话ID
      * @param content   AI 回复内容（为空时不保存）
      * @param sources   RAG 检索来源，序列化为 JSON 后随消息入库，可为null
+     * @param degraded  是否为降级回复；降级回复若摘录了知识库原文，仍会保存来源，保证回放一致
      */
-    private void saveAssistantMessage(Long sessionId, String content, List<Map<String, Object>> sources) {
+    private void saveAssistantMessage(Long sessionId, String content,
+                                      List<Map<String, Object>> sources, boolean degraded) {
         if (content == null || content.isEmpty()) {
             return;
         }
@@ -225,6 +378,7 @@ public class ChatService {
         assistantMsg.setRole("assistant");
         assistantMsg.setContent(content);
         assistantMsg.setSources(sources == null || sources.isEmpty() ? null : toJson(sources));
+        assistantMsg.setDegraded(degraded);
         assistantMsg.setCreateTime(LocalDateTime.now());
         messageMapper.insert(assistantMsg);
     }
@@ -286,52 +440,6 @@ public class ChatService {
             }
         }
         return messages;
-    }
-
-    /**
-     * 根据用户最后一条消息生成降级回复文案
-     *
-     * @param lastUserMsg 用户最后一条消息内容
-     * @return 匹配的防诈骗提示文案
-     */
-    private String getMockResponse(String lastUserMsg) {
-        String lowerMsg = lastUserMsg.toLowerCase();
-
-        if (lowerMsg.contains("电信诈骗") || lowerMsg.contains("诈骗") || lowerMsg.contains("防骗")) {
-            return """
-                防诈骗提示：
-
-                1. **警惕陌生来电**：自称公检法、银行、快递等要求转账的都是诈骗！
-                2. **不要轻信中奖信息**：天上不会掉馅饼，中奖先交钱都是骗局！
-                3. **保护个人信息**：身份证号、银行卡号、验证码不要告诉陌生人！
-                4. **核实对方身份**：遇到可疑情况，先挂断电话，再官方渠道核实！
-                5. **不点击陌生链接**：短信、微信中的不明链接不要点！
-
-                如遇到诈骗，请立即拨打110报警！""";
-        } else if (lowerMsg.contains("网络诈骗")) {
-            return """
-                网络诈骗常见手法：
-
-                1. **虚假购物**：低价商品先付款后发货，然后消失
-                2. **刷单返利**：前期小利，后期大额充值后无法提现
-                3. **虚假投资**：高收益稳赚，典型的庞氏骗局
-                4. **冒充客服**：假称退款、注销账户，诱导转账
-                5. **杀猪盘**：网恋交友，诱导投资赌博
-
-                记住：只要让你转账给陌生人，就很可能是诈骗！""";
-        } else {
-            return """
-                您好！我是防诈骗知识助手，基于RAG知识库为您提供专业解答。
-
-                我可以帮您了解：
-                - 电信诈骗的常见手法和防范方法
-                - 网络诈骗的各种套路
-                - 冒充类诈骗的识别技巧
-                - 投资理财诈骗的识别
-                - 各类诈骗案例分享
-
-                请告诉我您想了解的内容！""";
-        }
     }
 
     /**

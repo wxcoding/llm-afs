@@ -93,6 +93,8 @@ public class RagSearchService {
 
     /**
      * 检索并压平为面向前端/提示词的 Map 结构（content、source、title、id、type、score）。
+     *
+     * <p>其中 score 是 0~1 的相关性分数（越大越相关），-1 表示本次未取得可信分数。</p>
      */
     public List<Map<String, Object>> searchWithMetadata(String query, int topK) {
         return searchRelevant(query, topK).stream()
@@ -103,10 +105,31 @@ public class RagSearchService {
                     result.put("title", String.valueOf(document.getMetadata().getOrDefault("title", "")));
                     result.put("id", String.valueOf(document.getMetadata().getOrDefault("dbId", "")));
                     result.put("type", String.valueOf(document.getMetadata().getOrDefault("type", "knowledge")));
-                    result.put("score", document.getMetadata().getOrDefault("distance", 0.0));
+                    result.put("score", resolveRelevanceScore(document));
                     return result;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析展示用相关性分数。
+     *
+     * <p>优先使用重排给出的 relevanceScore；重排不可用（如模型未开通）时退回向量余弦相似度，
+     * 避免"分数未知"导致引用门控全部放行。混合检索会把 distance 覆写为 RRF 融合分，
+     * 不能当作余弦相似度使用，因此只读取专门的 similarity 字段。</p>
+     */
+    private double resolveRelevanceScore(Document document) {
+        Object relevanceScore = document.getMetadata().get("relevanceScore");
+        if (relevanceScore instanceof Number number) {
+            double score = number.doubleValue();
+            return score < 0 ? -1 : Math.min(1.0, score);
+        }
+        Object similarity = document.getMetadata().get("similarity");
+        if (similarity instanceof Number number) {
+            double score = number.doubleValue();
+            return score < 0 ? -1 : Math.min(1.0, score);
+        }
+        return -1;
     }
 
     /**

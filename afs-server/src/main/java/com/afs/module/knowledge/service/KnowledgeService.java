@@ -1,6 +1,7 @@
 package com.afs.module.knowledge.service;
 
 import com.afs.enums.KnowledgeStatus;
+import com.afs.enums.VectorStatus;
 import com.afs.exception.BusinessException;
 import com.afs.module.knowledge.entity.Knowledge;
 import com.afs.module.knowledge.entity.KnowledgeAudit;
@@ -354,6 +355,28 @@ public class KnowledgeService {
             k7.setCreateTime(LocalDateTime.now());
             knowledgeMapper.insert(k7);
         }
+    }
+
+    /**
+     * 增量同步向量库：只派发尚未成功向量化的已发布知识，不做全量重建。
+     *
+     * 用于应用启动，避免每次启动都重复向量化全部知识（消耗 Embedding 额度）。
+     * 需要重建全部索引时仍使用 {@link #syncAllToVectorStore()}。
+     */
+    public void syncPendingToVectorStore() {
+        List<Knowledge> pending = knowledgeMapper.selectList(new QueryWrapper<Knowledge>()
+                .eq("status", KnowledgeStatus.ACTIVE.getCode())
+                .and(w -> w.ne("vector_status", VectorStatus.SUCCESS.getCode())
+                        .or().isNull("vector_status")));
+
+        int dispatched = 0;
+        for (Knowledge k : pending) {
+            if (k.getContent() != null && !k.getContent().isEmpty()) {
+                ragIngestionDispatcher.dispatchKnowledgeUpsert(k.getId());
+                dispatched++;
+            }
+        }
+        log.info("增量向量同步完成，待同步 {} 条，已派发 {} 条", pending.size(), dispatched);
     }
 
     /**

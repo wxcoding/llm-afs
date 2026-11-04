@@ -33,6 +33,9 @@ public class ChatMessage {
     /** RAG 检索来源，JSON 字符串，可为空 */
     private String sources;
 
+    /** 是否为降级回复（AI 调用失败时的兜底文案），降级回复不展示参考来源 */
+    private Boolean degraded;
+
     /** 消息创建时间 */
     private LocalDateTime createTime;
 }

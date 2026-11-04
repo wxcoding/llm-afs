@@ -263,6 +263,25 @@ class KnowledgeServiceCrudTest {
         verify(ragIngestionDispatcher, times(1)).dispatchKnowledgeUpsert(isNull());
     }
 
+    // 增量向量同步：只派发内容非空的待同步知识
+    @Test
+    void syncPendingToVectorStore_dispatchesOnlyNonEmptyContent() {
+        Knowledge pending = new Knowledge();
+        pending.setId(21L);
+        pending.setStatus(KnowledgeStatus.ACTIVE.getCode());
+        pending.setContent("content");
+        Knowledge emptyContent = new Knowledge();
+        emptyContent.setId(22L);
+        emptyContent.setStatus(KnowledgeStatus.ACTIVE.getCode());
+        emptyContent.setContent("");
+        when(knowledgeMapper.selectList(any())).thenReturn(List.of(pending, emptyContent));
+
+        knowledgeService.syncPendingToVectorStore();
+
+        verify(ragIngestionDispatcher, times(1)).dispatchKnowledgeUpsert(21L);
+        verify(ragIngestionDispatcher, never()).dispatchKnowledgeUpsert(22L);
+    }
+
     // 更新时将 DTO 字段拷贝到已存在的实体上（通过捕获参数验证）
     @Test
     void updateKnowledge_copiesFieldsOntoExistingEntity() {

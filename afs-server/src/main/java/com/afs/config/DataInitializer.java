@@ -36,9 +36,9 @@ public class DataInitializer {
             systemConfigService.initDefaultConfigs();
             scamCaseService.initDefaultCases();
             knowledgeService.initDefaultKnowledge();
-            log.info("默认数据初始化完成，开始同步向量库...");
+            log.info("默认数据初始化完成，开始增量同步向量库...");
             try {
-                knowledgeService.syncAllToVectorStore();
+                knowledgeService.syncPendingToVectorStore();
                 scamCaseService.syncAllToVectorStore();
                 log.info("向量库同步完成");
             } catch (Exception e) {
