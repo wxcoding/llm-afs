@@ -24,8 +24,10 @@ public class RagIngestionDispatcher {
 
     /** 入库任务处理器 */
     private final RagIngestionProcessor ragIngestionProcessor;
+
     /** 知识库记录 Mapper */
     private final KnowledgeMapper knowledgeMapper;
+
     /** RAG 入库专用线程池 */
     private final Executor ragIngestionExecutor;
 

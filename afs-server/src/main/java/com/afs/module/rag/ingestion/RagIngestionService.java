@@ -30,10 +30,13 @@ public class RagIngestionService {
 
     /** 向量库，写入与删除向量索引 */
     private final VectorStore vectorStore;
+
     /** JDBC 客户端，维护 rag_chunk 全文索引表 */
     private final JdbcTemplate jdbcTemplate;
+
     /** 向量库元数据过滤表达式构造器 */
     private final FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
+
     // 中文句子级切分：按句读切分、贪心合并到 400 字、块间重叠 60 字，避免在句中硬切
     private final TextSplitter splitter = new ChineseSentenceTextSplitter();
 //    private final TokenTextSplitter splitter = new TokenTextSplitter();
@@ -91,10 +94,17 @@ public class RagIngestionService {
 
     /**
      * 单篇文档的索引主流程：先清除旧索引，再切分、向量化并双写 rag_chunk 全文表。
+     *
+     * @param source     文档对象，包含正文和元数据
+     * @param sourceType 文档来源类型（knowledge / scamcase）
+     * @param sourceId   文档来源主键（知识库条目 ID / 案例记录 ID）
+     * @param title      文档标题
+     * @param category   文档分类（知识库条目分类 / 案例类型），参与全文检索词项构造
      */
     private void indexDocument(Document source, String sourceType, Long sourceId, String title, String category) {
         // 先删后建：同一文档重复入库时不会产生残留 chunk
         deleteDocumentIndex(sourceType, sourceId);
+        // 将文档切分为多个 chunk，生成 chunk_id 并写入向量库和全文表
         List<Document> splitChunks = splitter.apply(List.of(source));
         List<Document> chunks = new ArrayList<>(splitChunks.size());
         for (int i = 0; i < splitChunks.size(); i++) {

@@ -26,10 +26,13 @@ public class RagIngestionProcessor {
 
     /** RAG 入库服务，执行文档切分与索引写入 */
     private final RagIngestionService ragIngestionService;
+
     /** 知识库记录 Mapper */
     private final KnowledgeMapper knowledgeMapper;
+
     /** 诈骗案例记录 Mapper */
     private final ScamCaseMapper scamCaseMapper;
+
 
     /**
      * 处理单条知识库记录的入库：回读最新内容，发布且正文非空时重建索引，否则清除索引。

@@ -27,6 +27,7 @@ public class RagIngestionRecovery implements ApplicationRunner {
 
     /** 知识库记录 Mapper */
     private final KnowledgeMapper knowledgeMapper;
+
     /** 入库任务派发器，用于重新派发中断的入库任务 */
     private final RagIngestionDispatcher ragIngestionDispatcher;
 
