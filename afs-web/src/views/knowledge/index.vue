@@ -97,6 +97,7 @@ import {
   submitForAudit
 } from '@/api/knowledge'
 import dict from '@/utils/dict'
+import { isVectorStatusInProgress } from '@/utils/vectorStatus'
 import { useUserStore } from '@/stores/user'
 import FilterBar from '@/components/common/FilterBar.vue'
 import KnowledgeItem from '@/components/business/KnowledgeItem.vue'
@@ -152,9 +153,7 @@ const scheduleVectorStatusPolling = () => {
     clearTimeout(pollTimer)
     pollTimer = null
   }
-  const hasInProgress = knowledgeList.value.some(
-    k => k.vectorStatus === 'PENDING' || k.vectorStatus === 'PROCESSING'
-  )
+  const hasInProgress = knowledgeList.value.some(k => isVectorStatusInProgress(k.vectorStatus))
   if (hasInProgress) {
     pollTimer = setTimeout(loadKnowledge, 3000)
   }

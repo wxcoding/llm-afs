@@ -8,8 +8,8 @@
         <el-tag :type="categoryTagType" size="small">{{ item.category }}</el-tag>
         <h3 class="knowledge-item-title">{{ item.title }}</h3>
         <el-tag :type="statusTagType" size="small">{{ displayStatus }}</el-tag>
-        <el-tag v-if="isAdmin && item.vectorStatus" :type="vectorStatusTagType" size="small" effect="plain">
-          {{ vectorStatusText }}
+        <el-tag v-if="isAdmin && item.vectorStatus" :type="vectorStatusPresentation.tagType" size="small" effect="plain">
+          {{ vectorStatusPresentation.text }}
         </el-tag>
       </div>
       <div class="knowledge-item-right">
@@ -32,6 +32,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { getVectorStatusPresentation } from '@/utils/vectorStatus'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -75,25 +76,9 @@ const displayStatus = computed(() => {
 })
 
 // 向量化处理状态（管理员可见）：异步入库任务的进度反馈
-const vectorStatusTagType = computed(() => {
-  const map = {
-    'PENDING': 'info',
-    'PROCESSING': 'warning',
-    'SUCCESS': 'success',
-    'FAILED': 'danger'
-  }
-  return map[props.item.vectorStatus] || 'info'
-})
-
-const vectorStatusText = computed(() => {
-  const map = {
-    'PENDING': '待向量化',
-    'PROCESSING': '向量化中',
-    'SUCCESS': '已索引',
-    'FAILED': '索引失败'
-  }
-  return map[props.item.vectorStatus] || props.item.vectorStatus
-})
+const vectorStatusPresentation = computed(() =>
+  getVectorStatusPresentation(props.item.vectorStatus)
+)
 </script>
 
 <style scoped>
