@@ -33,6 +33,9 @@ public class PostgresHybridSearchService {
     /** RRF 融合常数：数值越大，排名靠后的结果分数衰减越平缓 */
     private static final int RRF_K = 60;
 
+    /** 单次全文查询参与 OR 组合的词项上限：粘贴长文本会拼出超出 PostgreSQL 长度限制且明显变慢的 tsquery */
+    private static final int MAX_KEYWORD_TERMS = 32;
+
     /** 向量库，向量召回通道 */
     private final VectorStore vectorStore;
 
@@ -171,7 +174,8 @@ public class PostgresHybridSearchService {
         boolean failed = false;
         for (String query : queries) {
             // 查询词与写入索引时使用相同的分词器，避免中英文分词规则不一致。
-            List<String> terms = FullTextTokenizer.tokenize(query).stream().distinct().toList();
+            List<String> terms = FullTextTokenizer.tokenize(query).stream().distinct()
+                    .limit(MAX_KEYWORD_TERMS).toList();
             if (terms.isEmpty()) {
                 continue;
             }

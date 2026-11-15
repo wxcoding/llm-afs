@@ -116,6 +116,34 @@ class PostgresHybridSearchServiceTest {
         assertThrows(IllegalStateException.class, () -> service.search("诈骗", null, 5));
     }
 
+    @Test
+    void capsKeywordTermsSoLongQueryCannotBuildOversizedTsQuery() {
+        VectorStore vectorStore = mock(VectorStore.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        PostgresHybridSearchService service = new PostgresHybridSearchService(
+                vectorStore, jdbcTemplate, new DictionaryQueryExpander()
+        );
+        ReflectionTestUtils.setField(service, "hybridSearchEnabled", true);
+        ReflectionTestUtils.setField(service, "queryExpansionEnabled", false);
+        ReflectionTestUtils.setField(service, "vectorTopK", 5);
+        ReflectionTestUtils.setField(service, "keywordTopK", 5);
+        ReflectionTestUtils.setField(service, "maxExpansionQueries", 5);
+
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
+        AtomicInteger termCount = new AtomicInteger();
+        when(jdbcTemplate.queryForList(anyString(), any(Object[].class))).thenAnswer(invocation -> {
+            String sql = invocation.getArgument(0);
+            if (sql.startsWith("SELECT c.chunk_id")) {
+                termCount.set(invocation.getArgument(1).toString().split(" \\| ").length);
+            }
+            return List.of();
+        });
+
+        service.search("网络诈骗案件受害人资金如何追回银行卡手机短信链接点击后填写了身份证号码和验证码怎么办能不能报警处理", null, 3);
+
+        assertEquals(32, termCount.get(), "词项数应被截断到 MAX_KEYWORD_TERMS");
+    }
+
     private static Document document(String id) {
         return Document.builder().id(id).text("text").build();
     }
