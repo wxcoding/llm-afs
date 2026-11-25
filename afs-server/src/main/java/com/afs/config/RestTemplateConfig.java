@@ -24,7 +24,8 @@ public class RestTemplateConfig {
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
                 .connectTimeout(Duration.ofSeconds(5))
-                .readTimeout(Duration.ofSeconds(30))
+                // 重排正常耗时 1s 内，读超时不设 30s：接口抖动时尽快失败并回退原始召回顺序
+                .readTimeout(Duration.ofSeconds(8))
                 .build();
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -69,6 +70,8 @@ class ChatServiceTest {
         ragContextBuilder = mock(RagContextBuilder.class);
         chatService = new ChatService(sessionMapper, messageMapper, chatClient,
                 ragSearchService, ragContextBuilder, new ObjectMapper());
+        // 直接 new 出来的实例不会注入 @Value，检索超时需手动赋值，否则超时为 0 会立即降级
+        ReflectionTestUtils.setField(chatService, "ragSearchTimeoutSeconds", 10L);
     }
 
     // 打桩 ChatClient 调用链，返回指定的 AI 响应流

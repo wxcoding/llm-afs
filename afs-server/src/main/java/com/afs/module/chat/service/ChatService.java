@@ -21,6 +21,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
@@ -62,6 +63,10 @@ public class ChatService {
     /** 来源展示的相关度阈值：低于该值的检索结果不作为"参考来源"展示给用户 */
     @Value("${rag.citation.min-score:0.35}")
     private double citationMinScore;
+
+    /** 检索最长等待秒数：超过后直接降级为纯模型回答，避免外部接口抖动把首字拖到分钟级 */
+    @Value("${rag.search-timeout-seconds:10}")
+    private long ragSearchTimeoutSeconds;
 
     /** 模型不可用时，降级回答最多摘录的知识条目数（只给最高分一条，避免半成品答案被当成完整回答） */
     private static final int MAX_EXCERPT_SOURCES = 1;
@@ -118,7 +123,15 @@ public class ChatService {
         List<Map<String, Object>> sources = new ArrayList<>();
         List<Map<String, Object>> displaySources = new ArrayList<>();
         try {
-            sources = ragSearchService.searchWithMetadata(content, 5);
+            // 检索限时：外部 Embedding/ReRank 接口抖动时会长时间挂起并触发重试，
+            // 不设上限会把首字拖到分钟级，因此超时即降级为纯模型回答
+            sources = Mono.fromCallable(() -> ragSearchService.searchWithMetadata(content, 5))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .timeout(Duration.ofSeconds(ragSearchTimeoutSeconds))
+                    .block();
+            if (sources == null) {
+                sources = new ArrayList<>();
+            }
             if (!sources.isEmpty()) {
                 context = ragContextBuilder.buildContext(sources);
                 // 上下文仍使用全部召回内容，展示层只保留相关度达标的部分，避免低分结果被当作权威引用
@@ -127,7 +140,8 @@ public class ChatService {
                         sources.size(), displaySources.size(), citationMinScore);
             }
         } catch (Exception e) {
-            log.warn("RAG 检索失败，已降级为纯 AI 对话模式", e);
+            log.warn("RAG 检索失败或超时（上限 {}s），已降级为纯 AI 对话模式", ragSearchTimeoutSeconds, e);
+            sources = new ArrayList<>();
         }
 
         // 头部事件：会话ID + 是否有可引用来源

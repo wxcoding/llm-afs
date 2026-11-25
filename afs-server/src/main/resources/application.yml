@@ -96,8 +96,10 @@ spring:
         endpoint: https://api.cohere.ai/v1/rerank
         api-key: ${COHERE_API_KEY:}
 
-# RAG 引用展示配置
+# RAG 配置
 rag:
+  # 检索最长等待秒数，超时降级为纯模型回答（外部 Embedding/ReRank 抖动时的兜底）
+  search-timeout-seconds: 10
   citation:
     # 参考来源展示阈值：仅展示相关度达到该值的检索结果；分数未知时不过滤。
     # 调低可放宽（如 0.25），调高更严格（如 0.5）。设为 0 等同于关闭门控。
