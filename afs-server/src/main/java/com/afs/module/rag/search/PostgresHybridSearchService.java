@@ -9,7 +9,10 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,6 +67,10 @@ public class PostgresHybridSearchService {
     /** 扩展查询的最大数量 */
     @Value("${spring.ai.vectorstore.hybrid-search.max-expansion-queries:5}")
     private int maxExpansionQueries;
+
+    /** 向量召回（含 Embedding 调用）最长等待秒数，超时即放弃向量通道、仅用全文召回 */
+    @Value("${rag.vector-timeout-seconds:5}")
+    private long vectorTimeoutSeconds;
 
     /**
      * 按当前检索配置执行向量检索或混合检索，并返回调用方需要的候选数量。
@@ -147,7 +154,13 @@ public class PostgresHybridSearchService {
             if (filter != null) {
                 request.filterExpression(filter);
             }
-            List<Document> results = vectorStore.similaritySearch(request.build());
+            List<Document> results = Mono.fromCallable(() -> vectorStore.similaritySearch(request.build()))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .timeout(Duration.ofSeconds(vectorTimeoutSeconds))
+                    .block();
+            if (results == null) {
+                results = Collections.emptyList();
+            }
             // RRF 只比较排名，不直接混用向量距离和全文相关性分数。
             for (int rank = 0; rank < results.size(); rank++) {
                 Document document = results.get(rank);

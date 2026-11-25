@@ -34,6 +34,7 @@ class PostgresHybridSearchServiceTest {
         ReflectionTestUtils.setField(service, "vectorTopK", 5);
         ReflectionTestUtils.setField(service, "keywordTopK", 5);
         ReflectionTestUtils.setField(service, "maxExpansionQueries", 5);
+        ReflectionTestUtils.setField(service, "vectorTimeoutSeconds", 5L);
 
         when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(
                 document("shared"), document("vector-only")
@@ -75,6 +76,7 @@ class PostgresHybridSearchServiceTest {
         ReflectionTestUtils.setField(service, "vectorTopK", 5);
         ReflectionTestUtils.setField(service, "keywordTopK", 5);
         ReflectionTestUtils.setField(service, "maxExpansionQueries", 2);
+        ReflectionTestUtils.setField(service, "vectorTimeoutSeconds", 5L);
 
         when(queryExpander.expand("诈骗")).thenReturn(List.of("诈骗", "骗钱"));
         when(vectorStore.similaritySearch(any(SearchRequest.class)))
@@ -107,6 +109,7 @@ class PostgresHybridSearchServiceTest {
         ReflectionTestUtils.setField(service, "vectorTopK", 5);
         ReflectionTestUtils.setField(service, "keywordTopK", 5);
         ReflectionTestUtils.setField(service, "maxExpansionQueries", 5);
+        ReflectionTestUtils.setField(service, "vectorTimeoutSeconds", 5L);
 
         when(vectorStore.similaritySearch(any(SearchRequest.class)))
                 .thenThrow(new IllegalStateException("vector unavailable"));
@@ -128,6 +131,7 @@ class PostgresHybridSearchServiceTest {
         ReflectionTestUtils.setField(service, "vectorTopK", 5);
         ReflectionTestUtils.setField(service, "keywordTopK", 5);
         ReflectionTestUtils.setField(service, "maxExpansionQueries", 5);
+        ReflectionTestUtils.setField(service, "vectorTimeoutSeconds", 5L);
 
         when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of());
         AtomicInteger termCount = new AtomicInteger();
