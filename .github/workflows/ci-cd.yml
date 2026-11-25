@@ -28,7 +28,7 @@ env:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   POSTGRES_DB: afs
-  AI_DASHSCOPE_MODEL: qwen3.8-flash
+  AI_DASHSCOPE_MODEL: qwen4-max
 
 jobs:
   # ==================== 构建阶段 ====================
