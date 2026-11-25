@@ -52,7 +52,7 @@ spring:
       base-url: https://llm-oyswq13b7aipovuo.cn-beijing.maas.aliyuncs.com/compatible-mode
       chat:
         options:
-          model: ${AI_DASHSCOPE_MODEL:qwen3.8-flash}
+          model: ${AI_DASHSCOPE_MODEL:qwen4-max}
           temperature: 0.7
           max-tokens: 2000
       embedding:
