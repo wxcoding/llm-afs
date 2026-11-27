@@ -1,11 +1,9 @@
 server:
   port: 8080
-  servlet:
-    context-path: /
 
 spring:
+  # 本地开发使用的数据库连接；部署环境通过环境变量覆盖。
   datasource:
-    driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/afs?stringtype=unspecified
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:guanwx}
@@ -16,13 +14,9 @@ spring:
       connection-timeout: 20000
       max-lifetime: 1200000
   flyway:
-    enabled: true
-    locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0
-    validate-on-migrate: true
   cache:
-    type: caffeine
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=10m
   data:
@@ -37,15 +31,15 @@ spring:
           max-idle: 8
           min-idle: 2
   ai:
-    # 重试配置：只重试限流(429)与服务端错误(5xx)；4xx（鉴权失败、模型未开通等）重试没有意义
+    # 仅对限流和服务端错误重试；鉴权、参数等 4xx 错误不重试。
     retry:
-      max-attempts: 3              # 最多重试3次
-      on-client-errors: false      # 4xx 不重试
-      on-http-codes: 429           # 限流仍重试
+      max-attempts: 3
+      on-client-errors: false
+      on-http-codes: 429
       backoff:
-        initial-interval: 5000     # 初始等待5秒（避开限流恢复窗口）
-        multiplier: 2              # 指数退避：5s → 10s → 20s
-        max-interval: 30000        # 最大等待30秒
+        initial-interval: 5000
+        multiplier: 2
+        max-interval: 30000
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
 #      base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -58,33 +52,32 @@ spring:
       embedding:
         options:
           model: qwen3.7-text-embedding-flash
-      # HTTP客户端超时配置
+      # 外部 AI 请求超时，避免慢响应长时间占用请求线程。
       client:
         http:
-          connect-timeout: 5000      # 连接超时5秒
-          read-timeout: 60000        # 读取超时60秒（Embedding可能较慢）
-          write-timeout: 30000       # 写入超时30秒
+          connect-timeout: 5000
+          read-timeout: 60000
+          write-timeout: 30000
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1024
         initialize-schema: true
-        filter: true  # 启用 FilterExpression 支持（Spring AI 1.1.7）
-      # 混合检索配置（PostgreSQL 全文检索 + 向量）
+        filter: true
+      # PostgreSQL 全文检索与向量检索的融合参数。
       hybrid-search:
-        enabled: true  # 是否启用混合检索
-        query-expansion: true  # 是否启用查询扩展
-        max-expansion-queries: 5  # 单次检索最多执行的关键词扩展查询数
-        vector-top-k: 20  # 向量检索返回数量
-        keyword-top-k: 20  # 全文检索返回数量
-        # 召回候选数由调用方决定：未启用重排时使用请求 topK，启用重排时使用 rerank.candidate-top-k
-    # ReRank 重排序配置
+        enabled: true
+        query-expansion: true
+        max-expansion-queries: 5
+        vector-top-k: 20
+        keyword-top-k: 20
+    # 所选 ReRank 服务需要配置对应的 API Key。
     rerank:
-      enabled: true  # 是否启用 ReRank
-      provider: dashscope  # Provider: dashscope / jina / cohere / mock
-      candidate-top-k: 20  # 启用重排时的最小召回候选数
-      top-n: 5  # 重排后最终保留数量
+      enabled: true
+      provider: dashscope
+      candidate-top-k: 20
+      top-n: 5
       dashscope:
         endpoint: https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
         api-key: ${AI_DASHSCOPE_API_KEY:}
@@ -96,45 +89,39 @@ spring:
         endpoint: https://api.cohere.ai/v1/rerank
         api-key: ${COHERE_API_KEY:}
 
-# RAG 配置
+# RAG 检索与引用配置。
 rag:
-  # 检索最长等待秒数，超时降级为纯模型回答（外部 Embedding/ReRank 抖动时的兜底）
+  # 超时后检索降级为纯模型回答。
   search-timeout-seconds: 10
-  # 向量通道最长等待秒数，超时立即改用全文召回，避免整条检索被 Embedding 挂起拖死
+  # 向量检索超时后改用全文检索。
   vector-timeout-seconds: 5
   citation:
-    # 参考来源展示阈值：仅展示相关度达到该值的检索结果；分数未知时不过滤。
-    # 调低可放宽（如 0.25），调高更严格（如 0.5）。设为 0 等同于关闭门控。
+    # 低于阈值的检索结果不展示为引用；设为 0 可关闭筛选。
     min-score: 0.35
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    # SQL 日志统一走 slf4j，由 logback 按环境控制级别
+    # 通过 SLF4J 输出 SQL 日志，便于按环境统一控制日志级别。
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: auto
 
-# 登录鉴权配置
+# 默认密钥仅供本地开发；生产环境必须设置强随机 JWT_SECRET。
 jwt:
-  # 生产环境务必通过环境变量覆盖
   secret: ${JWT_SECRET:afs-jwt-secret-please-change-in-production-0123456789}
   expire-hours: 72
 
-# 登录防爆破策略（基于 Redis 计数，窗口到期自动解锁）
+# 登录失败计数与锁定时长（基于 Redis）。
 security:
   login:
-    max-failures: 5      # 连续失败 5 次后锁定
-    lock-seconds: 600    # 锁定时长 10 分钟
+    max-failures: 5
+    lock-seconds: 600
 
+# 生产环境由部署配置关闭 API 文档。
 springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
   swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
 
@@ -146,23 +133,19 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-  health:
-    db:
-      enabled: true
   metrics:
     tags:
       application: afs-server
 
+# /actuator/info 展示的应用信息。
 info:
   app:
     name: afs-server
     description: 智能防诈骗系统后端
     version: 1.0.0
-
-
+# 开发环境日志级别；容器环境通过 json-log profile 输出结构化日志。
 logging:
   level:
-    root: INFO
     com.afs: DEBUG
     org.springframework.ai: WARN
     org.springframework.ai.retry: DEBUG
