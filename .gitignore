@@ -81,3 +81,4 @@ coverage/
 
 # pnpm-lock.yaml
 pnpm-lock.yaml
+!/afs-web/pnpm-lock.yaml

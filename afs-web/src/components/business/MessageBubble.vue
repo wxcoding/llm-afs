@@ -30,9 +30,9 @@
           </div>
         </div>
       </div>
-      <div v-else-if="msg.noEvidence && !msg.degraded" class="message-no-evidence">
-        <el-icon :size="13"><InfoFilled /></el-icon>
-        本次回答未引用知识库内容
+      <div v-if="msg.noEvidence" class="message-no-evidence">
+        <el-icon :size="13"><WarningFilled /></el-icon>
+        未检索到可信的知识库依据，回答仅供参考。涉及转账、验证码或疑似诈骗，请停止操作并拨打 96110 核实。
       </div>
       <div v-if="msg.degraded" class="message-degraded">
         <el-icon :size="13"><WarningFilled /></el-icon>
@@ -44,7 +44,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Collection, ArrowUp, ArrowDown, InfoFilled, WarningFilled } from '@element-plus/icons-vue'
+import { Collection, ArrowUp, ArrowDown, WarningFilled } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import ShieldIcon from '@/components/common/ShieldIcon.vue'
 import { useUserStore } from '@/stores/user'
@@ -264,8 +264,11 @@ const renderedContent = computed(() => md.render(props.msg.content || ''))
   align-items: center;
   gap: 6px;
   margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #fdf6ec;
   font-size: 12px;
-  color: #909399;
+  color: #b88230;
 }
 
 .message-degraded {

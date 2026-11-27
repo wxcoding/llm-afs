@@ -209,7 +209,11 @@ public class ChatService {
                         用户问题：%s"""
                         .formatted(context, userContent);
             } else {
-                augmentedUserContent = userContent;
+                augmentedUserContent = """
+                        当前没有检索到可信的本地知识库资料。你可以提供一般性风险识别信息，但必须明确说明信息未经本地资料核验，不得伪造来源或声称依据了知识库；避免给出确定性的法律、财务或安全结论。涉及转账、验证码、屏幕共享或疑似诈骗时，优先建议用户停止操作、通过官方渠道核实，并拨打 96110。
+
+                        用户问题：%s"""
+                        .formatted(userContent);
             }
 
             messages.add(new UserMessage(augmentedUserContent));

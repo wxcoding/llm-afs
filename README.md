@@ -53,7 +53,7 @@
 
 ## 🏗️ 系统架构
 
-详细架构图和 RAG 检索流程见 [docs/architecture.md](docs/architecture.md)
+详细架构图和 RAG 检索流程见 [系统架构](docs/系统架构.md)；检索与引用回归案例见 [RAG 评估集](docs/RAG评估集.md)。
 
 **简要说明**：
 - **分层结构**：客户端（Vue 3）→ Nginx → 应用层（Spring Boot）→ 外部服务（PostgreSQL + Redis + 阿里云百炼）
@@ -102,7 +102,8 @@ llm-afs/
 ├── .env.example
 ├── deployment.md                # 服务器部署与运维说明
 ├── docs/
-│   └── architecture.md           # 系统架构与 RAG 流程详解
+│   ├── 系统架构.md                # 系统架构与 RAG 流程详解
+│   └── RAG评估集.md               # 检索与引用回归案例
 └── README.md
 ```
 
@@ -125,7 +126,15 @@ docker compose up -d --build
 
 后端环境：JDK 17+、Maven 3.8+、PostgreSQL 17 + pgvector、Redis 7、阿里云百炼 API Key。 
 
-前端环境：Node.js 18+。 
+前端环境：Node.js 22+、pnpm 11.1.3（可通过 Corepack 启用）。
+
+```bash
+cd afs-web
+corepack enable
+pnpm install --frozen-lockfile
+pnpm test
+pnpm dev
+```
 
 完整配置见 [.env.example](.env.example)；RAG、防爆破、JWT 有效期等见 [application.yml](afs-server/src/main/resources/application.yml)。
 

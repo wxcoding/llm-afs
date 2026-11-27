@@ -314,8 +314,8 @@ class ChatServiceTest {
         assertEquals("回复1", messages.get(1).getText());
         assertInstanceOf(AssistantMessage.class, messages.get(2));
         assertEquals("回复2", messages.get(2).getText());
-        // 无 RAG 上下文时直接使用原始输入
-        assertEquals("最新问题", messages.get(3).getText());
+        // 无可信 RAG 上下文时附加安全约束，同时保留原始问题
+        assertTrue(messages.get(3).getText().contains("用户问题：最新问题"));
     }
 
     @Test
@@ -336,6 +336,24 @@ class ChatServiceTest {
         assertInstanceOf(UserMessage.class, last);
         assertTrue(last.getText().contains("CTX-CONTENT"));
         assertTrue(last.getText().contains("原始问题"));
+    }
+
+    @Test
+    void 无可信检索来源时提示模型标明未核验并提供反诈安全建议() {
+        when(ragSearchService.searchWithMetadata(anyString(), eq(5))).thenReturn(new ArrayList<>());
+        stubEmptyHistory();
+        stubChatClient(Flux.just(chunk("谨慎核实")));
+
+        chatService.sendMessageStream(1L, 12L, "对方要求我提供验证码")
+                .collectList().block();
+
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        verify(requestSpec).messages(captor.capture());
+        String prompt = captor.getValue().get(0).getText();
+        assertTrue(prompt.contains("没有检索到可信的本地知识库资料"));
+        assertTrue(prompt.contains("不得伪造来源"));
+        assertTrue(prompt.contains("拨打 96110"));
+        assertTrue(prompt.contains("对方要求我提供验证码"));
     }
 
     @Test
