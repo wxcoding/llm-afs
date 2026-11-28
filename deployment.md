@@ -102,7 +102,8 @@ WEB_PORT=3000
 JAVA_OPTS=-Xmx512m -Xms256m
 
 AI_DASHSCOPE_API_KEY=sk-请替换
-AI_DASHSCOPE_MODEL=qwen3.8-max-0902
+AI_DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
+AI_DASHSCOPE_MODEL=qwen4-max
 
 JWT_SECRET=请替换为足够长的随机字符串
 ```
@@ -110,6 +111,7 @@ JWT_SECRET=请替换为足够长的随机字符串
 说明：
 
 - `POSTGRES_PASSWORD`、`AI_DASHSCOPE_API_KEY`、`JWT_SECRET` 必须替换，不要使用默认值。
+- `AI_DASHSCOPE_BASE_URL` 使用百炼官方兼容接口时保持默认值；使用专属部署端点或自建代理时改为对应地址。Chat、Embedding、ReRank 模型需先在百炼控制台开通。
 - 当前 Compose 内置 Redis 服务，默认无需填写 `REDIS_HOST`、`REDIS_PORT` 或 `REDIS_PASSWORD`；若使用外部 Redis，必须按 Redis 服务说明修改 Compose 配置。
 - 生产环境保持 Swagger 关闭；需要临时调试时再设置 `SPRINGDOC_API_DOCS_ENABLED=true` 和 `SPRINGDOC_SWAGGER_UI_ENABLED=true`。
 - 前后端同源反向代理时通常无需调整 CORS；分离部署时通过 `APP_CORS_ALLOWED_ORIGINS` 配置实际域名。
