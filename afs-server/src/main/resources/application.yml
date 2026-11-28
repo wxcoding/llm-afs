@@ -78,6 +78,8 @@ spring:
       provider: dashscope
       candidate-top-k: 20
       top-n: 5
+      # ReRank 失败后的熔断冷却时间，期间直接使用原始召回顺序。
+      circuit-breaker-seconds: 60
       dashscope:
         endpoint: https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
         api-key: ${AI_DASHSCOPE_API_KEY:}
@@ -93,8 +95,10 @@ spring:
 rag:
   # 超时后检索降级为纯模型回答。
   search-timeout-seconds: 10
-  # 向量检索超时后改用全文检索。
-  vector-timeout-seconds: 5
+  # 向量检索超时后改用全文检索；外部 Embedding 接口抖动时尽快失败。
+  vector-timeout-seconds: 2
+  # 向量/重排通道失败后的熔断冷却时间，避免连续请求反复等待超时。
+  circuit-breaker-seconds: 60
   citation:
     # 低于阈值的检索结果不展示为引用；设为 0 可关闭筛选。
     min-score: 0.35

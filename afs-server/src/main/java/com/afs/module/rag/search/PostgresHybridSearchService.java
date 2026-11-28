@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +72,13 @@ public class PostgresHybridSearchService {
     /** 向量召回（含 Embedding 调用）最长等待秒数，超时即放弃向量通道、仅用全文召回 */
     @Value("${rag.vector-timeout-seconds:5}")
     private long vectorTimeoutSeconds;
+
+    /** 向量通道失败后的熔断冷却秒数，避免外部接口异常时每个请求都重复等待超时 */
+    @Value("${rag.circuit-breaker-seconds:60}")
+    private long circuitBreakerSeconds = 60;
+
+    /** 向量通道熔断截止时间（毫秒时间戳），当前时间小于该值时直接跳过向量通道 */
+    private volatile long vectorCircuitOpenUntil = 0;
 
     /**
      * 按当前检索配置执行向量检索或混合检索，并返回调用方需要的候选数量。
@@ -148,6 +156,11 @@ public class PostgresHybridSearchService {
     private RecallResult vectorSearch(String query, Map<String, Object> filters, int topK) {
         Map<String, Double> scores = new LinkedHashMap<>();
         Map<String, Double> similarities = new HashMap<>();
+        long now = System.currentTimeMillis();
+        if (now < vectorCircuitOpenUntil) {
+            log.debug("向量检索熔断中，跳过向量通道，剩余 {}ms 后重试", vectorCircuitOpenUntil - now);
+            return new RecallResult(Collections.emptyMap(), Collections.emptyMap(), true);
+        }
         try {
             SearchRequest.Builder request = SearchRequest.builder().query(query).topK(topK);
             var filter = RagSearchFilters.buildVectorExpression(filters);
@@ -172,9 +185,12 @@ public class PostgresHybridSearchService {
                     similarities.put(chunkId, Math.max(0.0, 1.0 - number.doubleValue()));
                 }
             }
+            vectorCircuitOpenUntil = 0;
             return new RecallResult(scores, similarities, false);
         } catch (Exception e) {
-            log.error("向量检索失败，将仅使用全文检索结果参与融合", e);
+            long cooldownMs = TimeUnit.SECONDS.toMillis(Math.max(1, circuitBreakerSeconds));
+            vectorCircuitOpenUntil = System.currentTimeMillis() + cooldownMs;
+            log.error("向量检索失败，{} 秒内跳过向量通道，仅使用全文检索", circuitBreakerSeconds, e);
             return new RecallResult(scores, similarities, true);
         }
     }

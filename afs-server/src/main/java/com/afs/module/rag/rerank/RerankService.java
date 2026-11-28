@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -101,6 +102,17 @@ public class RerankService {
     private int rerankTopN;
 
     /**
+     * ReRank 失败后的熔断冷却秒数，避免接口异常时每个请求都重复等待超时
+     */
+    @Value("${spring.ai.rerank.circuit-breaker-seconds:60}")
+    private long circuitBreakerSeconds = 60;
+
+    /**
+     * ReRank 熔断截止时间（毫秒时间戳），当前时间小于该值时直接返回原始召回顺序
+     */
+    private volatile long circuitOpenUntil = 0;
+
+    /**
      * RestTemplate 用于调用外部 API
      */
     private final RestTemplate restTemplate;
@@ -134,21 +146,26 @@ public class RerankService {
             throw new IllegalArgumentException("ReRank top-n 必须大于 0");
         }
 
+        long now = System.currentTimeMillis();
+        if (now < circuitOpenUntil) {
+            log.debug("ReRank 熔断中，保留原始召回顺序，剩余 {}ms 后重试", circuitOpenUntil - now);
+            return candidates;
+        }
+
         try {
-            switch (rerankProvider.toLowerCase(Locale.ROOT)) {
-                case "dashscope":
-                    return rerankWithDashScope(query, candidates);
-                case "jina":
-                    return rerankWithJina(query, candidates);
-                case "cohere":
-                    return rerankWithCohere(query, candidates);
-                case "mock":
-                    return rerankWithMock(query, candidates);
-                default:
-                    throw new IllegalArgumentException("不支持的 ReRank provider: " + rerankProvider);
-            }
+            List<Document> reranked = switch (rerankProvider.toLowerCase(Locale.ROOT)) {
+                case "dashscope" -> rerankWithDashScope(query, candidates);
+                case "jina" -> rerankWithJina(query, candidates);
+                case "cohere" -> rerankWithCohere(query, candidates);
+                case "mock" -> rerankWithMock(query, candidates);
+                default -> throw new IllegalArgumentException("不支持的 ReRank provider: " + rerankProvider);
+            };
+            circuitOpenUntil = 0;
+            return reranked;
         } catch (Exception e) {
-            log.warn("ReRank 调用失败，保留原始召回顺序。provider: {}", rerankProvider, e);
+            long cooldownMs = TimeUnit.SECONDS.toMillis(Math.max(1, circuitBreakerSeconds));
+            circuitOpenUntil = System.currentTimeMillis() + cooldownMs;
+            log.warn("ReRank 调用失败，{} 秒内保留原始召回顺序。provider: {}", circuitBreakerSeconds, rerankProvider, e);
             return candidates;
         }
     }

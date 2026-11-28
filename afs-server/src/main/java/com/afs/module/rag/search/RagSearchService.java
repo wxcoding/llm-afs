@@ -55,7 +55,6 @@ public class RagSearchService {
      * @param topK  最终返回的文档数量，必须大于 0
      * @return 相关文档列表
      */
-    @Cacheable(value = "vectorSearch", key = "#query + '_' + #topK", unless = "#result == null || #result.isEmpty()")
     public List<Document> searchRelevant(String query, int topK) {
         validateRequest(query, topK);
         long startTime = System.currentTimeMillis();
@@ -96,6 +95,7 @@ public class RagSearchService {
      *
      * <p>其中 score 是 0~1 的相关性分数（越大越相关），-1 表示本次未取得可信分数。</p>
      */
+    @Cacheable(value = "vectorSearch", key = "#query + '_' + #topK", unless = "#result == null || #result.isEmpty()")
     public List<Map<String, Object>> searchWithMetadata(String query, int topK) {
         return searchRelevant(query, topK).stream()
                 .map(document -> {

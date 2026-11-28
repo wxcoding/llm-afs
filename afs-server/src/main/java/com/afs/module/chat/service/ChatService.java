@@ -224,6 +224,9 @@ public class ChatService {
             StringBuilder responseBuilder = new StringBuilder();
             // 来源事件推迟到首个内容块到达时下发：AI 调用失败时不会先展示来源再立刻清空
             AtomicBoolean sourcesSent = new AtomicBoolean(false);
+            // 首字耗时与整条流耗时分开记录，便于区分模型等待和生成时间
+            long aiStart = System.currentTimeMillis();
+            AtomicBoolean firstTokenLogged = new AtomicBoolean(false);
             return request.stream().chatResponse()
                     // 超时兜底：首token及相邻增量间隔超过120秒判定为模型挂起
                     .timeout(Duration.ofSeconds(120))
@@ -233,7 +236,12 @@ public class ChatService {
                             ? chatResponse.getResult().getOutput().getText()
                             : "")
                     .filter(chunk -> !chunk.isEmpty())
-                    .doOnNext(responseBuilder::append)
+                    .doOnNext(chunk -> {
+                        if (firstTokenLogged.compareAndSet(false, true)) {
+                            log.info("AI 首字耗时: {}ms", System.currentTimeMillis() - aiStart);
+                        }
+                        responseBuilder.append(chunk);
+                    })
                     .map(chunk -> sse(toJson(Map.of("content", chunk))))
                     .flatMap(event -> {
                         if (sourcesSent.compareAndSet(false, true) && sources != null && !sources.isEmpty()) {
@@ -249,7 +257,11 @@ public class ChatService {
                         saveAssistantMessage(sessionId, fallback, excerptSources, true);
                         return degradedStream(fallback, excerptSources);
                     }))
-                    .doOnComplete(() -> saveAssistantMessage(sessionId, responseBuilder.toString(), sources, false))
+                    .doOnComplete(() -> {
+                        log.info("AI 流完成，耗时: {}ms，输出长度: {} 字",
+                                System.currentTimeMillis() - aiStart, responseBuilder.length());
+                        saveAssistantMessage(sessionId, responseBuilder.toString(), sources, false);
+                    })
                     .onErrorResume(e -> {
                         logAiError(e);
                         String fallback = buildDegradedAnswer(resolveDegradedMessage(e), excerptSources);
