@@ -42,7 +42,7 @@ spring:
         max-interval: 30000
     openai:
       api-key: ${AI_DASHSCOPE_API_KEY}
-    # 专属端点属性（可配置） base-url: https://llm-oyswq13b7aipovuo.cn-beijing.maas.aliyuncs.com/compatible-mode
+    # 专属端点属性（可配置）base-url: ${AI_DASHSCOPE_BASE_URL:https://llm-oyswq13b7aipovuo.cn-beijing.maas.aliyuncs.com/compatible-mode}
       base-url: ${AI_DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
       chat:
         options:

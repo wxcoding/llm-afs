@@ -318,7 +318,7 @@ docker compose -f docker-compose.prod.yml down -v
 | 前端 502 / 空白 | `curl -f http://localhost:8080/actuator/health`；`docker exec afs-web nginx -t`；`ss -lntp \| grep 3000` |
 | Flyway 迁移失败 | `docker compose -f docker-compose.prod.yml logs afs-server \| grep -i flyway`，检查脚本 checksum 与 SQL 语法 |
 | 向量检索异常 | 检查 `AI_DASHSCOPE_API_KEY` 与 Embedding 模型配置；调用 `POST /api/knowledge/sync-vector` 重新同步 |
-| 流式回答卡顿 | Nginx 的 `/api/` 代理增加 `proxy_buffering off;`，并调大 `proxy_read_timeout` |
+| 流式回答卡顿 | 仓库 `nginx.conf` 已默认配置 `proxy_buffering off` 与 `proxy_read_timeout 300s`；若使用外部 Nginx，需确认 `/api/` 代理也关闭缓冲并调大读超时 |
 | 磁盘占用过高 | `df -h`、`docker system df`、清理悬空镜像与旧日志 |
 | 端口被占用 | `ss -lntp \| grep -E '3000|8080|5432'`，修改 `.env` 中的映射端口后重启 |
 
