@@ -1,6 +1,6 @@
 # 部署文档
 
-本文档说明 AFS 的服务器部署、配置、运维与故障排查。本地开发、接口和架构说明见 [README.md](README.md)。
+本文档说明 AFS 的服务器部署、配置、运维与故障排查。系统组件和 RAG 流程见[系统架构](docs/系统架构.md)，本地开发与项目概览见 [README.md](README.md)。
 
 ## 1. 部署架构
 
@@ -12,8 +12,13 @@
 │   afs-web    │ ────────▶ │  afs-server  │ ───────▶ │  afs-postgres  │
 │  Nginx :80   │           │    :8080     │          │  pgvector :5432│
 └──────────────┘           └──────┬───────┘          └────────────────┘
-                                  │ HTTPS
-                                  ▼
+                                 │
+                                 ├── Redis TCP :6379 ──▶ ┌──────────────┐
+                                 │                       │    redis     │
+                                 │                       │     :6379    │
+                                 │                       └──────────────┘
+                                 │ HTTPS
+                                 ▼
                          阿里云百炼 DashScope
 ```
 
@@ -22,8 +27,18 @@
 | `afs-web` | Node 构建 → Nginx | `80` | 前端静态资源、`/api` 反向代理 |
 | `afs-server` | Maven 构建 → JRE | `8080` | REST API、SSE、RAG 编排 |
 | `postgres` | `pgvector/pgvector:pg17` | `5432` | 业务数据、向量与全文索引 |
+| `redis` | `redis:7-alpine` | `6379` | 登录失败计数、JWT 吊销黑名单、系统配置和字典缓存 |
 
-默认对外端口：前端 `3000`，后端 `8080`，数据库 `5432`。生产环境建议只暴露 `3000`，由 Nginx 统一入口。
+上述是容器内部端口，不代表都对公网开放。生产 Compose 将前端映射到宿主机 `3000`，数据库仅绑定宿主机回环地址 `127.0.0.1:5432`，Redis 不发布宿主机端口；后端当前默认映射宿主机 `8080`，建议通过防火墙限制该端口，或调整 Compose 只允许本机访问。公网通常只需开放前端入口。
+
+### Redis 服务说明
+
+Redis 已包含在开发和生产 Compose 配置中，使用 Docker Compose 部署时**不需要另外在服务器安装或启动 Redis**。后端通过 Compose 内部网络中的服务名 `redis:6379` 连接，不应将 `localhost` 配置为容器内的 Redis 地址。
+
+- Redis 保存 JWT 吊销黑名单、登录失败计数，并缓存系统配置和字典；PostgreSQL 才是业务数据的持久化主库。
+- 生产配置启用了 AOF，并将 Redis 数据保存在 `redis_data` 卷中；Redis 没有发布宿主机端口，只供 Compose 网络内服务访问。
+- 当前生产 Compose 未给 Redis 配置访问密码，`.env` 中的 `REDIS_PASSWORD` 应留空。只设置该变量而不同时配置 Redis 服务端认证，会导致后端连接失败；使用外部 Redis 或启用密码认证需要同步调整 Compose 和 Redis 服务端配置。
+- Redis 故障时，部分缓存会回源 PostgreSQL；令牌吊销检查和登录失败限制则按当前代码采用 fail-open 降级，可能暂时跳过这些安全检查。应及时恢复 Redis，并关注后端日志。
 
 ## 2. 环境准备
 
@@ -95,6 +110,7 @@ JWT_SECRET=请替换为足够长的随机字符串
 说明：
 
 - `POSTGRES_PASSWORD`、`AI_DASHSCOPE_API_KEY`、`JWT_SECRET` 必须替换，不要使用默认值。
+- 当前 Compose 内置 Redis 服务，默认无需填写 `REDIS_HOST`、`REDIS_PORT` 或 `REDIS_PASSWORD`；若使用外部 Redis，必须按 Redis 服务说明修改 Compose 配置。
 - 生产环境保持 Swagger 关闭；需要临时调试时再设置 `SPRINGDOC_API_DOCS_ENABLED=true` 和 `SPRINGDOC_SWAGGER_UI_ENABLED=true`。
 - 前后端同源反向代理时通常无需调整 CORS；分离部署时通过 `APP_CORS_ALLOWED_ORIGINS` 配置实际域名。
 - 使用镜像部署时，补充 `REGISTRY`、`IMAGE_NAME_SERVER`、`IMAGE_NAME_WEB`、`IMAGE_TAG`。
@@ -156,12 +172,9 @@ docker compose -f docker-compose.prod.yml up -d --build
 2. 创建个人版实例和命名空间。
 3. 记录 Registry 地址，例如 `cr-xxx.cn-hangzhou.personal.cr.aliyuncs.com`。
 
-### 5.2 启用工作流
+### 5.2 工作流触发方式
 
-仓库中的工作流默认为停用状态：
-
-1. 将 `.github/workflows/ci-cd.disabled.yml` 重命名为 `ci-cd.yml`。
-2. 取消文件顶部 `on:` 触发器的注释。
+仓库中的 `.github/workflows/ci-cd.yml` 已启用。推送到 `main` 或 `master` 会运行构建并推送镜像；该事件不会部署到服务器。需要部署时，在 GitHub Actions 页面手动运行工作流并将 `deploy` 设为 `true`。
 
 ### 5.3 配置 Secrets
 
@@ -176,6 +189,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `ALIYUN_ACR_USERNAME` / `ALIYUN_ACR_PASSWORD` | ACR 登录凭据 |
 | `POSTGRES_PASSWORD` | 数据库密码 |
 | `AI_DASHSCOPE_API_KEY` | 百炼 API Key |
+| `JWT_SECRET` | 生产环境 JWT 签名密钥，必须配置为足够长的随机值 |
 
 ### 5.4 配置 SSH 密钥
 
@@ -195,7 +209,7 @@ cat deploy-key
 代码推送 → 后端/前端构建 → 构建并推送镜像到 ACR → SSH 部署 → 状态通知
 ```
 
-工作流会向服务器的 `.env` 写入镜像与数据库配置，然后执行 `docker compose pull` 和 `up -d`。
+部署任务会向服务器的 `.env` 写入镜像及所需配置，然后执行 `docker compose pull` 和 `up -d`。
 
 ## 6. 日常运维
 
@@ -211,6 +225,10 @@ docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml up -d
 docker compose -f docker-compose.prod.yml stop
 docker compose -f docker-compose.prod.yml restart afs-server
+docker compose -f docker-compose.prod.yml logs --tail=100 redis
+
+# 检查 Redis 是否健康（应返回 PONG）
+docker exec afs-redis redis-cli ping
 
 # 查看配置是否正确
 docker compose -f docker-compose.prod.yml config
@@ -282,7 +300,7 @@ docker compose -f docker-compose.prod.yml down -v
 
 ## 7. 数据库迁移
 
-- 迁移脚本位于 `afs-server/src/main/resources/db/migration/`，当前共有 11 个脚本，编号为 `V1 ~ V13`（中间有跳号）。
+- 迁移脚本位于 `afs-server/src/main/resources/db/migration/`，当前共有 18 个脚本，编号为 `V1 ~ V18`。
 - 命名规则为 `V<版本号>__<描述>.sql`，例如 `V14__add_xxx.sql`。
 - 应用启动时 Flyway 自动执行未应用的脚本，并记录到 `flyway_schema_history`。
 - 已执行的脚本不要修改；需要变更时新增下一个版本脚本，避免 checksum 冲突。
@@ -294,6 +312,7 @@ docker compose -f docker-compose.prod.yml down -v
 |------|----------|
 | 容器启动失败 | `docker compose -f docker-compose.prod.yml logs afs-server`、`docker compose -f docker-compose.prod.yml config` |
 | 数据库连接失败 | `docker compose -f docker-compose.prod.yml logs postgres`，并确认 `.env` 中的用户名和密码一致 |
+| Redis 不可用 | `docker compose -f docker-compose.prod.yml ps redis`、`docker compose -f docker-compose.prod.yml logs redis`、`docker exec afs-redis redis-cli ping`；检查 Redis 健康状态及 `REDIS_PASSWORD` 是否留空 |
 | 前端 502 / 空白 | `curl -f http://localhost:8080/actuator/health`；`docker exec afs-web nginx -t`；`ss -lntp \| grep 3000` |
 | Flyway 迁移失败 | `docker compose -f docker-compose.prod.yml logs afs-server \| grep -i flyway`，检查脚本 checksum 与 SQL 语法 |
 | 向量检索异常 | 检查 `AI_DASHSCOPE_API_KEY` 与 Embedding 模型配置；调用 `POST /api/knowledge/sync-vector` 重新同步 |

@@ -33,8 +33,10 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     /** JWT 工具，用于令牌解析 */
     private final JwtUtil jwtUtil;
+
     /** 令牌黑名单服务，用于判断令牌是否已吊销 */
     private final TokenBlacklistService tokenBlacklistService;
+
     /** JSON 序列化器，用于输出 401 错误响应 */
     private final ObjectMapper objectMapper;
 
