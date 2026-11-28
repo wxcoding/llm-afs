@@ -5,10 +5,13 @@
       <el-avatar v-else :size="36" :src="userAvatar" class="user-avatar">{{ userInitial }}</el-avatar>
     </div>
     <div class="message-body">
-      <div v-if="msg.content" class="message-content">
+      <div v-if="loading && !msg.content" class="message-loading">
+        <span class="loading-dots">正在检索知识库并生成回答...</span>
+      </div>
+      <div v-if="msg.content" class="message-content" :class="{ streaming: loading }">
         <div class="markdown-body" v-html="renderedContent"></div>
       </div>
-      <div v-if="msg.sources && msg.sources.length > 0" class="message-sources">
+      <div v-if="!loading && msg.sources && msg.sources.length > 0" class="message-sources">
         <div class="sources-header" @click="$emit('toggle-sources')">
           <span class="sources-title">
             <el-icon :size="14"><Collection /></el-icon>
@@ -30,11 +33,12 @@
           </div>
         </div>
       </div>
-      <div v-if="msg.noEvidence" class="message-no-evidence">
+      <div v-if="!loading && msg.stopped" class="message-stopped">已停止生成</div>
+      <div v-if="!loading && msg.noEvidence" class="message-no-evidence">
         <el-icon :size="13"><WarningFilled /></el-icon>
         未检索到可信的知识库依据，回答仅供参考。涉及转账、验证码或疑似诈骗，请停止操作并拨打 96110 核实。
       </div>
-      <div v-if="msg.degraded" class="message-degraded">
+      <div v-if="!loading && msg.degraded" class="message-degraded">
         <el-icon :size="13"><WarningFilled /></el-icon>
         {{ msg.sources && msg.sources.length > 0 ? '以上为知识库原文摘录，未经模型总结' : '回答服务暂时异常，请稍后重试' }}
       </div>
@@ -50,7 +54,8 @@ import ShieldIcon from '@/components/common/ShieldIcon.vue'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
-  msg: { type: Object, required: true }
+  msg: { type: Object, required: true },
+  loading: { type: Boolean, default: false }
 })
 
 defineEmits(['toggle-sources'])
@@ -126,6 +131,47 @@ const renderedContent = computed(() => md.render(props.msg.content || ''))
 /* AI 消息：无气泡，正文直接排版 */
 .message.assistant .message-content {
   padding: 4px 0;
+}
+
+/* 流式输出中的光标：跟随最后一段正文 */
+.message-content.streaming .markdown-body :deep(p:last-child)::after,
+.message-content.streaming .markdown-body :deep(li:last-child)::after {
+  content: '▍';
+  margin-left: 2px;
+  color: #409eff;
+  animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.message-loading {
+  padding: 4px 0;
+}
+
+.loading-dots {
+  display: inline-block;
+  font-size: 14px;
+  color: #909399;
+  animation: dotPulse 1.5s infinite;
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% {
+    opacity: 0.35;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+.message-stopped {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 用户消息：品牌蓝气泡右对齐 */

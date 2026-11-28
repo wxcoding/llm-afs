@@ -18,18 +18,12 @@
             v-for="(msg, index) in messages"
             :key="index"
             :msg="msg"
+            :loading="loading && index === messages.length - 1"
             @toggle-sources="toggleSources(index)"
           />
-
-          <div v-if="loading" class="message assistant">
-            <div class="message-avatar"><ShieldIcon :size="18" /></div>
-            <div class="message-content">
-              <span class="loading-dots">正在思考中...</span>
-            </div>
-          </div>
         </div>
 
-        <ChatInput v-model="inputMessage" :loading="loading" @send="sendMessage" />
+        <ChatInput v-model="inputMessage" :loading="loading" @send="sendMessage" @stop="stopGeneration" />
       </div>
     </div>
   </div>
@@ -45,7 +39,6 @@ import SessionList from '@/components/business/SessionList.vue'
 import MessageBubble from '@/components/business/MessageBubble.vue'
 import ChatInput from '@/components/business/ChatInput.vue'
 import QuickQuestions from '@/components/business/QuickQuestions.vue'
-import ShieldIcon from '@/components/common/ShieldIcon.vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -58,6 +51,7 @@ const messages = ref([])
 const inputMessage = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
+let abortController = null
 
 const questionGroups = [
   {
@@ -177,18 +171,21 @@ const sendMessage = async (content) => {
       sources: [],
       noEvidence: false,
       degraded: false,
+      stopped: false,
       showSources: false
     }
     const assistantIndex = messages.value.length
     messages.value.push(assistantMessage)
 
+    abortController = new AbortController()
     const response = await fetch('/api/chat/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${userStore.token}`
       },
-      body: JSON.stringify(params)
+      body: JSON.stringify(params),
+      signal: abortController.signal
     })
 
     if (response.status === 401) {
@@ -266,10 +263,29 @@ const sendMessage = async (content) => {
       await loadSessions()
     }
   } catch (e) {
-    ElMessage.error('发送失败')
+    if (e.name !== 'AbortError') {
+      ElMessage.error('发送失败')
+      const last = messages.value[messages.value.length - 1]
+      if (last && last.role === 'assistant' && !last.content) {
+        last.content = '回答失败，请稍后重试。'
+      }
+    }
   } finally {
     loading.value = false
+    abortController = null
   }
+}
+
+const stopGeneration = () => {
+  const last = messages.value[messages.value.length - 1]
+  if (last && last.role === 'assistant') {
+    if (last.content) {
+      last.stopped = true
+    } else {
+      last.content = '已停止生成。'
+    }
+  }
+  abortController?.abort()
 }
 
 const sendQuickQuestion = (question) => {
@@ -316,45 +332,5 @@ onMounted(() => {
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-}
-
-.loading-dots {
-  display: inline-block;
-  animation: dotPulse 1.5s infinite;
-}
-
-@keyframes dotPulse {
-  0%, 60%, 100% {
-    opacity: 0.3;
-  }
-  30% {
-    opacity: 1;
-  }
-}
-
-.message {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  align-items: flex-start;
-}
-
-.message-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #ecf5ff;
-  color: #409eff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.message-content {
-  padding: 4px 0;
-  font-size: 14px;
-  color: #303133;
-  line-height: 1.7;
 }
 </style>

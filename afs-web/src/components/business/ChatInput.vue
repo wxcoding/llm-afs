@@ -12,13 +12,16 @@
       />
       <div class="input-bar">
         <span class="input-tip">基于防诈知识库检索增强</span>
+        <button v-if="loading" class="stop-btn" title="停止生成" @click="handleStop">
+          <el-icon :size="14"><VideoPause /></el-icon>
+        </button>
         <button
+          v-else
           class="send-btn"
-          :disabled="!inputValue.trim() || loading"
+          :disabled="!inputValue.trim()"
           @click="handleSend"
         >
-          <el-icon v-if="loading" class="is-loading"><Loading /></el-icon>
-          <el-icon v-else :size="16"><Promotion /></el-icon>
+          <el-icon :size="16"><Promotion /></el-icon>
         </button>
       </div>
     </div>
@@ -27,13 +30,13 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Loading, Promotion } from '@element-plus/icons-vue'
+import { Promotion, VideoPause } from '@element-plus/icons-vue'
 
 const props = defineProps({
   loading: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['send'])
+const emit = defineEmits(['send', 'stop'])
 
 const inputValue = ref('')
 
@@ -41,6 +44,10 @@ const handleSend = () => {
   if (!inputValue.value.trim() || props.loading) return
   emit('send', inputValue.value.trim())
   inputValue.value = ''
+}
+
+const handleStop = () => {
+  emit('stop')
 }
 </script>
 
@@ -105,6 +112,24 @@ const handleSend = () => {
 
 .send-btn:hover:not(:disabled) {
   background: #66b1ff;
+}
+
+.stop-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f56c6c;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stop-btn:hover {
+  background: #f78989;
 }
 
 .send-btn:disabled {
