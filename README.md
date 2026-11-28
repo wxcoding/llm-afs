@@ -57,8 +57,8 @@
 
 **简要说明**：
 - **分层结构**：客户端（Vue 3）→ Nginx → 应用层（Spring Boot）→ 外部服务（PostgreSQL + Redis + 阿里云百炼）
-- **RAG 检索链路**：查询扩展 → 并行检索（全文+向量）→ RRF 融合 → ReRank 重排 → 上下文组装 → LLM 流式输出
-- **多级降级**：混合检索异常 → 纯向量检索 → RAG 失败退化为纯 AI 对话 → AI 异常返回兜底文案
+- **RAG 检索链路**：查询扩展（仅关键词通道）→ 向量 + PostgreSQL 全文双通道召回 → RRF 融合 → ReRank 重排 → 上下文组装 → LLM 流式输出
+- **多级降级**：向量通道超时/失败 → 仅全文召回；检索整体失败 → 纯向量兜底；RAG 超时 → 纯 AI 对话；AI 调用异常 → 兜底文案
 
 ## 📁 项目结构
 
@@ -119,6 +119,8 @@ docker compose up -d --build
 
 访问 http://localhost:3000 ，默认管理员账号 `admin`，密码 `admin123`（Flyway 迁移脚本 V16 自动初始化）。
 
+> 本地默认使用百炼官方兼容接口，可通过 `AI_DASHSCOPE_BASE_URL` 覆盖；Chat、Embedding、ReRank 模型需先在百炼控制台开通，并按实际可用模型名调整 `AI_DASHSCOPE_MODEL` 与 `application.yml` 中的 embedding/rerank 模型。
+
 详细部署见 [deployment.md](deployment.md)。
 
 
@@ -132,7 +134,14 @@ cp .env.example .env
 docker compose up -d postgres redis
 ```
 
-本机直接运行后端时，数据库地址和 Redis 地址默认是 `localhost`；请在 IDE 的运行配置中将 `DB_PASSWORD` 设置为与 `.env` 中 `POSTGRES_PASSWORD` 相同的值。停止依赖服务可运行 `docker compose stop postgres redis`。
+本机直接运行后端时，数据库地址和 Redis 地址默认是 `localhost`。`.env` 不会被 Maven 或 IDE 自动加载，需在运行配置或终端环境中显式设置 `DB_PASSWORD`（与 `.env` 中 `POSTGRES_PASSWORD` 相同）和 `AI_DASHSCOPE_API_KEY`，然后启动：
+
+```bash
+cd afs-server
+mvn spring-boot:run
+```
+
+停止依赖服务可运行 `docker compose stop postgres redis`。
 
 前端环境：Node.js 22+、pnpm 11.1.3（可通过 Corepack 启用）。
 
@@ -144,7 +153,7 @@ pnpm test
 pnpm dev
 ```
 
-完整配置见 [.env.example](.env.example)；RAG、防爆破、JWT 有效期等见 [application.yml](afs-server/src/main/resources/application.yml)。
+环境变量清单见 [.env.example](.env.example)；RAG、检索超时、防爆破、JWT 有效期等见 [application.yml](afs-server/src/main/resources/application.yml)。
 
 ## 🎨 设计要点
 
