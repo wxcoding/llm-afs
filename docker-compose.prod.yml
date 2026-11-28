@@ -72,6 +72,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
+      # 默认沿用当前生产环境的专属部署端点；使用官方接口时在 .env 中覆盖
+      AI_DASHSCOPE_BASE_URL: ${AI_DASHSCOPE_BASE_URL:-https://llm-oyswq13b7aipovuo.cn-beijing.maas.aliyuncs.com/compatible-mode}
       AI_DASHSCOPE_MODEL: ${AI_DASHSCOPE_MODEL:-qwen4-max}
       # 必填，缺失时启动直接报错，避免回退到仓库中的默认弱密钥
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
