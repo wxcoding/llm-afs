@@ -89,7 +89,7 @@ llm-afs/
 │   │   ├── main/resources/
 │   │   │   ├── application.yml
 │   │   │   ├── logback-spring.xml   # json-log profile 切换 JSON 结构化日志
-│   │   │   └── db/migration/    # Flyway V1 ~ V16
+│   │   │   └── db/migration/    # Flyway V1 ~ V18
 │   │   └── test/java/com/afs/   # 单元测试
 │   ├── Dockerfile
 │   └── pom.xml
@@ -109,7 +109,7 @@ llm-afs/
 
 ## 🚀 快速开始
 
-环境：Docker Compose 2.0+、阿里云百炼 API Key。
+环境：Docker Compose 2.0+、阿里云百炼 API Key。Compose 会启动前端、后端、PostgreSQL 和 Redis，Redis 无需单独安装。
 
 ```bash
 git clone https://github.com/wxcoding/llm-afs.git && cd llm-afs
@@ -117,14 +117,22 @@ cp .env.example .env        # 至少填写 POSTGRES_PASSWORD 和 AI_DASHSCOPE_AP
 docker compose up -d --build
 ```
 
-访问 http://localhost:3000 ，默认管理员账号 `admin`，密码 `admin123`（Flyway 迁移脚本 v16 自动初始化）。
+访问 http://localhost:3000 ，默认管理员账号 `admin`，密码 `admin123`（Flyway 迁移脚本 V16 自动初始化）。
 
 详细部署见 [deployment.md](deployment.md)。
 
 
 ## 💻 本地开发
 
-后端环境：JDK 17+、Maven 3.8+、PostgreSQL 17 + pgvector、Redis 7、阿里云百炼 API Key。 
+后端环境：JDK 17+、Maven 3.8+、阿里云百炼 API Key。PostgreSQL 17 + pgvector 和 Redis 7 可使用 Docker Compose 启动：
+
+```bash
+# 在项目根目录创建 .env，并设置 POSTGRES_PASSWORD
+cp .env.example .env
+docker compose up -d postgres redis
+```
+
+本机直接运行后端时，数据库地址和 Redis 地址默认是 `localhost`；请在 IDE 的运行配置中将 `DB_PASSWORD` 设置为与 `.env` 中 `POSTGRES_PASSWORD` 相同的值。停止依赖服务可运行 `docker compose stop postgres redis`。
 
 前端环境：Node.js 22+、pnpm 11.1.3（可通过 Corepack 启用）。
 
